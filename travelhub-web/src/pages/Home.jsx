@@ -5,15 +5,20 @@ import FeaturedDestinations from "../components/home/FeaturedDestinations";
 import Hero from "../components/home/Hero";
 import "./Home.css";
 
+/** MVP: en true muestra la sección Explorar y Destinos destacados */
+const showHomeExploreBlocks = false;
+
 function Home() {
   return (
     <div className="home-page">
       <Navbar />
       <Hero />
-      <PageContainer>
-        <ExploreSection />
-        <FeaturedDestinations />
-      </PageContainer>
+      {showHomeExploreBlocks ? (
+        <PageContainer>
+          <ExploreSection />
+          <FeaturedDestinations />
+        </PageContainer>
+      ) : null}
     </div>
   );
 }
