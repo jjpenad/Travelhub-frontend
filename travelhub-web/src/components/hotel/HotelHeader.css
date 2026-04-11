@@ -1,0 +1,130 @@
+/* Block: hotel-header */
+
+.hotel-header {
+  margin: 0 0 var(--section-gap-sm);
+  min-width: 0;
+}
+
+.hotel-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.hotel-header__title {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: var(--type-section);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.hotel-header__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.hotel-header__badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.hotel-header__badge--verified {
+  color: #15803d;
+  background: color-mix(in srgb, #15803d 12%, transparent);
+  border-color: color-mix(in srgb, #15803d 35%, transparent);
+}
+
+.hotel-header__location {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0 0 0.75rem;
+  font-size: var(--type-body-muted);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.hotel-header__location-icon {
+  flex-shrink: 0;
+  margin-top: 0.12rem;
+  color: var(--color-text-muted);
+}
+
+.hotel-header__rating-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+}
+
+.hotel-header__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+}
+
+.hotel-header__star {
+  width: 18px;
+  height: 18px;
+  color: #eab308;
+  flex-shrink: 0;
+}
+
+.hotel-header__rating-value {
+  font-size: var(--type-body);
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.hotel-header__amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hotel-header__amenity {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--text);
+}
+
+.hotel-header__amenity-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.hotel-header__amenity-label {
+  font-weight: 500;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hotel-header__badge--verified {
+    color: #4ade80;
+    background: color-mix(in srgb, #4ade80 14%, transparent);
+    border-color: color-mix(in srgb, #4ade80 40%, transparent);
+  }
+}
