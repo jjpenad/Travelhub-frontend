@@ -1,13 +1,13 @@
+/* Block: navbar — barra superior púrpura sólido (mockup) */
+
 .navbar {
   width: 100%;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
   z-index: 100;
+  background-color: #5d44bd;
+  border-bottom: 1px solid #4a36a3;
+  box-shadow: 0 2px 14px rgba(35, 22, 80, 0.45);
 }
 
 .navbar__inner {
@@ -20,17 +20,108 @@
   max-width: none;
 }
 
-.navbar__logo {
-  font-family: var(--heading);
-  font-weight: 700;
-  font-size: 1.15rem;
-  color: var(--text-h);
-  text-decoration: none;
-  letter-spacing: -0.03em;
+/* MVP: logo + enlaces a la izquierda, acciones (perfil/login) a la derecha */
+.navbar__inner--compact {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
-.navbar__logo:hover {
-  color: var(--accent);
+.navbar__start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.navbar__inner--compact .navbar__menu {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.navbar__inner--compact .navbar__actions {
+  flex-shrink: 0;
+}
+
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  font-family: var(--heading);
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.navbar__brand:hover {
+  color: #ffffff;
+}
+
+/* Agrupa círculo + wordmark (mockup image_13) */
+.navbar__brand-container {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Contenedor circular blanco: el ícono rellena el disco (bordea el círculo) */
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  padding: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+/*
+ * Escala alta + sin padding: el motivo llega al borde del círculo (el PNG
+ * suele incluir margen transparente; overflow recorta en forma circular).
+ */
+.navbar__logo-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  transform: scale(2.5);
+  transform-origin: center center;
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.navbar__brand-text {
+  margin-left: 1.25rem;
+  line-height: 1.1;
+  font-family: var(--heading);
+  font-size: clamp(1.85rem, 2.6vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  text-transform: none;
+}
+
+/* “Hub” */
+.navbar__brand-text--accent {
+  color: #e040fb;
+  font-weight: 800;
+  transition: color 0.2s ease;
+}
+
+.navbar__brand:hover .navbar__brand-text--accent {
+  color: color-mix(in srgb, #e040fb 88%, #ffffff);
+}
+
+.navbar__brand:hover .navbar__brand-text {
+  color: #ffffff;
 }
 
 .navbar__menu {
@@ -50,17 +141,37 @@
 }
 
 .navbar__link {
-  color: var(--text);
+  position: relative;
+  color: #f0f0f0;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
-  padding: 0.35rem 0;
+  padding: 0.35rem 0 0.55rem;
   border-radius: var(--radius-sm);
-  transition: color 0.2s;
+  transition: color 0.2s ease;
 }
 
 .navbar__link:hover {
-  color: var(--accent);
+  color: #ffffff;
+}
+
+/* Línea de selección sólida bajo el enlace activo */
+.navbar__link--active {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.navbar__link--active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: #ffffff;
+  border-radius: 999px;
+  box-sizing: border-box;
 }
 
 .navbar__search {
@@ -73,13 +184,13 @@
   width: 100%;
   box-sizing: border-box;
   padding: 0.55rem 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid #6b5ac7;
   border-radius: var(--radius-md);
-  background: var(--surface);
-  color: var(--text-h);
+  background: #4a36a3;
+  color: #f0f0f0;
   font: inherit;
   font-size: 0.875rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
   transition:
     border-color 0.2s,
     box-shadow 0.2s,
@@ -87,19 +198,21 @@
 }
 
 .navbar__search-input:hover {
-  border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+  border-color: #8b7adb;
 }
 
 .navbar__search-input::placeholder {
-  color: var(--text);
-  opacity: 0.8;
+  color: #d4d0ee;
+  opacity: 1;
 }
 
 .navbar__search-input:focus {
   outline: none;
   border-color: var(--accent);
-  background: var(--bg);
-  box-shadow: 0 0 0 3px var(--accent-bg), var(--shadow-sm);
+  background: #403298;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .navbar__actions {
@@ -127,38 +240,108 @@
 }
 
 .navbar__btn--ghost {
-  color: var(--text-h);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  box-shadow: var(--shadow-sm);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  box-shadow: none;
 }
 
 .navbar__btn--ghost:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Iniciar sesión: mismo estilo que el CTA primario (accent) */
+.navbar__btn--primary.navbar__sign-in {
+  color: #ffffff;
+}
+
+/* Registrarse: fondo blanco, texto alineado al sistema de color de la app */
+.navbar__btn--register {
+  color: var(--text-h);
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, #ffffff 88%, var(--border));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.navbar__btn--register:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, #ffffff 94%, var(--accent-bg));
+  border-color: color-mix(in srgb, var(--accent) 28%, #ffffff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 .navbar__btn--primary {
   color: #fff;
   background: var(--accent);
   border: 1px solid transparent;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .navbar__btn--primary:hover {
   background: var(--accent-hover);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-hover) 45%, transparent);
 }
 
 .navbar__btn--primary:active,
-.navbar__btn--ghost:active {
+.navbar__btn--ghost:active,
+.navbar__btn--register:active {
   transform: scale(0.98);
 }
 
 .navbar__btn--primary:focus-visible,
-.navbar__btn--ghost:focus-visible {
+.navbar__btn--ghost:focus-visible,
+.navbar__btn--register:focus-visible {
   outline: 2px solid var(--accent-focus-ring);
   outline-offset: 2px;
+}
+
+/* Elemento de usuario circular (mockup: inicial blanca sobre degradado naranja–púrpura) */
+.navbar__user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+  font-family: var(--heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  text-decoration: none;
+  flex-shrink: 0;
+  background: linear-gradient(
+    145deg,
+    #f97316 0%,
+    #ea580c 38%,
+    var(--accent) 100%
+  );
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.35),
+    0 2px 0 rgba(0, 0, 0, 0.15),
+    0 6px 18px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.navbar__user-avatar:hover {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.48),
+    0 2px 0 rgba(0, 0, 0, 0.12),
+    0 8px 22px rgba(0, 0, 0, 0.45),
+    0 0 18px color-mix(in srgb, #f97316 45%, transparent);
+}
+
+.navbar__user-avatar:active {
+  transform: scale(0.97);
+}
+
+.navbar__user-avatar:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 3px;
 }
 
 .visually-hidden {
@@ -174,18 +357,20 @@
 }
 
 @media (max-width: 720px) {
-  .navbar__inner {
-    justify-content: center;
+  .navbar__inner--compact {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 0.75rem;
+  }
+
+  .navbar__start {
+    flex: 1 1 auto;
+    min-width: min(100%, 12rem);
   }
 
   .navbar__search {
     order: 3;
     max-width: none;
     flex-basis: 100%;
-  }
-
-  .navbar__actions {
-    flex: 1 1 auto;
-    justify-content: center;
   }
 }
