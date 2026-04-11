@@ -5,8 +5,8 @@ export const searchResultsCopy = {
   pageTitle: "Resultados de búsqueda",
   toolbar: {
     filtersToolbarLabel: "Filtros rápidos",
-    summaryLead: "128 properties in Santorini",
-    summaryMeta: "12 Apr – 18 Apr · 2 guests",
+    summaryLead: "128 alojamientos en Santorini",
+    summaryMeta: "12 abr – 18 abr · 2 huéspedes",
     filterPrice: "Precio",
     filterRating: "Calificación",
     filterAmenities: "Amenidades",

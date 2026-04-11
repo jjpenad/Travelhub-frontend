@@ -7,14 +7,14 @@ function HotelDescription({ hotel, onShowMore }) {
   }
 
   const text = buildDescriptionText(
-    hotel.name ?? "This property",
+    hotel.name ?? "Este alojamiento",
     hotel.location,
   );
 
   return (
     <section className="hotel-description" aria-labelledby="hotel-description-heading">
       <h2 id="hotel-description-heading" className="hotel-description__title">
-        About this property
+        Sobre este alojamiento
       </h2>
       <p className="hotel-description__text">{text}</p>
       <button
@@ -22,7 +22,7 @@ function HotelDescription({ hotel, onShowMore }) {
         className="hotel-description__more"
         onClick={onShowMore}
       >
-        Show more
+        Ver más
       </button>
     </section>
   );

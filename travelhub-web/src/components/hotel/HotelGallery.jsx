@@ -13,7 +13,7 @@ function HotelGallery({ hotel }) {
   const displayName = hotel.name ?? "Hotel";
   const main = {
     src: hotel.image,
-    alt: `Main photo — ${displayName}`,
+    alt: `Foto principal — ${displayName}`,
   };
   const thumbs = buildGalleryThumbs(hotel, displayName);
 

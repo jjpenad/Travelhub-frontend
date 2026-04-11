@@ -25,16 +25,16 @@ function HotelDetailContent({ hotel }) {
           className="hotel-detail"
           data-selected-room={selectedRoom}
         >
-          <nav className="hotel-detail__breadcrumb" aria-label="Breadcrumb">
+          <nav className="hotel-detail__breadcrumb" aria-label="Migas de pan">
             <ol className="hotel-detail__breadcrumb-list">
               <li className="hotel-detail__breadcrumb-item">
                 <Link className="hotel-detail__breadcrumb-link" to="/">
-                  Home
+                  Inicio
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
                 <Link className="hotel-detail__breadcrumb-link" to="/search">
-                  Greece
+                  Grecia
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
@@ -70,7 +70,7 @@ function HotelDetailContent({ hotel }) {
 
             <aside
               className="hotel-detail__booking-sidebar"
-              aria-label="Booking"
+              aria-label="Reserva"
             >
               <BookingWidget
                 hotel={hotel}

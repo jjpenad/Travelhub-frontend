@@ -97,17 +97,17 @@
 .booking-widget__select {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-h);
   font: inherit;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .booking-widget__input {
-  padding: 0.5rem 0.65rem;
+  padding: 12px;
   background: var(--surface);
 }
 
@@ -128,7 +128,6 @@
 .booking-widget__select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .booking-widget__room-type {

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import "./BookingWidget.css";
 
 function IconLock({ className }) {
@@ -53,6 +54,7 @@ function BookingWidget({
   onSelectedRoomChange,
   availableRooms: availableRoomsProp,
 }) {
+  const navigate = useNavigate();
   const pricePerNight = pricePerNightProp ?? hotel?.price ?? 380;
   const rating = ratingProp ?? hotel?.rating ?? 4.9;
   const cancellationText =
@@ -71,8 +73,37 @@ function BookingWidget({
       ? availableRoomsProp
       : hotel?.availableRooms ?? [];
 
+  const hotelId = hotel?.id;
+  const roomType =
+    availableRooms.length > 0
+      ? (selectedRoom ?? availableRooms[0] ?? "")
+      : "";
+
   function handleSubmit(e) {
     e.preventDefault();
+    const fd = new FormData(e.target);
+    const checkIn = String(fd.get("checkIn") ?? "");
+    const checkOut = String(fd.get("checkOut") ?? "");
+    const guestsRaw = fd.get("guests");
+    const guests = guestsRaw != null ? Number(guestsRaw) : 2;
+
+    if (hotelId) {
+      navigate(`/checkout/${hotelId}`, {
+        state: {
+          roomType,
+          total,
+          nights,
+          guests: Number.isFinite(guests) ? guests : 2,
+          checkIn,
+          checkOut,
+          pricePerNight,
+          cleaningFee,
+          serviceFee,
+          taxes,
+          roomSubtotal,
+        },
+      });
+    }
     onReserve?.(e);
   }
 

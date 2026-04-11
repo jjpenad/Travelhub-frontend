@@ -11,11 +11,11 @@ import {
 import "./HotelHeader.css";
 
 const AMENITIES = [
-  { id: "pool", label: "Pool", Icon: IconAmenityPool },
-  { id: "breakfast", label: "Breakfast", Icon: IconAmenityBreakfast },
+  { id: "pool", label: "Piscina", Icon: IconAmenityPool },
+  { id: "breakfast", label: "Desayuno", Icon: IconAmenityBreakfast },
   { id: "wifi", label: "WiFi", Icon: IconAmenityWifi },
   { id: "spa", label: "Spa", Icon: IconAmenitySpa },
-  { id: "parking", label: "Parking", Icon: IconAmenityParking },
+  { id: "parking", label: "Aparcamiento", Icon: IconAmenityParking },
   { id: "bar", label: "Bar", Icon: IconAmenityBar },
 ];
 
@@ -25,7 +25,7 @@ function HotelHeader({ hotel }) {
   }
 
   const title = hotel.name ?? "";
-  const location = hotel.location ?? "Santorini, Greece";
+  const location = hotel.location ?? "Santorini, Grecia";
   const rating = hotel.rating ?? 4.9;
   const ratingNum =
     typeof rating === "number" ? rating.toFixed(1) : String(rating ?? "");
@@ -37,7 +37,7 @@ function HotelHeader({ hotel }) {
         <div className="hotel-header__badges" aria-label="Tipo de alojamiento">
           <span className="hotel-header__badge">Hotel</span>
           <span className="hotel-header__badge hotel-header__badge--verified">
-            Verified
+            Verificado
           </span>
         </div>
       </div>

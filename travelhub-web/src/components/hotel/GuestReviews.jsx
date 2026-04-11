@@ -1,10 +1,10 @@
 import "./GuestReviews.css";
 
 const DEFAULT_SCORES = [
-  { id: "cleanliness", label: "Cleanliness", percent: 96 },
-  { id: "location", label: "Location", percent: 98 },
-  { id: "service", label: "Service", percent: 94 },
-  { id: "value", label: "Value", percent: 91 },
+  { id: "cleanliness", label: "Limpieza", percent: 96 },
+  { id: "location", label: "Ubicación", percent: 98 },
+  { id: "service", label: "Servicio", percent: 94 },
+  { id: "value", label: "Relación calidad-precio", percent: 91 },
 ];
 
 const DEFAULT_REVIEWS = [
@@ -12,13 +12,13 @@ const DEFAULT_REVIEWS = [
     id: "1",
     name: "Sarah M.",
     initials: "SM",
-    text: "Absolutely stunning views and impeccable service. The infinity pool at sunset was unforgettable. We will definitely return.",
+    text: "Vistas absolutamente espectaculares y un servicio impecable. La piscina infinita al atardecer fue inolvidable. Sin duda volveremos.",
   },
   {
     id: "2",
     name: "James R.",
     initials: "JR",
-    text: "Great location in Oia, quiet but close to everything. Breakfast was delicious. Only minor issue was the Wi‑Fi speed in the room.",
+    text: "Excelente ubicación en Oia, tranquilo pero cerca de todo. El desayuno estaba delicioso. Como único detalle, la velocidad del Wi‑Fi en la habitación.",
   },
 ];
 
@@ -40,14 +40,14 @@ function GuestReviews({
       aria-labelledby="guest-reviews-heading"
     >
       <h2 id="guest-reviews-heading" className="guest-reviews__title">
-        Guest Reviews
+        Opiniones de huéspedes
       </h2>
 
       <p className="guest-reviews__summary">
         <span className="guest-reviews__summary-value">{summary}</span>
       </p>
 
-      <ul className="guest-reviews__scores" aria-label="Scores by category">
+      <ul className="guest-reviews__scores" aria-label="Puntuaciones por categoría">
         {scores.map(({ id, label, percent }) => (
           <li key={id} className="guest-reviews__score-row">
             <span className="guest-reviews__score-label">{label}</span>
