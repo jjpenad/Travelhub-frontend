@@ -63,6 +63,28 @@
   min-height: 6rem;
 }
 
+.guest-form__textarea-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.guest-form__textarea--counter {
+  padding-bottom: 2rem;
+}
+
+.guest-form__char-count {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
 .guest-form__input::placeholder,
 .guest-form__textarea::placeholder {
   color: var(--color-text-muted);
@@ -73,6 +95,24 @@
 .guest-form__textarea:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.guest-form__input--error,
+.guest-form__textarea.guest-form__input--error {
+  border-color: var(--error);
+}
+
+.guest-form__input--error:focus,
+.guest-form__textarea.guest-form__input--error:focus {
+  border-color: var(--error);
+}
+
+.guest-form__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--error);
+  line-height: 1.35;
 }
 
 @media (max-width: 640px) {

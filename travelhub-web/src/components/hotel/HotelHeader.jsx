@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import { IconStar } from "../home/HeroIcons";
 import {
   IconAmenityBar,
@@ -62,7 +63,9 @@ function HotelHeader({ hotel }) {
       <ul className="hotel-header__amenities" aria-label="Servicios destacados">
         {AMENITIES.map(({ id, label, Icon }) => (
           <li key={id} className="hotel-header__amenity">
-            <Icon className="hotel-header__amenity-icon" />
+            {createElement(Icon, {
+              className: "hotel-header__amenity-icon",
+            })}
             <span className="hotel-header__amenity-label">{label}</span>
           </li>
         ))}

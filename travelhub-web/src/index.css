@@ -61,6 +61,7 @@
   --leading-body: 1.65;
   --text-muted: #64748b;
   --color-text-muted: var(--text-muted);
+  --error: #dc2626;
 
   --sans: "Plus Jakarta Sans", system-ui, "Segoe UI", Roboto, sans-serif;
   --heading: "Plus Jakarta Sans", system-ui, "Segoe UI", Roboto, sans-serif;
@@ -100,6 +101,7 @@
     --accent-shadow-md: rgba(167, 139, 250, 0.4);
     --social-bg: rgba(30, 34, 48, 0.8);
     --text-muted: #94a3b8;
+    --error: #f87171;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
     --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
     --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45), 0 6px 16px rgba(0, 0, 0, 0.3);

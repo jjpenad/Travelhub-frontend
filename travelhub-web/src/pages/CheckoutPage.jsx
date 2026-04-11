@@ -92,6 +92,7 @@ function buildBookingSummaryData(locationState, hotelFromMock) {
 
 function CheckoutPage() {
   const [guestEmail, setGuestEmail] = useState("");
+  const [guestFormValid, setGuestFormValid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [cardNumber, setCardNumber] = useState("");
   const { hotelId } = useParams();
@@ -137,8 +138,16 @@ function CheckoutPage() {
 
           <div className="checkout__layout">
             <div className="checkout__main">
-              <GuestForm email={guestEmail} onEmailChange={setGuestEmail} />
-              <PaymentForm />
+              <GuestForm
+                onGuestEmailChange={setGuestEmail}
+                onValidityChange={setGuestFormValid}
+              />
+              <PaymentForm
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={setPaymentMethod}
+                cardNumber={cardNumber}
+                onCardNumberChange={setCardNumber}
+              />
             </div>
             <div className="checkout__aside">
               <BookingSummaryCard
@@ -154,6 +163,7 @@ function CheckoutPage() {
                 taxes={summary.taxes}
                 total={summary.total}
                 guestEmail={guestEmail}
+                guestFormValid={guestFormValid}
                 paymentMethod={paymentMethod}
                 cardNumber={cardNumber}
               />
