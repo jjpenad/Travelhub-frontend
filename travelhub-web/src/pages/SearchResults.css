@@ -19,6 +19,12 @@
 
 .search-results-page .page-container__inner {
   padding-top: calc(var(--nav-height) * 0.2 + var(--page-block-y-start));
+  /* Menos hueco entre resumen de búsqueda y toolbar (evita --section-gap-lg global) */
+  gap: 0.65rem;
+}
+
+.search-results-page .search-summary {
+  margin-bottom: 0;
 }
 
 .results {
@@ -31,22 +37,18 @@
   z-index: 0;
 }
 
-.results__title {
-  margin: 0;
-  font-family: var(--heading);
-  font-size: var(--type-section);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text-h);
-  line-height: var(--leading-tight);
-}
-
 .results__grid {
   display: grid;
   grid-template-columns: minmax(14rem, 17.5rem) minmax(0, 1fr);
   gap: var(--section-gap);
   align-items: start;
   min-width: 0;
+}
+
+/* Sin sidebar: el listado ocupa todo el ancho desde el mismo margen izquierdo del contenido */
+.results__grid--no-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
 
 .results__sidebar {

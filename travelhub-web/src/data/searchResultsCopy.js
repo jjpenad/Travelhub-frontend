@@ -2,11 +2,9 @@
  * Textos parametrizables para la vista de resultados (fuera de componentes de presentación).
  */
 export const searchResultsCopy = {
-  pageTitle: "Resultados de búsqueda",
   toolbar: {
     filtersToolbarLabel: "Filtros rápidos",
     summaryLead: "128 alojamientos en Santorini",
-    summaryMeta: "12 abr – 18 abr · 2 huéspedes",
     filterPrice: "Precio",
     filterRating: "Calificación",
     filterAmenities: "Amenidades",

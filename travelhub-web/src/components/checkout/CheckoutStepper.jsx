@@ -1,7 +1,7 @@
 import "./CheckoutStepper.css";
 
 const STEPS = [
-  { id: "details", label: "Datos" },
+  { id: "details", label: "Reserva" },
   { id: "payment", label: "Pago" },
   { id: "confirm", label: "Confirmación", labelDone: "Confirmado" },
 ];

@@ -82,6 +82,7 @@ function BookingSummaryCard({
   total = 0,
   guestEmail = "",
   guestFormValid = false,
+  paymentFormValid = false,
   paymentMethod = "card",
   cardNumber = "",
   onConfirm,
@@ -204,18 +205,24 @@ function BookingSummaryCard({
           </span>
           <span>{fmtMoney(roomSubtotal)}</span>
         </div>
-        <div className="booking-summary-card__row">
-          <span>Tarifa de limpieza</span>
-          <span>{fmtMoney(cleaningFee)}</span>
-        </div>
-        <div className="booking-summary-card__row">
-          <span>Tarifa de servicio</span>
-          <span>{fmtMoney(serviceFee)}</span>
-        </div>
-        <div className="booking-summary-card__row">
-          <span>Impuestos</span>
-          <span>{fmtMoney(taxes)}</span>
-        </div>
+        {cleaningFee > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Tarifa de limpieza</span>
+            <span>{fmtMoney(cleaningFee)}</span>
+          </div>
+        ) : null}
+        {serviceFee > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Tarifa de servicio</span>
+            <span>{fmtMoney(serviceFee)}</span>
+          </div>
+        ) : null}
+        {taxes > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Impuestos</span>
+            <span>{fmtMoney(taxes)}</span>
+          </div>
+        ) : null}
         <div className="booking-summary-card__row booking-summary-card__row--total">
           <span>Total</span>
           <span className="booking-summary-card__total-amount">
@@ -227,11 +234,11 @@ function BookingSummaryCard({
       <button
         type="button"
         className="booking-summary-card__confirm"
-        disabled={!guestFormValid}
+        disabled={!guestFormValid || !paymentFormValid}
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />
-        Confirmar y pagar {fmtMoney(total)}
+        Confirmar y Pagar
       </button>
 
       <footer className="booking-summary-card__footer">

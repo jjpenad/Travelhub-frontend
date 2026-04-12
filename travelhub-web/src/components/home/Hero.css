@@ -1,8 +1,8 @@
 /* Hero: full-bleed travel landing — intense purple, centered stack, floating search card */
 .home-hero {
-  /* ~900–1100px band on large screens; never wider than parent */
-  --hero-search-max: 1040px;
-  --search-control-h: 48px;
+  /* ~900–1200px band on large screens; never wider than parent */
+  --hero-search-max: 1180px;
+  --search-control-h: 54px;
   --search-field-gap: 1rem;
   --search-field-border: #e2e8f0;
   --search-field-bg: #f8fafc;
@@ -28,7 +28,8 @@
   padding: clamp(3rem, 8vw, 5.5rem) var(--page-padding-x);
   text-align: center;
   position: relative;
-  overflow: hidden;
+  /* visible: mensajes de error absolutos bajo la tarjeta no se recortan */
+  overflow: visible;
 }
 
 /* Depth: soft highlights + vignette for richer purple */
@@ -123,15 +124,20 @@
   flex-direction: column;
   align-items: stretch;
   gap: clamp(1.15rem, 2.5vw, 1.65rem);
+  position: relative;
+  z-index: 1;
 }
 
 /* Floating search bar — single row, uniform spacing (Booking / Airbnb style) */
 .home-hero__search-card {
+  position: relative;
+  z-index: 2;
   width: 100%;
   background: #fff;
   border-radius: 16px;
   border: 1px solid rgba(226, 232, 240, 0.95);
-  padding: 1rem 1rem 1rem 1.125rem;
+  padding: 1.75rem 1.5rem 1.75rem 1.5rem;
+  overflow: visible;
   box-shadow:
     0 2px 4px rgba(30, 27, 75, 0.04),
     0 12px 28px rgba(76, 29, 149, 0.1),
@@ -142,7 +148,7 @@
 .home-hero__search-row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--search-field-gap);
   min-width: 0;
 }
@@ -158,16 +164,16 @@
 }
 
 .home-hero__field--destination {
-  flex: 1.35 1 12rem;
+  flex: 1.35 1 13.5rem;
 }
 
 .home-hero__field--guests {
-  flex: 0 1 9.5rem;
+  flex: 0 1 11rem;
 }
 
 .home-hero__field--datecol {
-  flex: 0 1 9.75rem;
-  min-width: 8.5rem;
+  flex: 0 1 11rem;
+  min-width: 9.25rem;
 }
 
 .home-hero__field-label {
@@ -186,6 +192,53 @@
   user-select: none;
 }
 
+/* Contenedor del control: contexto para mensajes de error sin layout shift */
+.home-hero__field-wrap {
+  position: relative;
+  align-self: stretch;
+  min-width: 0;
+  z-index: 1;
+}
+
+.home-hero__field-error {
+  position: absolute;
+  left: 0;
+  /* Debajo del control, fuera de la caja blanca (sin ocupar flujo; sin layout shift) */
+  top: calc(100% + 6px);
+  margin: 0;
+  padding: 0;
+  max-width: min(100%, 17rem);
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #991b1b;
+  text-align: left;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  z-index: 3;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  animation: home-hero-field-error-in 0.3s ease;
+}
+
+@keyframes home-hero-field-error-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 901px) {
+  .home-hero__field-error {
+    font-size: 11px;
+    max-width: min(100%, 19rem);
+  }
+}
+
 .home-hero__field-control {
   display: flex;
   align-items: center;
@@ -198,19 +251,36 @@
   border-radius: var(--search-field-radius);
   background: var(--search-field-bg);
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    background 0.2s;
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background-color 0.3s ease;
 }
 
-.home-hero__field-control:hover {
+.home-hero__field-control:hover:not(:has(.home-hero__field-input--error)):not(
+    :has(.home-hero__field-select--error)
+  ) {
   border-color: #cbd5e1;
 }
 
-.home-hero__field-control:focus-within {
+.home-hero__field-control:has(.home-hero__field-input--error),
+.home-hero__field-control:has(.home-hero__field-select--error) {
+  border: 1px solid rgba(255, 0, 0, 0.4);
+  background-color: rgba(255, 0, 0, 0.045);
+}
+
+.home-hero__field-control:focus-within:not(:has(.home-hero__field-input--error)):not(
+    :has(.home-hero__field-select--error)
+  ) {
   border-color: var(--accent-border-focus);
   background: #fff;
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.home-hero__field-control:has(.home-hero__field-input--error):focus-within,
+.home-hero__field-control:has(.home-hero__field-select--error):focus-within {
+  border-color: rgba(255, 0, 0, 0.48);
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.12);
 }
 
 .home-hero__field-icon {
@@ -243,18 +313,37 @@
   font-weight: 400;
 }
 
-/* Fecha: tipografía un poco menor; vacío = mismo gris que placeholder de destino */
+/* Fecha: misma tipografía y color que destino / huéspedes */
 .home-hero__field-input--date {
   color-scheme: light;
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 400;
+  color: #64748b;
+}
+
+/* Chromium/Safari: el texto dd/mm/aaaa usa pseudo-elementos; forzar gris como placeholder */
+.home-hero__field-input--date::-webkit-datetime-edit,
+.home-hero__field-input--date::-webkit-datetime-edit-fields-wrapper,
+.home-hero__field-input--date::-webkit-datetime-edit-text,
+.home-hero__field-input--date::-webkit-datetime-edit-month-field,
+.home-hero__field-input--date::-webkit-datetime-edit-day-field,
+.home-hero__field-input--date::-webkit-datetime-edit-year-field {
   color: #64748b;
 }
 
 .home-hero__field-input--date:not([value=""]) {
   color: #0f172a;
   font-weight: 500;
+}
+
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit,
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-fields-wrapper,
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-text,
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-month-field,
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-day-field,
+.home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-year-field {
+  color: #0f172a;
 }
 
 .home-hero__field-input--date::-webkit-calendar-picker-indicator {
@@ -332,6 +421,8 @@
 
 /* Trust line */
 .home-hero__trust {
+  position: relative;
+  z-index: 0;
   margin: 0;
   display: flex;
   flex-wrap: wrap;
@@ -360,7 +451,7 @@
 
   .home-hero__search-card {
     border-radius: 14px;
-    padding: 1rem;
+    padding: 1.5rem 1.125rem;
   }
 
   .home-hero__search-row {
@@ -410,12 +501,24 @@
     font-weight: 400;
   }
 
-  .home-hero__field-input--date[value=""] {
+  .home-hero__field-input--date[value=""],
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit,
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit-fields-wrapper,
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit-text,
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit-month-field,
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit-day-field,
+  .home-hero__field-input--date[value=""]::-webkit-datetime-edit-year-field {
     color: #64748b;
     font-weight: 400;
   }
 
-  .home-hero__field-input--date:not([value=""]) {
+  .home-hero__field-input--date:not([value=""]),
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit,
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-fields-wrapper,
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-text,
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-month-field,
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-day-field,
+  .home-hero__field-input--date:not([value=""])::-webkit-datetime-edit-year-field {
     color: #0f172a;
     font-weight: 500;
   }

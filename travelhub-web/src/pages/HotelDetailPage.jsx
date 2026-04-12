@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import BookingWidget from "../components/hotel/BookingWidget";
 import GuestReviews from "../components/hotel/GuestReviews";
 import HotelDescription from "../components/hotel/HotelDescription";
@@ -8,9 +8,13 @@ import HotelHeader from "../components/hotel/HotelHeader";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import { mockHotels } from "../data/mockHotels";
+import { parseBookingFromSearchParams } from "../utils/searchUrlParams";
 import "./HotelDetailPage.css";
 
-function HotelDetailContent({ hotel }) {
+/** MVP: en `false` se oculta la sección «Opiniones de huéspedes» (código del componente se conserva). */
+const showGuestReviewsSection = false;
+
+function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
   const [selectedRoom, setSelectedRoom] = useState(
     () => hotel.availableRooms?.[0] ?? "",
   );
@@ -33,12 +37,18 @@ function HotelDetailContent({ hotel }) {
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
-                <Link className="hotel-detail__breadcrumb-link" to="/search">
+                <Link
+                  className="hotel-detail__breadcrumb-link"
+                  to={`/search${searchSuffix}`}
+                >
                   Grecia
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
-                <Link className="hotel-detail__breadcrumb-link" to="/search">
+                <Link
+                  className="hotel-detail__breadcrumb-link"
+                  to={`/search${searchSuffix}`}
+                >
                   Santorini
                 </Link>
               </li>
@@ -64,7 +74,9 @@ function HotelDetailContent({ hotel }) {
 
                 <HotelDescription hotel={hotel} />
 
-                <GuestReviews hotel={hotel} />
+                {showGuestReviewsSection ? (
+                  <GuestReviews hotel={hotel} />
+                ) : null}
               </div>
             </div>
 
@@ -74,7 +86,10 @@ function HotelDetailContent({ hotel }) {
             >
               <BookingWidget
                 hotel={hotel}
-                nights={5}
+                nights={bookingFromSearch.nights}
+                defaultCheckIn={bookingFromSearch.checkIn}
+                defaultCheckOut={bookingFromSearch.checkOut}
+                defaultGuests={bookingFromSearch.guestsStr}
                 selectedRoom={selectedRoom}
                 onSelectedRoomChange={setSelectedRoom}
                 availableRooms={hotel.availableRooms ?? []}
@@ -89,8 +104,19 @@ function HotelDetailContent({ hotel }) {
 
 function HotelDetailPage() {
   const { hotelId: hotelIdParam } = useParams();
+  const [searchParams] = useSearchParams();
   const hotelId = hotelIdParam ? decodeURIComponent(hotelIdParam) : "";
   const hotel = mockHotels.find((h) => h.id === hotelId);
+
+  const searchSuffix = useMemo(() => {
+    const s = searchParams.toString();
+    return s ? `?${s}` : "";
+  }, [searchParams]);
+
+  const bookingFromSearch = useMemo(
+    () => parseBookingFromSearchParams(searchParams),
+    [searchParams],
+  );
 
   if (!hotel) {
     return (
@@ -102,7 +128,10 @@ function HotelDetailPage() {
             <p className="hotel-detail__not-found-text">
               No listing matches this URL. Check the link or return to search.
             </p>
-            <Link className="hotel-detail__not-found-link" to="/search">
+            <Link
+              className="hotel-detail__not-found-link"
+              to={`/search${searchSuffix}`}
+            >
               Back to results
             </Link>
           </div>
@@ -111,7 +140,14 @@ function HotelDetailPage() {
     );
   }
 
-  return <HotelDetailContent key={hotel.id} hotel={hotel} />;
+  return (
+    <HotelDetailContent
+      key={hotel.id}
+      hotel={hotel}
+      bookingFromSearch={bookingFromSearch}
+      searchSuffix={searchSuffix}
+    />
+  );
 }
 
 export default HotelDetailPage;

@@ -1,7 +1,7 @@
 import { buildDescriptionText } from "../../utils/hotelDetailHelpers";
 import "./HotelDescription.css";
 
-function HotelDescription({ hotel, onShowMore }) {
+function HotelDescription({ hotel }) {
   if (!hotel) {
     return null;
   }
@@ -17,13 +17,6 @@ function HotelDescription({ hotel, onShowMore }) {
         Sobre este alojamiento
       </h2>
       <p className="hotel-description__text">{text}</p>
-      <button
-        type="button"
-        className="hotel-description__more"
-        onClick={onShowMore}
-      >
-        Ver más
-      </button>
     </section>
   );
 }

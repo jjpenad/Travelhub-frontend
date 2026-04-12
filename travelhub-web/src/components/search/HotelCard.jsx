@@ -1,9 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { IconStar } from "../home/HeroIcons";
 import "./HotelCard.css";
 
 function HotelCard({ hotel, copy }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const ratingDisplay =
     typeof hotel.rating === "number" ? hotel.rating.toFixed(2) : String(hotel.rating);
   const maxAmenities = 4;
@@ -76,7 +77,15 @@ function HotelCard({ hotel, copy }) {
         <button
           type="button"
           className="hotel-card__book"
-          onClick={() => navigate(`/hotel/${encodeURIComponent(hotel.id)}`)}
+          onClick={() => {
+            const next = new URLSearchParams(searchParams);
+            next.delete("rooms");
+            const qs = next.toString();
+            navigate({
+              pathname: `/hotel/${encodeURIComponent(hotel.id)}`,
+              search: qs ? `?${qs}` : "",
+            });
+          }}
         >
           {copy.bookNow}
         </button>

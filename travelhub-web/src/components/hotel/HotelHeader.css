@@ -1,16 +1,15 @@
 /* Block: hotel-header */
 
 .hotel-header {
-  margin: 0 0 var(--section-gap-sm);
+  margin: 0;
   min-width: 0;
 }
 
 .hotel-header__title-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.65rem 1rem;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
@@ -22,8 +21,8 @@
   letter-spacing: -0.03em;
   color: var(--text-h);
   line-height: var(--leading-tight);
-  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
 }
 
 .hotel-header__badges {
