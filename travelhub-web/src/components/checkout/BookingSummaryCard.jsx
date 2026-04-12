@@ -205,18 +205,24 @@ function BookingSummaryCard({
           </span>
           <span>{fmtMoney(roomSubtotal)}</span>
         </div>
-        <div className="booking-summary-card__row">
-          <span>Tarifa de limpieza</span>
-          <span>{fmtMoney(cleaningFee)}</span>
-        </div>
-        <div className="booking-summary-card__row">
-          <span>Tarifa de servicio</span>
-          <span>{fmtMoney(serviceFee)}</span>
-        </div>
-        <div className="booking-summary-card__row">
-          <span>Impuestos</span>
-          <span>{fmtMoney(taxes)}</span>
-        </div>
+        {cleaningFee > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Tarifa de limpieza</span>
+            <span>{fmtMoney(cleaningFee)}</span>
+          </div>
+        ) : null}
+        {serviceFee > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Tarifa de servicio</span>
+            <span>{fmtMoney(serviceFee)}</span>
+          </div>
+        ) : null}
+        {taxes > 0 ? (
+          <div className="booking-summary-card__row">
+            <span>Impuestos</span>
+            <span>{fmtMoney(taxes)}</span>
+          </div>
+        ) : null}
         <div className="booking-summary-card__row booking-summary-card__row--total">
           <span>Total</span>
           <span className="booking-summary-card__total-amount">

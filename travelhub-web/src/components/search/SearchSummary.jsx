@@ -7,52 +7,13 @@ import {
   IconSearch,
   IconUsers,
 } from "../home/HeroIcons";
+import {
+  formatFriendlyDate,
+  formatGuestsLabel,
+  formatRoomsLabel,
+  safeDecode,
+} from "../../utils/searchUrlParams";
 import "./SearchSummary.css";
-
-function parseIsoToLocalDate(iso) {
-  if (!iso || typeof iso !== "string") return null;
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const y = Number(m[1]);
-  const mo = Number(m[2]) - 1;
-  const d = Number(m[3]);
-  const dt = new Date(y, mo, d);
-  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) {
-    return null;
-  }
-  return dt;
-}
-
-/** ISO YYYY-MM-DD → texto legible (ej. "24 mar 2026") */
-function formatFriendlyDate(iso) {
-  const dt = parseIsoToLocalDate(iso);
-  if (!dt) return "—";
-  return new Intl.DateTimeFormat("es", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(dt);
-}
-
-function safeDecode(s) {
-  try {
-    return decodeURIComponent(s);
-  } catch {
-    return s;
-  }
-}
-
-function formatGuestsLabel(n) {
-  const num = parseInt(String(n), 10);
-  if (!Number.isFinite(num) || num < 1) return "—";
-  return num === 1 ? "1 huésped" : `${num} huéspedes`;
-}
-
-function formatRoomsLabel(n) {
-  const num = parseInt(String(n), 10);
-  if (!Number.isFinite(num) || num < 1) return "—";
-  return num === 1 ? "1 habitación" : `${num} habitaciones`;
-}
 
 function SearchSummary() {
   const [searchParams] = useSearchParams();

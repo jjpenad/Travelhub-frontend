@@ -19,7 +19,7 @@ export const mockHotels = [
       "Desayuno",
       "Traslado aeropuerto",
     ],
-    availableRooms: ["Standard Room", "Deluxe Suite", "Ocean View"],
+    availableRooms: ["Habitación estándar", "Suite deluxe", "Vista al mar"],
     isRefundable: true,
   },
   {
@@ -45,7 +45,7 @@ export const mockHotels = [
     image:
       "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80",
     amenities: ["Wi‑Fi", "Spa", "Piscina", "Bar en azotea", "Servicio de habitaciones"],
-    availableRooms: ["Superior Caldera", "Suite honeymoon", "Villa privada"],
+    availableRooms: ["Superior caldera", "Suite luna de miel", "Villa privada"],
     isRefundable: false,
   },
   {
@@ -58,7 +58,7 @@ export const mockHotels = [
     image:
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&q=80",
     amenities: ["Wi‑Fi", "Piscina", "Spa", "Desayuno buffet", "Concierge"],
-    availableRooms: ["Cueva Suite", "Infinity Suite", "Master Suite"],
+    availableRooms: ["Suite cueva", "Suite infinity", "Suite principal"],
     isRefundable: true,
   },
   {
@@ -71,7 +71,7 @@ export const mockHotels = [
     image:
       "https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=800&q=80",
     amenities: ["Wi‑Fi", "Piscina", "Restaurante", "Bar", "Traslado"],
-    availableRooms: ["Chambre vue mer", "Suite Grace", "The Villa"],
+    availableRooms: ["Habitación vista mar", "Suite Grace", "La villa"],
     isRefundable: true,
   },
   {
@@ -84,7 +84,7 @@ export const mockHotels = [
     image:
       "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800&q=80",
     amenities: ["Wi‑Fi", "Spa", "Piscina", "Desayuno", "Terraza privada"],
-    availableRooms: ["Cave Pool Suite", "Grand Suite", "Water Villa"],
+    availableRooms: ["Suite cueva con piscina", "Gran suite", "Villa sobre el agua"],
     isRefundable: false,
   },
 ];

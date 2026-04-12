@@ -107,6 +107,11 @@
   min-width: 0;
 }
 
+/* Menos hueco entre la cabecera (amenidades) y «Sobre este alojamiento» */
+.hotel-detail__main-stack > .hotel-header + .hotel-description {
+  margin-top: calc(-0.75 * var(--section-gap-sm));
+}
+
 .hotel-detail__gallery {
   width: 100%;
   min-width: 0;

@@ -195,8 +195,7 @@ function Hero() {
       const checkIn = ensureIsoYmd(data.checkIn);
       const checkOut = ensureIsoYmd(data.checkOut);
       const guests = normalizeGuestsValue(data.guests);
-      const rooms = "1";
-      const payload = { destination, checkIn, checkOut, guests, rooms };
+      const payload = { destination, checkIn, checkOut, guests };
       try {
         sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(payload));
       } catch {
@@ -209,7 +208,6 @@ function Hero() {
           checkIn,
           checkOut,
           guests,
-          rooms,
         }).toString(),
       });
     },

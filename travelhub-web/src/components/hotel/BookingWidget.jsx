@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import { formatFriendlyDate, formatGuestsLabel } from "../../utils/searchUrlParams";
 import "./BookingWidget.css";
+
+/** En `false` se ocultan tarifa de limpieza, tarifa de servicio e impuestos del desglose (y no se suman al total). */
+const showBreakdownExtraFees = false;
 
 function IconLock({ className }) {
   return (
@@ -42,17 +46,19 @@ function fmtMoney(n) {
 function BookingWidget({
   hotel,
   pricePerNight: pricePerNightProp,
-  nights = 5,
+  nights: nightsProp,
   rating: ratingProp,
   cleaningFee = 75,
   serviceFee = 45,
   taxes = 62,
   cancellationText: cancellationTextProp,
-  contactHostHref = "#contact-host",
   onReserve,
   selectedRoom,
   onSelectedRoomChange,
   availableRooms: availableRoomsProp,
+  defaultCheckIn = "",
+  defaultCheckOut = "",
+  defaultGuests = "2",
 }) {
   const navigate = useNavigate();
   const pricePerNight = pricePerNightProp ?? hotel?.price ?? 380;
@@ -61,12 +67,25 @@ function BookingWidget({
     cancellationTextProp ??
     (hotel?.isRefundable === false
       ? "Tarifa no reembolsable"
-      : "Cancelación gratuita hasta el 22 de marzo");
+      : "Cancelación gratuita");
 
+  const nights = typeof nightsProp === "number" && nightsProp > 0 ? nightsProp : 5;
   const roomSubtotal = pricePerNight * nights;
-  const total = roomSubtotal + cleaningFee + serviceFee + taxes;
+  const cleaningFeeApplied = showBreakdownExtraFees ? cleaningFee : 0;
+  const serviceFeeApplied = showBreakdownExtraFees ? serviceFee : 0;
+  const taxesApplied = showBreakdownExtraFees ? taxes : 0;
+  const total =
+    roomSubtotal + cleaningFeeApplied + serviceFeeApplied + taxesApplied;
+
+  const formKey = `${hotel?.id ?? ""}-${defaultCheckIn}-${defaultCheckOut}-${defaultGuests}-${nights}`;
   const ratingDisplay =
     typeof rating === "number" ? rating.toFixed(1) : String(rating);
+
+  const checkInDisplay =
+    defaultCheckIn.trim() !== "" ? formatFriendlyDate(defaultCheckIn) : "—";
+  const checkOutDisplay =
+    defaultCheckOut.trim() !== "" ? formatFriendlyDate(defaultCheckOut) : "—";
+  const guestsDisplay = formatGuestsLabel(defaultGuests);
 
   const availableRooms =
     Array.isArray(availableRoomsProp) && availableRoomsProp.length > 0
@@ -97,9 +116,9 @@ function BookingWidget({
           checkIn,
           checkOut,
           pricePerNight,
-          cleaningFee,
-          serviceFee,
-          taxes,
+          cleaningFee: cleaningFeeApplied,
+          serviceFee: serviceFeeApplied,
+          taxes: taxesApplied,
           roomSubtotal,
         },
       });
@@ -124,36 +143,42 @@ function BookingWidget({
         </div>
       </div>
 
-      <form className="booking-widget__form" onSubmit={handleSubmit}>
+      <form
+        key={formKey}
+        className="booking-widget__form"
+        onSubmit={handleSubmit}
+      >
         <div className="booking-widget__grid">
-          <label className="booking-widget__field">
+          <div className="booking-widget__field">
             <span className="booking-widget__label">Entrada</span>
-            <input
-              className="booking-widget__input"
-              type="date"
-              name="checkIn"
-              required
-            />
-          </label>
-          <label className="booking-widget__field">
+            <input type="hidden" name="checkIn" value={defaultCheckIn} />
+            <div
+              className="booking-widget__static-field"
+              aria-label={`Entrada: ${checkInDisplay}`}
+            >
+              {checkInDisplay}
+            </div>
+          </div>
+          <div className="booking-widget__field">
             <span className="booking-widget__label">Salida</span>
-            <input
-              className="booking-widget__input"
-              type="date"
-              name="checkOut"
-              required
-            />
-          </label>
-          <label className="booking-widget__field booking-widget__field--full">
+            <input type="hidden" name="checkOut" value={defaultCheckOut} />
+            <div
+              className="booking-widget__static-field"
+              aria-label={`Salida: ${checkOutDisplay}`}
+            >
+              {checkOutDisplay}
+            </div>
+          </div>
+          <div className="booking-widget__field booking-widget__field--full">
             <span className="booking-widget__label">Huéspedes</span>
-            <select className="booking-widget__select" name="guests" defaultValue="2">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-                <option key={n} value={String(n)}>
-                  {n} {n === 1 ? "huésped" : "huéspedes"}
-                </option>
-              ))}
-            </select>
-          </label>
+            <input type="hidden" name="guests" value={defaultGuests} />
+            <div
+              className="booking-widget__static-field booking-widget__static-field--guests"
+              aria-label={`Huéspedes: ${guestsDisplay}`}
+            >
+              {guestsDisplay}
+            </div>
+          </div>
         </div>
 
         {availableRooms.length > 0 && typeof onSelectedRoomChange === "function" ? (
@@ -188,18 +213,22 @@ function BookingWidget({
             </span>
             <span>{fmtMoney(roomSubtotal)}</span>
           </div>
-          <div className="booking-widget__row">
-            <span>Tarifa de limpieza</span>
-            <span>{fmtMoney(cleaningFee)}</span>
-          </div>
-          <div className="booking-widget__row">
-            <span>Tarifa de servicio</span>
-            <span>{fmtMoney(serviceFee)}</span>
-          </div>
-          <div className="booking-widget__row">
-            <span>Impuestos</span>
-            <span>{fmtMoney(taxes)}</span>
-          </div>
+          {showBreakdownExtraFees ? (
+            <>
+              <div className="booking-widget__row">
+                <span>Tarifa de limpieza</span>
+                <span>{fmtMoney(cleaningFee)}</span>
+              </div>
+              <div className="booking-widget__row">
+                <span>Tarifa de servicio</span>
+                <span>{fmtMoney(serviceFee)}</span>
+              </div>
+              <div className="booking-widget__row">
+                <span>Impuestos</span>
+                <span>{fmtMoney(taxes)}</span>
+              </div>
+            </>
+          ) : null}
           <div className="booking-widget__row booking-widget__row--total">
             <span>Total</span>
             <span>{fmtMoney(total)}</span>
@@ -218,9 +247,6 @@ function BookingWidget({
           <IconShieldSsl className="booking-widget__ssl-icon" />
           <span>Pago seguro con SSL</span>
         </p>
-        <a className="booking-widget__contact-link" href={contactHostHref}>
-          Contactar al anfitrión
-        </a>
       </footer>
     </div>
   );
