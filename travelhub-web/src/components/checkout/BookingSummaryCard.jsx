@@ -82,6 +82,7 @@ function BookingSummaryCard({
   total = 0,
   guestEmail = "",
   guestFormValid = false,
+  paymentFormValid = false,
   paymentMethod = "card",
   cardNumber = "",
   onConfirm,
@@ -227,7 +228,7 @@ function BookingSummaryCard({
       <button
         type="button"
         className="booking-summary-card__confirm"
-        disabled={!guestFormValid}
+        disabled={!guestFormValid || !paymentFormValid}
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />

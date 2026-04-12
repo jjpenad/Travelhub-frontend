@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import "./PaymentForm.css";
 
 const METHODS = [
@@ -88,11 +88,22 @@ function validateCardholder(name) {
   return null;
 }
 
+function isCardPaymentDataValid(cardNumber, cardholderName, cardExpiry, cardCvv) {
+  const digits = onlyDigits(cardNumber);
+  return (
+    validateCardNumber(digits) === null &&
+    validateCardholder(cardholderName) === null &&
+    validateExpiry(cardExpiry) === null &&
+    validateCvv(cardCvv) === null
+  );
+}
+
 function PaymentForm({
   paymentMethod = "card",
   onPaymentMethodChange,
   cardNumber = "",
   onCardNumberChange,
+  onValidityChange,
 }) {
   const baseId = useId();
   const [cardholderName, setCardholderName] = useState("");
@@ -112,6 +123,20 @@ function PaymentForm({
     : null;
   const errExpiry = touched.cardExpiry ? validateExpiry(cardExpiry) : null;
   const errCvv = touched.cardCvv ? validateCvv(cardCvv) : null;
+
+  const paymentDataValid = useMemo(() => {
+    if (paymentMethod !== "card") return true;
+    return isCardPaymentDataValid(
+      cardNumber,
+      cardholderName,
+      cardExpiry,
+      cardCvv,
+    );
+  }, [paymentMethod, cardNumber, cardholderName, cardExpiry, cardCvv]);
+
+  useEffect(() => {
+    onValidityChange?.(paymentDataValid);
+  }, [paymentDataValid, onValidityChange]);
 
   function markTouched(field) {
     setTouched((prev) => ({ ...prev, [field]: true }));
