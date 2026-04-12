@@ -1,0 +1,184 @@
+/* confirmation-ticket — variables index.css | Plus Jakarta Sans */
+
+.confirmation-ticket {
+  border: 1px dashed color-mix(in srgb, var(--border) 85%, var(--text-h));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--sans);
+}
+
+.confirmation-ticket__header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(1rem, 3vw, var(--section-gap-sm));
+  width: 100%;
+  padding: clamp(var(--section-gap-sm), 3vw, var(--section-gap)) clamp(var(--section-gap-sm), 3vw, var(--section-gap-lg));
+  border-bottom: 1px dashed var(--border);
+  box-sizing: border-box;
+}
+
+.confirmation-ticket__thumb-wrap {
+  flex-shrink: 0;
+}
+
+.confirmation-ticket__thumb {
+  display: block;
+  width: clamp(5.5rem, 12vw, 6.5rem);
+  height: clamp(5.5rem, 12vw, 6.5rem);
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.confirmation-ticket__thumb--placeholder {
+  background: linear-gradient(
+    145deg,
+    var(--surface) 0%,
+    color-mix(in srgb, var(--border) 50%, var(--surface)) 100%
+  );
+}
+
+.confirmation-ticket__header-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.confirmation-ticket__header-main .confirmation-ticket__hotel-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.confirmation-ticket__header-main .confirmation-ticket__location {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.confirmation-ticket__hotel-name {
+  margin: 0 0 0.35rem;
+  font-family: var(--heading);
+  font-size: clamp(1.15rem, 2.2vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  color: var(--text-h);
+}
+
+.confirmation-ticket__location {
+  margin: 0;
+  font-size: var(--type-body-muted);
+  color: var(--color-text-muted);
+  line-height: var(--leading-body);
+}
+
+.confirmation-ticket__rating {
+  flex-shrink: 0;
+  margin: 0 0 0 auto;
+  align-self: center;
+  font-size: var(--type-body);
+  font-family: var(--sans);
+  white-space: nowrap;
+}
+
+.confirmation-ticket__rating-value {
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.confirmation-ticket__rating-max {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.confirmation-ticket__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+}
+
+.confirmation-ticket__cell {
+  padding: clamp(var(--section-gap-sm), 3vw, var(--section-gap)) clamp(1rem, 2.5vw, 1.5rem);
+  border-right: 1px dashed var(--border);
+  min-width: 0;
+}
+
+.confirmation-ticket__cell:last-child {
+  border-right: none;
+}
+
+.confirmation-ticket__cell-title {
+  margin: 0 0 0.65rem;
+  font-size: var(--type-eyebrow);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  font-family: var(--sans);
+}
+
+.confirmation-ticket__cell-date {
+  margin: 0 0 0.45rem;
+  font-size: var(--type-body);
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+  word-break: break-word;
+}
+
+.confirmation-ticket__cell-time {
+  margin: 0;
+  font-size: var(--type-body-muted);
+  color: var(--text);
+  line-height: var(--leading-body);
+}
+
+.confirmation-ticket__cell-amount {
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--sans);
+}
+
+.confirmation-ticket__cell-method {
+  margin: 0 0 0.55rem;
+  font-size: var(--type-body-muted);
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.confirmation-ticket__cell-status {
+  margin: 0;
+  font-size: var(--type-body-muted);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--sans);
+}
+
+@media (max-width: 720px) {
+  .confirmation-ticket__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-ticket__cell {
+    border-right: none;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .confirmation-ticket__cell:last-child {
+    border-bottom: none;
+  }
+}
