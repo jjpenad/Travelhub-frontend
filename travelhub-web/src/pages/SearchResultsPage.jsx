@@ -2,13 +2,16 @@ import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import HotelCard from "../components/search/HotelCard";
 import ResultsToolbar from "../components/search/ResultsToolbar";
+import SearchSummary from "../components/search/SearchSummary";
 import { mockHotels } from "../data/mockHotels";
 import { searchResultsCopy } from "../data/searchResultsCopy";
 import "./SearchResults.css";
 
+/** MVP: oculta la columna de filtros; pon en true para mostrar el sidebar */
+const showFiltersSidebar = false;
+
 function SearchResultsPage() {
   const {
-    pageTitle,
     sidebarTitle,
     sidebarPlaceholder,
     resultsRegionLabel,
@@ -20,18 +23,27 @@ function SearchResultsPage() {
     <div className="search-results-page">
       <Navbar />
       <PageContainer>
+        <SearchSummary />
         <div className="results">
-          <h1 className="results__title">{pageTitle}</h1>
-
           <ResultsToolbar copy={toolbarCopy} />
 
-          <div className="results__grid">
-            <aside className="results__sidebar" aria-labelledby="results-sidebar-heading">
-              <h2 id="results-sidebar-heading" className="results__sidebar-title">
-                {sidebarTitle}
-              </h2>
-              <p className="results__sidebar-placeholder">{sidebarPlaceholder}</p>
-            </aside>
+          <div
+            className={
+              "results__grid" +
+              (showFiltersSidebar ? "" : " results__grid--no-sidebar")
+            }
+          >
+            {showFiltersSidebar ? (
+              <aside
+                className="results__sidebar"
+                aria-labelledby="results-sidebar-heading"
+              >
+                <h2 id="results-sidebar-heading" className="results__sidebar-title">
+                  {sidebarTitle}
+                </h2>
+                <p className="results__sidebar-placeholder">{sidebarPlaceholder}</p>
+              </aside>
+            ) : null}
 
             <div
               className="results__list"

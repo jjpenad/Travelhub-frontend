@@ -32,6 +32,18 @@ export function IconUsers({ className }) {
   );
 }
 
+/** Cama / habitaciones (barra de resumen de búsqueda) */
+export function IconBed({ className }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#92400e"
+        d="M17 10V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v3H4v10h2v-2h12v2h2V10h-3zM9 7h6v3H9V7zm-5 8h16v2H4v-2z"
+      />
+    </svg>
+  );
+}
+
 export function IconSearch({ className }) {
   return (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">

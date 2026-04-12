@@ -13,6 +13,15 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Solo Precio + sin ordenar: resumen y botón en bloque a la izquierda (no pegados al borde derecho) */
+.results-toolbar--solo-price {
+  justify-content: flex-start;
+}
+
+.results-toolbar--solo-price .results-toolbar__summary {
+  flex: 0 1 auto;
+}
+
 .results-toolbar__summary {
   flex: 1 1 auto;
   min-width: 0;

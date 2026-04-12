@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 import { IconCalendar, IconMapPin, IconSearch, IconUsers } from "./HeroIcons";
 import "./Hero.css";
 
@@ -11,6 +11,8 @@ const guestOptions = [
   { value: "4", label: "4 huéspedes" },
   { value: "5", label: "5+ huéspedes" },
 ];
+
+const SEARCH_STORAGE_KEY = "travelhub-search";
 
 /** @param {string} yyyyMmDd */
 function parseLocalDate(yyyyMmDd) {
@@ -43,6 +45,40 @@ function addDaysYmd(yyyyMmDd, days) {
   return formatYmd(next);
 }
 
+/**
+ * Normaliza a YYYY-MM-DD (ISO fecha) para URL y para <input type="date" />.
+ * Acepta YYYY-MM-DD o DD/MM/YYYY (p. ej. pegado manualmente).
+ */
+function ensureIsoYmd(value) {
+  if (value == null || value === "") return "";
+  const v = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const d = parseLocalDate(v);
+    return d ? formatYmd(d) : "";
+  }
+  const slash = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slash) {
+    const day = Number(slash[1]);
+    const month = Number(slash[2]);
+    const year = Number(slash[3]);
+    const dt = new Date(year, month - 1, day);
+    if (
+      dt.getFullYear() === year &&
+      dt.getMonth() === month - 1 &&
+      dt.getDate() === day
+    ) {
+      return formatYmd(dt);
+    }
+  }
+  return "";
+}
+
+function normalizeGuestsValue(g) {
+  if (g == null || g === "") return "1";
+  const s = String(g);
+  return guestOptions.some((o) => o.value === s) ? s : "1";
+}
+
 function withClearError(reg, clearErrors, names) {
   const list = Array.isArray(names) ? names : [names];
   return {
@@ -60,12 +96,14 @@ function withClearError(reg, clearErrors, names) {
 
 function Hero() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     register,
     handleSubmit,
     control,
     trigger,
     clearErrors,
+    reset,
     formState: { errors, touchedFields, isSubmitted, submitCount },
   } = useForm({
     defaultValues: {
@@ -96,6 +134,44 @@ function Hero() {
     }
   }, [checkInValue, trigger]);
 
+  useEffect(() => {
+    const dest = searchParams.get("destination") ?? "";
+    const checkInRaw = searchParams.get("checkIn");
+    const checkOutRaw = searchParams.get("checkOut");
+    const guestsRaw = searchParams.get("guests");
+
+    const hasUrl =
+      dest !== "" ||
+      (checkInRaw != null && checkInRaw !== "") ||
+      (checkOutRaw != null && checkOutRaw !== "") ||
+      (guestsRaw != null && guestsRaw !== "");
+
+    if (hasUrl) {
+      reset({
+        destination: dest,
+        checkIn: ensureIsoYmd(checkInRaw ?? ""),
+        checkOut: ensureIsoYmd(checkOutRaw ?? ""),
+        guests: normalizeGuestsValue(guestsRaw),
+      });
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(SEARCH_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      reset({
+        destination:
+          typeof parsed.destination === "string" ? parsed.destination : "",
+        checkIn: ensureIsoYmd(parsed.checkIn ?? ""),
+        checkOut: ensureIsoYmd(parsed.checkOut ?? ""),
+        guests: normalizeGuestsValue(parsed.guests),
+      });
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }, [searchParams, reset]);
+
   const errorKeys = useMemo(() => Object.keys(errors).sort().join(","), [errors]);
 
   useEffect(() => {
@@ -113,9 +189,32 @@ function Hero() {
     [errors, touchedFields, isSubmitted, submitCount],
   );
 
-  const onValidSubmit = () => {
-    navigate("/search");
-  };
+  const onValidSubmit = useCallback(
+    (data) => {
+      const destination = data.destination.trim();
+      const checkIn = ensureIsoYmd(data.checkIn);
+      const checkOut = ensureIsoYmd(data.checkOut);
+      const guests = normalizeGuestsValue(data.guests);
+      const rooms = "1";
+      const payload = { destination, checkIn, checkOut, guests, rooms };
+      try {
+        sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(payload));
+      } catch {
+        /* ignore */
+      }
+      navigate({
+        pathname: "/search",
+        search: createSearchParams({
+          destination,
+          checkIn,
+          checkOut,
+          guests,
+          rooms,
+        }).toString(),
+      });
+    },
+    [navigate],
+  );
 
   const onInvalidSubmit = useCallback(async () => {
     await trigger(
