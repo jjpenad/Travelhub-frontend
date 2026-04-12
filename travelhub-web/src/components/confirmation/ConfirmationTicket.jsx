@@ -48,8 +48,8 @@ function ConfirmationTicket({
               src={imageSrc}
               alt=""
               loading="lazy"
-              width={96}
-              height={96}
+              width={124}
+              height={124}
             />
           ) : (
             <div

@@ -6,6 +6,9 @@ import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import "./ConfirmationPage.css";
 
+/** MVP: en `false` oculta «Ver detalles del viaje», «Descargar recibo» y la nota del QR asociada. */
+const showConfirmationTripActions = false;
+
 function IconCheckCelebration({ className }) {
   return (
     <svg
@@ -199,28 +202,30 @@ function ConfirmationPage() {
                   </p>
                 ) : null}
 
-                <div className="confirmation-actions">
-                  <div className="confirmation-actions__buttons">
-                    <Link
-                      className="confirmation-actions__btn confirmation-actions__btn--primary"
-                      to={tripDetailsTo}
-                    >
-                      Ver detalles del viaje
-                      <IconArrowRight className="confirmation-actions__btn-icon" />
-                    </Link>
-                    <button
-                      type="button"
-                      className="confirmation-actions__btn confirmation-actions__btn--secondary"
-                      onClick={handleDownloadReceipt}
-                    >
-                      Descargar recibo
-                    </button>
+                {showConfirmationTripActions ? (
+                  <div className="confirmation-actions">
+                    <div className="confirmation-actions__buttons">
+                      <Link
+                        className="confirmation-actions__btn confirmation-actions__btn--primary"
+                        to={tripDetailsTo}
+                      >
+                        Ver detalles del viaje
+                        <IconArrowRight className="confirmation-actions__btn-icon" />
+                      </Link>
+                      <button
+                        type="button"
+                        className="confirmation-actions__btn confirmation-actions__btn--secondary"
+                        onClick={handleDownloadReceipt}
+                      >
+                        Descargar recibo
+                      </button>
+                    </div>
+                    <p className="confirmation-actions__qr-note">
+                      <IconQrSmall className="confirmation-actions__qr-icon" />
+                      El código QR de check-in está disponible en Detalles del viaje
+                    </p>
                   </div>
-                  <p className="confirmation-actions__qr-note">
-                    <IconQrSmall className="confirmation-actions__qr-icon" />
-                    El código QR de check-in está disponible en Detalles del viaje
-                  </p>
-                </div>
+                ) : null}
 
                 <Link className="confirmation-card__cta" to="/">
                   Volver al inicio
