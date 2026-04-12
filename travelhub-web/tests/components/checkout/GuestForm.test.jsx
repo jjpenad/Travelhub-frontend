@@ -18,7 +18,7 @@ function GuestFormWithPayButton() {
         data-testid="checkout-confirm-pay"
         disabled={!guestFormValid}
       >
-        Confirmar y pagar
+        Confirmar y Pagar
       </button>
     </>
   );

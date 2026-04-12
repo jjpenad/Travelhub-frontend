@@ -238,7 +238,7 @@ function BookingSummaryCard({
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />
-        Confirmar y pagar {fmtMoney(total)}
+        Confirmar y Pagar
       </button>
 
       <footer className="booking-summary-card__footer">
