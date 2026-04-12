@@ -8,6 +8,9 @@ const showFullMenu = false;
 /** MVP: oculta la búsqueda del header; pon en true para mostrarla */
 const showSearchBar = false;
 
+/** MVP: oculta Iniciar sesión y Registrarse; pon en true para mostrarlos */
+const showAuthButtons = false;
+
 const navLinks = [
   { label: "Estancias", href: "#stays" },
   { label: "Mis viajes", href: "#my-trips" },
@@ -85,17 +88,19 @@ function Navbar() {
           </form>
         ) : null}
 
-        <div className="navbar__actions">
-          <a
-            className="navbar__btn navbar__btn--primary navbar__sign-in"
-            href="/login"
-          >
-            Iniciar sesión
-          </a>
-          <a className="navbar__btn navbar__btn--register" href="/signup">
-            Registrarse
-          </a>
-        </div>
+        {showAuthButtons ? (
+          <div className="navbar__actions">
+            <a
+              className="navbar__btn navbar__btn--primary navbar__sign-in"
+              href="/login"
+            >
+              Iniciar sesión
+            </a>
+            <a className="navbar__btn navbar__btn--register" href="/signup">
+              Registrarse
+            </a>
+          </div>
+        ) : null}
       </div>
     </header>
   );
