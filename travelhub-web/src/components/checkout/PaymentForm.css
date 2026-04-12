@@ -103,11 +103,41 @@
   gap: var(--section-gap-sm);
 }
 
+.payment-form__card-fields--no-method-row {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .payment-form__card-row {
   display: grid;
   grid-template-columns: 1fr minmax(5.5rem, 7rem);
   gap: var(--section-gap-sm);
   align-items: start;
+}
+
+.payment-form__card-row--number-titular {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Misma anchura de columnas que número | titular: expiración alineada con número de tarjeta */
+.payment-form__card-row--expiry-cvv {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.payment-form__card-row--expiry-cvv .payment-form__field--cvv {
+  justify-self: start;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .payment-form__card-row--number-titular {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-form__card-row--expiry-cvv {
+    grid-template-columns: 1fr;
+  }
 }
 
 .payment-form__field {
@@ -149,6 +179,22 @@
 .payment-form__input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.payment-form__input--error {
+  border-color: var(--error);
+}
+
+.payment-form__input--error:focus {
+  border-color: var(--error);
+}
+
+.payment-form__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--error);
+  line-height: 1.35;
 }
 
 @media (max-width: 480px) {
