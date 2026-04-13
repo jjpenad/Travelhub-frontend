@@ -1,0 +1,449 @@
+{
+  "info": {
+    "_postman_id": "32f4b9ae-8f66-4636-ba09-1fd03e1dbe02",
+    "name": "ProyectoFinalMISW",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "10706350"
+  },
+  "item": [
+    {
+      "name": "BUscar Acomodacion",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/service-core/accommodations/search?check_in=2026-05-01&check_out=2026-05-05&city=Lima",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "service-core",
+            "accommodations",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "check_in",
+              "value": "2026-05-01",
+              "type": "text"
+            },
+            {
+              "key": "check_out",
+              "value": "2026-05-05",
+              "type": "text"
+            },
+            {
+              "key": "city",
+              "value": "Lima",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "No accommodations available",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-core/accommodations/search?check_in=2026-04-01&check_out=2026-04-05&city=Lima",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "accommodations",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "check_in",
+                  "value": "2026-04-01",
+                  "type": "text"
+                },
+                {
+                  "key": "check_out",
+                  "value": "2026-04-05",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "Lima",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:38:04 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "2"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "[]"
+        },
+        {
+          "name": "Successful",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-core/accommodations/search?check_in=2026-05-01&check_out=2026-05-05&city=Lima",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "accommodations",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "check_in",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "check_out",
+                  "value": "2026-05-05"
+                },
+                {
+                  "key": "city",
+                  "value": "Lima"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:38:53 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "1977"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "[\n    {\n        \"hotel_id\": \"b1000000-0000-0000-0000-000000000002\",\n        \"hotel_name\": \"Casa Sol Lima\",\n        \"description\": \"Hotel de lujo frente al Océano Pacífico en el distrito de Miraflores. Disfrute de vistas panorámicas al mar, gastronomía de primer nivel y acceso directo al Parque del Amor.\",\n        \"address\": \"Malecón de la Reserva 1035, Miraflores\",\n        \"city\": \"Lima\",\n        \"stars\": 5,\n        \"rating\": \"4.8\",\n        \"check_in_time\": \"14:00:00\",\n        \"check_out_time\": \"12:00:00\",\n        \"available_room_types\": [\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000201\",\n                \"name\": \"Ocean Room\",\n                \"description\": \"Habitación con vista directa al Océano Pacífico, cama king, ducha lluvia y deck privado.\",\n                \"max_capacity\": 2,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"35.0\",\n                \"price_per_night\": \"247.50\",\n                \"total_price\": \"990.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"minibar\",\n                        \"icon\": \"local_bar\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"rain_shower\",\n                        \"icon\": \"shower\"\n                    },\n                    {\n                        \"name\": \"tv\",\n                        \"icon\": \"tv\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000202\",\n                \"name\": \"Deluxe Ocean View\",\n                \"description\": \"Habitación amplia con vista panorámica al mar, bañera independiente, sala de estar y servicio de mayordomo.\",\n                \"max_capacity\": 3,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"55.0\",\n                \"price_per_night\": \"427.50\",\n                \"total_price\": \"1710.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"balcony\",\n                        \"icon\": \"balcony\"\n                    },\n                    {\n                        \"name\": \"bathtub\",\n                        \"icon\": \"bathtub\"\n                    },\n                    {\n                        \"name\": \"minibar\",\n                        \"icon\": \"local_bar\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"tv\",\n                        \"icon\": \"tv\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000203\",\n                \"name\": \"Penthouse Suite\",\n                \"description\": \"Suite exclusiva en planta alta con terraza privada frente al mar, piscina personal y acceso VIP al spa.\",\n                \"max_capacity\": 4,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"120.0\",\n                \"price_per_night\": \"956.25\",\n                \"total_price\": \"3825.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"butler\",\n                        \"icon\": \"concierge\"\n                    },\n                    {\n                        \"name\": \"kitchen\",\n                        \"icon\": \"kitchen\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"private_pool\",\n                        \"icon\": \"pool\"\n                    },\n                    {\n                        \"name\": \"terrace\",\n                        \"icon\": \"deck\"\n                    }\n                ]\n            }\n        ]\n    }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Listar Hoteles",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/service-core/accommodations/hotels",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "service-core",
+            "accommodations",
+            "hotels"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Successful",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/service-core/accommodations/hotels",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "accommodations",
+                "hotels"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:07:41 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "2412"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "[\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000002\",\n        \"name\": \"Casa Sol Lima\",\n        \"description\": \"Hotel de lujo frente al Océano Pacífico en el distrito de Miraflores. Disfrute de vistas panorámicas al mar, gastronomía de primer nivel y acceso directo al Parque del Amor.\",\n        \"address\": \"Malecón de la Reserva 1035, Miraflores\",\n        \"city\": \"Lima\",\n        \"stars\": 5,\n        \"rating\": \"4.8\",\n        \"total_reviews\": 578,\n        \"active\": true\n    },\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000003\",\n        \"name\": \"Plaza Grande Quito\",\n        \"description\": \"Histórico hotel frente a la Plaza de la Independencia, en el Centro Histórico de Quito, Patrimonio de la Humanidad. Arquitectura colonial restaurada con todas las comodidades contemporáneas.\",\n        \"address\": \"García Moreno N5-16 y Chile, Centro Histórico\",\n        \"city\": \"Quito\",\n        \"stars\": 5,\n        \"rating\": \"4.7\",\n        \"total_reviews\": 421,\n        \"active\": true\n    },\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000005\",\n        \"name\": \"Noi Vitacura Santiago\",\n        \"description\": \"Hotel de diseño contemporáneo en el exclusivo barrio de Vitacura. Minimalismo chileno con arte local, piscina exterior climatizada y restaurante de autor con ingredientes de temporada.\",\n        \"address\": \"Nueva Costanera 3736, Vitacura\",\n        \"city\": \"Santiago\",\n        \"stars\": 4,\n        \"rating\": \"4.6\",\n        \"total_reviews\": 267,\n        \"active\": true\n    },\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000001\",\n        \"name\": \"Hotel Andino Bogotá\",\n        \"description\": \"Hotel boutique ubicado en el corazón de la Zona Rosa de Bogotá. Combina el estilo colonial con comodidades modernas, a pasos de los mejores restaurantes y centros comerciales de la ciudad.\",\n        \"address\": \"Calle 82 #11-37, Zona Rosa\",\n        \"city\": \"Bogotá\",\n        \"stars\": 4,\n        \"rating\": \"4.5\",\n        \"total_reviews\": 312,\n        \"active\": true\n    },\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000006\",\n        \"name\": \"Palermo Soho Suites\",\n        \"description\": \"Boutique hotel en el barrio más bohemio de Buenos Aires. Rodeado de galerías de arte, cafeterías de especialidad y la mejor propuesta gastronómica de la ciudad.\",\n        \"address\": \"El Salvador 4916, Palermo Soho\",\n        \"city\": \"Buenos Aires\",\n        \"stars\": 4,\n        \"rating\": \"4.4\",\n        \"total_reviews\": 389,\n        \"active\": true\n    },\n    {\n        \"id\": \"b1000000-0000-0000-0000-000000000004\",\n        \"name\": \"Gran Hotel Ciudad de México\",\n        \"description\": \"Ícono arquitectónico del Porfiriato ubicado frente al Zócalo capitalino. Su impresionante vitral Tiffany de 1908 y sus jaulas de ascensores originales lo convierten en un destino único.\",\n        \"address\": \"16 de Septiembre 82, Centro Histórico\",\n        \"city\": \"Ciudad de México\",\n        \"stars\": 4,\n        \"rating\": \"4.3\",\n        \"total_reviews\": 894,\n        \"active\": true\n    }\n]"
+        }
+      ]
+    },
+    {
+      "name": "Get Hotel availability",
+      "request": {
+        "method": "GET",
+        "header": []
+      },
+      "response": [
+        {
+          "name": "Unavailable no rooms",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-core/accommodations/hotels/b1000000-0000-0000-0000-000000000004/availability?check_in=2026-01-01&check_out=2026-01-12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "accommodations",
+                "hotels",
+                "b1000000-0000-0000-0000-000000000004",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "check_in",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "check_out",
+                  "value": "2026-01-12"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:20:00 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "446"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"hotel_id\": \"b1000000-0000-0000-0000-000000000004\",\n    \"hotel_name\": \"Gran Hotel Ciudad de México\",\n    \"description\": \"Ícono arquitectónico del Porfiriato ubicado frente al Zócalo capitalino. Su impresionante vitral Tiffany de 1908 y sus jaulas de ascensores originales lo convierten en un destino único.\",\n    \"city\": \"Ciudad de México\",\n    \"stars\": 4,\n    \"rating\": \"4.3\",\n    \"check_in_time\": \"15:00:00\",\n    \"check_out_time\": \"12:00:00\",\n    \"nights\": 11,\n    \"available_room_types\": []\n}"
+        },
+        {
+          "name": "available with rooms",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/service-core/accommodations/hotels/b1000000-0000-0000-0000-000000000004/availability?check_in=2026-05-01&check_out=2026-05-05",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "accommodations",
+                "hotels",
+                "b1000000-0000-0000-0000-000000000004",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "check_in",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "check_out",
+                  "value": "2026-05-05"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:20:53 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "1911"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"hotel_id\": \"b1000000-0000-0000-0000-000000000004\",\n    \"hotel_name\": \"Gran Hotel Ciudad de México\",\n    \"description\": \"Ícono arquitectónico del Porfiriato ubicado frente al Zócalo capitalino. Su impresionante vitral Tiffany de 1908 y sus jaulas de ascensores originales lo convierten en un destino único.\",\n    \"city\": \"Ciudad de México\",\n    \"stars\": 4,\n    \"rating\": \"4.3\",\n    \"check_in_time\": \"15:00:00\",\n    \"check_out_time\": \"12:00:00\",\n    \"nights\": 4,\n    \"available_room_types\": [\n        {\n            \"id\": \"c1000000-0000-0000-0000-000000000401\",\n            \"name\": \"Habitación Clásica\",\n            \"description\": \"Habitación de estilo porfiriano con vista al Zócalo, cama matrimonial, escritorio y baño de mármol.\",\n            \"max_capacity\": 2,\n            \"bed_type\": \"double\",\n            \"size_sqm\": \"25.0\",\n            \"price_per_night\": \"123.75\",\n            \"total_price\": \"495.00\",\n            \"currency_code\": \"USD\",\n            \"minimum_stay\": 1,\n            \"amenities\": [\n                {\n                    \"name\": \"city_view\",\n                    \"icon\": \"location_city\"\n                },\n                {\n                    \"name\": \"safe\",\n                    \"icon\": \"lock\"\n                },\n                {\n                    \"name\": \"tv\",\n                    \"icon\": \"tv\"\n                }\n            ]\n        },\n        {\n            \"id\": \"c1000000-0000-0000-0000-000000000402\",\n            \"name\": \"Habitación Superior Zócalo\",\n            \"description\": \"Habitación superior con vista privilegiada al Zócalo y la Catedral Metropolitana, cama king y sala de estar.\",\n            \"max_capacity\": 3,\n            \"bed_type\": \"king\",\n            \"size_sqm\": \"38.0\",\n            \"price_per_night\": \"219.38\",\n            \"total_price\": \"877.50\",\n            \"currency_code\": \"USD\",\n            \"minimum_stay\": 1,\n            \"amenities\": [\n                {\n                    \"name\": \"balcony\",\n                    \"icon\": \"balcony\"\n                },\n                {\n                    \"name\": \"city_view\",\n                    \"icon\": \"location_city\"\n                },\n                {\n                    \"name\": \"safe\",\n                    \"icon\": \"lock\"\n                },\n                {\n                    \"name\": \"tv\",\n                    \"icon\": \"tv\"\n                }\n            ]\n        },\n        {\n            \"id\": \"c1000000-0000-0000-0000-000000000403\",\n            \"name\": \"Suite Histórica\",\n            \"description\": \"La suite más emblemática del hotel, con vista de 180° al Zócalo, sala de juntas privada y decoración original.\",\n            \"max_capacity\": 4,\n            \"bed_type\": \"king\",\n            \"size_sqm\": \"90.0\",\n            \"price_per_night\": \"506.25\",\n            \"total_price\": \"2025.00\",\n            \"currency_code\": \"USD\",\n            \"minimum_stay\": 1,\n            \"amenities\": [\n                {\n                    \"name\": \"city_view\",\n                    \"icon\": \"location_city\"\n                },\n                {\n                    \"name\": \"meeting_room\",\n                    \"icon\": \"meeting_room\"\n                },\n                {\n                    \"name\": \"terrace\",\n                    \"icon\": \"deck\"\n                },\n                {\n                    \"name\": \"tv\",\n                    \"icon\": \"tv\"\n                }\n            ]\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Crear reserva",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"user_id\": \"b1000000-0000-0000-0000-000000000004\",\r\n    \"hotel_id\": \"b1000000-0000-0000-0000-000000000004\",\r\n    \"room_type_id\": \"b1000000-0000-0000-0000-000000000004\",\r\n    \"check_in\": \"2026-04-12\",\r\n    \"check_out\": \"2026-04-12\",\r\n    \"guests\": 1,\r\n    \"base_price\": \"0.00\",\r\n    \"taxes\": \"0.00\",\r\n    \"discounts\": \"0.00\",\r\n    \"total_price\": \"0.00\",\r\n    \"currency_code\": \"USD\",\r\n    \"primary_guest\": {\r\n        \"first_name\": \"string\",\r\n        \"last_name\": \"string\",\r\n        \"document_type\": \"string\",\r\n        \"document_number\": \"string\",\r\n        \"nationality\": \"string\"\r\n    },\r\n    \"payment\": {\r\n        \"amount\": \"string\",\r\n        \"currency_code\": \"USD\",\r\n        \"payment_token\": \"string\",\r\n        \"provider_id\": \"string\"\r\n    },\r\n    \"cart_id\": \"b1000000-0000-0000-0000-000000000004\",\r\n    \"cancellation_policy\": \"string\",\r\n    \"special_requests\": \"string\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/service-core/reservation-flow/create",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "service-core",
+            "reservation-flow",
+            "create"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Successful",
+          "originalRequest": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"hotel_id\": \"b1000000-0000-0000-0000-000000000001\",\r\n    \"room_type_id\": \"c1000000-0000-0000-0000-000000000101\",\r\n    \"check_in\": \"2026-05-01\",\r\n    \"check_out\": \"2026-05-05\",\r\n    \"guests\": 2,\r\n    \"base_price\": \"500.00\",\r\n    \"taxes\": \"50.00\",\r\n    \"discounts\": \"25.00\",\r\n    \"total_price\": \"525.00\",\r\n    \"currency_code\": \"USD\",\r\n    \"primary_guest\": {\r\n        \"first_name\": \"Juan\",\r\n        \"last_name\": \"Pérez\",\r\n        \"document_type\": \"CC\",\r\n        \"document_number\": \"1234567890\",\r\n        \"nationality\": \"COL\"\r\n    },\r\n    \"payment\": {\r\n        \"amount\": \"525.00\",\r\n        \"currency_code\": \"USD\",\r\n        \"payment_token\": \"tok_visa_4242424242424242\"\r\n    },\r\n    \"special_requests\": \"Habitación con vista al mar\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/service-core/reservation-flow/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "service-core",
+                "reservation-flow",
+                "create"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": null,
+          "header": [
+            {
+              "key": "Date",
+              "value": "Sun, 12 Apr 2026 23:29:28 GMT"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "key": "Content-Length",
+              "value": "404"
+            },
+            {
+              "key": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "key": "server",
+              "value": "uvicorn"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"completed\": false,\n    \"step\": \"validate\",\n    \"result\": {\n        \"success\": true,\n        \"proceed\": false,\n        \"exists\": true,\n        \"overlap\": true,\n        \"from_kafka\": true,\n        \"confirmation_code\": \"RES101DA4D3\",\n        \"message\": \"La habitación ya está reservada en esas fechas. Reserva existente: RES101DA4D3\",\n        \"reservation\": {\n            \"id\": \"370a1e9c-7ed3-4cb4-bc23-e9e17ce4e006\",\n            \"status\": \"pending\",\n            \"check_in\": \"2026-05-01\",\n            \"check_out\": \"2026-05-05\",\n            \"total_price\": \"525.00\"\n        }\n    }\n}"
+        }
+      ]
+    }
+  ]
+}
