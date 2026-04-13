@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import BookingWidget from "../components/hotel/BookingWidget";
 import GuestReviews from "../components/hotel/GuestReviews";
@@ -7,56 +7,40 @@ import HotelGallery from "../components/hotel/HotelGallery";
 import HotelHeader from "../components/hotel/HotelHeader";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
-import { mockHotels } from "../data/mockHotels";
+import { getHotelAvailability } from "../services/api";
 import { parseBookingFromSearchParams } from "../utils/searchUrlParams";
 import "./HotelDetailPage.css";
 
-/** MVP: en `false` se oculta la sección «Opiniones de huéspedes» (código del componente se conserva). */
 const showGuestReviewsSection = false;
 
 function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
-  const [selectedRoom, setSelectedRoom] = useState(
-    () => hotel.availableRooms?.[0] ?? "",
-  );
+  const roomObjects = hotel.availableRoomObjects || [];
+  const roomNames = roomObjects.length > 0
+    ? roomObjects.map((r) => r.name)
+    : hotel.availableRooms || [];
 
-  const displayName = hotel.name;
+  const [selectedRoom, setSelectedRoom] = useState(() => roomNames[0] ?? "");
+
+  const selectedRoomObj = roomObjects.find((r) => r.name === selectedRoom);
+  const pricePerNight = selectedRoomObj?.pricePerNight ?? hotel.price ?? 0;
 
   return (
     <div className="hotel-detail-page">
       <Navbar />
       <PageContainer>
-        <div
-          className="hotel-detail"
-          data-selected-room={selectedRoom}
-        >
+        <div className="hotel-detail" data-selected-room={selectedRoom}>
           <nav className="hotel-detail__breadcrumb" aria-label="Migas de pan">
             <ol className="hotel-detail__breadcrumb-list">
               <li className="hotel-detail__breadcrumb-item">
-                <Link className="hotel-detail__breadcrumb-link" to="/">
-                  Inicio
-                </Link>
+                <Link className="hotel-detail__breadcrumb-link" to="/">Inicio</Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
-                <Link
-                  className="hotel-detail__breadcrumb-link"
-                  to={`/search${searchSuffix}`}
-                >
-                  Grecia
+                <Link className="hotel-detail__breadcrumb-link" to={`/search${searchSuffix}`}>
+                  {hotel.city || "Búsqueda"}
                 </Link>
               </li>
-              <li className="hotel-detail__breadcrumb-item">
-                <Link
-                  className="hotel-detail__breadcrumb-link"
-                  to={`/search${searchSuffix}`}
-                >
-                  Santorini
-                </Link>
-              </li>
-              <li
-                className="hotel-detail__breadcrumb-item hotel-detail__breadcrumb-item--current"
-                aria-current="page"
-              >
-                {displayName}
+              <li className="hotel-detail__breadcrumb-item hotel-detail__breadcrumb-item--current" aria-current="page">
+                {hotel.name}
               </li>
             </ol>
           </nav>
@@ -64,35 +48,78 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
           <div className="hotel-detail__layout">
             <div className="hotel-detail__main-content">
               <div className="hotel-detail__main-stack">
-                {hotel.image ? (
+                {hotel.image && (
                   <div className="hotel-detail__gallery">
                     <HotelGallery hotel={hotel} totalPhotos={48} />
                   </div>
-                ) : null}
-
+                )}
                 <HotelHeader hotel={hotel} />
-
                 <HotelDescription hotel={hotel} />
 
-                {showGuestReviewsSection ? (
-                  <GuestReviews hotel={hotel} />
-                ) : null}
+                {roomObjects.length > 0 && (
+                  <section className="hotel-detail__rooms">
+                    <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1rem" }}>
+                      Habitaciones disponibles
+                    </h2>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                      {roomObjects.map((room) => (
+                        <div
+                          key={room.id}
+                          onClick={() => setSelectedRoom(room.name)}
+                          style={{
+                            border: selectedRoom === room.name ? "2px solid #6c63ff" : "1px solid #e5e7eb",
+                            borderRadius: "12px", padding: "1rem", cursor: "pointer",
+                            background: selectedRoom === room.name ? "#f5f3ff" : "#fff",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <strong>{room.name}</strong>
+                            <span style={{ color: "#6c63ff", fontWeight: 700 }}>${room.pricePerNight}/noche</span>
+                          </div>
+                          <p style={{ color: "#6b7280", fontSize: "0.875rem", margin: "0.25rem 0" }}>{room.description}</p>
+                          <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "#9ca3af" }}>
+                            <span>Máx. {room.maxCapacity} huéspedes</span>
+                            <span>{room.bedType}</span>
+                            {room.sizeSqm > 0 && <span>{room.sizeSqm} m²</span>}
+                          </div>
+                          {room.amenities.length > 0 && (
+                            <p style={{ fontSize: "0.8rem", color: "#6c63ff", marginTop: "0.25rem" }}>
+                              {room.amenities.join(" · ")}
+                            </p>
+                          )}
+                          {room.totalPrice > 0 && (
+                            <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.25rem" }}>
+                              Total: ${room.totalPrice}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {roomObjects.length === 0 && (
+                  <div style={{ padding: "1.5rem", background: "#fff7ed", borderRadius: "12px", textAlign: "center" }}>
+                    <p style={{ color: "#c2410c", fontWeight: 500 }}>No hay habitaciones disponibles para estas fechas.</p>
+                  </div>
+                )}
+
+                {showGuestReviewsSection && <GuestReviews hotel={hotel} />}
               </div>
             </div>
 
-            <aside
-              className="hotel-detail__booking-sidebar"
-              aria-label="Reserva"
-            >
+            <aside className="hotel-detail__booking-sidebar" aria-label="Reserva">
               <BookingWidget
                 hotel={hotel}
+                pricePerNight={pricePerNight}
                 nights={bookingFromSearch.nights}
                 defaultCheckIn={bookingFromSearch.checkIn}
                 defaultCheckOut={bookingFromSearch.checkOut}
                 defaultGuests={bookingFromSearch.guestsStr}
                 selectedRoom={selectedRoom}
                 onSelectedRoomChange={setSelectedRoom}
-                availableRooms={hotel.availableRooms ?? []}
+                availableRooms={roomNames}
+                roomTypeId={selectedRoomObj?.id || ""}
               />
             </aside>
           </div>
@@ -106,7 +133,21 @@ function HotelDetailPage() {
   const { hotelId: hotelIdParam } = useParams();
   const [searchParams] = useSearchParams();
   const hotelId = hotelIdParam ? decodeURIComponent(hotelIdParam) : "";
-  const hotel = mockHotels.find((h) => h.id === hotelId);
+
+  const checkIn = searchParams.get("checkIn") || "";
+  const checkOut = searchParams.get("checkOut") || "";
+
+  const [state, dispatch] = useReducer(
+    (prev, action) => {
+      switch (action.type) {
+        case "loading": return { hotel: null, loading: true, error: null };
+        case "success": return { hotel: action.hotel, loading: false, error: null };
+        case "error": return { hotel: null, loading: false, error: action.error };
+        default: return prev;
+      }
+    },
+    { hotel: null, loading: true, error: null },
+  );
 
   const searchSuffix = useMemo(() => {
     const s = searchParams.toString();
@@ -118,36 +159,50 @@ function HotelDetailPage() {
     [searchParams],
   );
 
-  if (!hotel) {
+  const fetchHotel = useCallback(async (id, ci, co, signal) => {
+    if (!id) return;
+    dispatch({ type: "loading" });
+    if (!ci || !co) {
+      dispatch({ type: "error", error: "Selecciona fechas para ver disponibilidad." });
+      return;
+    }
+    try {
+      const data = await getHotelAvailability(id, ci, co);
+      if (!signal.aborted) dispatch({ type: "success", hotel: data });
+    } catch (err) {
+      if (!signal.aborted) dispatch({ type: "error", error: err.message });
+    }
+  }, []);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchHotel(hotelId, checkIn, checkOut, ac.signal);
+    return () => ac.abort();
+  }, [hotelId, checkIn, checkOut, fetchHotel]);
+
+  const { hotel, loading, error } = state;
+
+  if (loading) {
     return (
-      <div className="hotel-detail-page">
-        <Navbar />
-        <PageContainer>
-          <div className="hotel-detail hotel-detail--not-found">
-            <h1 className="hotel-detail__not-found-title">Hotel not found</h1>
-            <p className="hotel-detail__not-found-text">
-              No listing matches this URL. Check the link or return to search.
-            </p>
-            <Link
-              className="hotel-detail__not-found-link"
-              to={`/search${searchSuffix}`}
-            >
-              Back to results
-            </Link>
-          </div>
-        </PageContainer>
-      </div>
+      <div className="hotel-detail-page"><Navbar /><PageContainer>
+        <p style={{ padding: "3rem", textAlign: "center" }}>Cargando hotel...</p>
+      </PageContainer></div>
     );
   }
 
-  return (
-    <HotelDetailContent
-      key={hotel.id}
-      hotel={hotel}
-      bookingFromSearch={bookingFromSearch}
-      searchSuffix={searchSuffix}
-    />
-  );
+  if (error || !hotel) {
+    return (
+      <div className="hotel-detail-page"><Navbar /><PageContainer>
+        <div className="hotel-detail hotel-detail--not-found">
+          <h1 className="hotel-detail__not-found-title">{error || "Hotel no encontrado"}</h1>
+          <p className="hotel-detail__not-found-text">Verifica el enlace o vuelve a buscar.</p>
+          <Link className="hotel-detail__not-found-link" to={`/search${searchSuffix}`}>Volver a resultados</Link>
+        </div>
+      </PageContainer></div>
+    );
+  }
+
+  return <HotelDetailContent key={hotel.id} hotel={hotel} bookingFromSearch={bookingFromSearch} searchSuffix={searchSuffix} />;
 }
 
 export default HotelDetailPage;

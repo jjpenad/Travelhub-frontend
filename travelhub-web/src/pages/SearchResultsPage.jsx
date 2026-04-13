@@ -1,9 +1,11 @@
+import { useCallback, useEffect, useReducer } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import HotelCard from "../components/search/HotelCard";
 import ResultsToolbar from "../components/search/ResultsToolbar";
 import SearchSummary from "../components/search/SearchSummary";
-import { mockHotels } from "../data/mockHotels";
+import { searchAccommodations } from "../services/api";
 import { searchResultsCopy } from "../data/searchResultsCopy";
 import "./SearchResults.css";
 
@@ -18,6 +20,44 @@ function SearchResultsPage() {
     toolbar: toolbarCopy,
   } = searchResultsCopy;
   const cardCopy = searchResultsCopy.hotelCard;
+
+  const [searchParams] = useSearchParams();
+
+  const destination = searchParams.get("destination") || "";
+  const checkIn = searchParams.get("checkIn") || "";
+  const checkOut = searchParams.get("checkOut") || "";
+
+  const [state, dispatch] = useReducer(
+    (prev, action) => {
+      switch (action.type) {
+        case "loading": return { hotels: [], loading: true, error: null };
+        case "success": return { hotels: action.hotels, loading: false, error: null };
+        case "error": return { hotels: [], loading: false, error: action.error };
+        case "empty": return { hotels: [], loading: false, error: null };
+        default: return prev;
+      }
+    },
+    { hotels: [], loading: true, error: null },
+  );
+
+  const fetchHotels = useCallback(async (dest, ci, co, signal) => {
+    if (!dest || !ci || !co) { dispatch({ type: "empty" }); return; }
+    dispatch({ type: "loading" });
+    try {
+      const results = await searchAccommodations(dest, ci, co);
+      if (!signal.aborted) dispatch({ type: "success", hotels: results });
+    } catch (err) {
+      if (!signal.aborted) dispatch({ type: "error", error: err.message });
+    }
+  }, []);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchHotels(destination, checkIn, checkOut, ac.signal);
+    return () => ac.abort();
+  }, [destination, checkIn, checkOut, fetchHotels]);
+
+  const { hotels, loading, error } = state;
 
   return (
     <div className="search-results-page">
@@ -50,11 +90,22 @@ function SearchResultsPage() {
               role="list"
               aria-label={resultsRegionLabel}
             >
-              {mockHotels.map((hotel) => (
-                <div key={hotel.id} className="results__list-item" role="listitem">
-                  <HotelCard hotel={hotel} copy={cardCopy} />
+              {loading ? (
+                <p style={{ padding: "2rem", textAlign: "center" }}>Buscando hoteles disponibles...</p>
+              ) : error ? (
+                <p style={{ padding: "2rem", textAlign: "center", color: "#e53935" }}>Error: {error}</p>
+              ) : hotels.length === 0 ? (
+                <div style={{ padding: "2rem", textAlign: "center" }}>
+                  <p><strong>No se encontraron hoteles disponibles.</strong></p>
+                  <p>Prueba con otras fechas u otra ciudad.</p>
                 </div>
-              ))}
+              ) : (
+                hotels.map((hotel) => (
+                  <div key={hotel.id} className="results__list-item" role="listitem">
+                    <HotelCard hotel={hotel} copy={cardCopy} />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

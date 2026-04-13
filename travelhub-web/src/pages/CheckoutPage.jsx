@@ -6,7 +6,7 @@ import GuestForm from "../components/checkout/GuestForm";
 import PaymentForm from "../components/checkout/PaymentForm";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
-import { mockHotels } from "../data/mockHotels";
+// TODO(backend): mockHotels removed — hotel data now comes from location.state via BookingWidget
 import "./CheckoutPage.css";
 
 const DEFAULT_NIGHTS = 5;
@@ -92,6 +92,7 @@ function buildBookingSummaryData(locationState, hotelFromMock) {
 
 function CheckoutPage() {
   const [guestEmail, setGuestEmail] = useState("");
+  const [guestName, setGuestName] = useState({ firstName: "", lastName: "" });
   const [guestFormValid, setGuestFormValid] = useState(false);
   const [paymentFormValid, setPaymentFormValid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -101,9 +102,7 @@ function CheckoutPage() {
   /** Datos enviados desde BookingWidget al navegar a /checkout/:hotelId */
   const detailState = location.state;
 
-  const hotelFromMock = mockHotels.find((h) => h.id === hotelId) ?? null;
-
-  const summary = buildBookingSummaryData(detailState, hotelFromMock);
+  const summary = buildBookingSummaryData(detailState, null);
 
   const hotel = summary.hotel;
 
@@ -141,6 +140,7 @@ function CheckoutPage() {
             <div className="checkout__main">
               <GuestForm
                 onGuestEmailChange={setGuestEmail}
+                onGuestNameChange={setGuestName}
                 onValidityChange={setGuestFormValid}
               />
               <PaymentForm
@@ -154,7 +154,9 @@ function CheckoutPage() {
             <div className="checkout__aside">
               <BookingSummaryCard
                 hotel={hotel}
+                hotelId={hotelId}
                 roomType={summary.roomType}
+                roomTypeId={detailState?.roomTypeId || ""}
                 checkIn={summary.checkIn}
                 checkOut={summary.checkOut}
                 guests={summary.guests}
@@ -169,6 +171,8 @@ function CheckoutPage() {
                 paymentFormValid={paymentFormValid}
                 paymentMethod={paymentMethod}
                 cardNumber={cardNumber}
+                guestFirstName={guestName.firstName}
+                guestLastName={guestName.lastName}
               />
             </div>
           </div>

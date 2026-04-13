@@ -23,7 +23,7 @@ function isFormValid(form) {
   return true;
 }
 
-function GuestForm({ onGuestEmailChange, onValidityChange }) {
+function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) {
   const [form, setForm] = useState({
     nombre: "",
     apellidos: "",
@@ -48,6 +48,10 @@ function GuestForm({ onGuestEmailChange, onValidityChange }) {
   useEffect(() => {
     onGuestEmailChange?.(form.email);
   }, [form.email, onGuestEmailChange]);
+
+  useEffect(() => {
+    onGuestNameChange?.({ firstName: form.nombre, lastName: form.apellidos });
+  }, [form.nombre, form.apellidos, onGuestNameChange]);
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));

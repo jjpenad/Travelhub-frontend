@@ -59,6 +59,7 @@ function BookingWidget({
   defaultCheckIn = "",
   defaultCheckOut = "",
   defaultGuests = "2",
+  roomTypeId = "",
 }) {
   const navigate = useNavigate();
   const pricePerNight = pricePerNightProp ?? hotel?.price ?? 380;
@@ -110,6 +111,7 @@ function BookingWidget({
       navigate(`/checkout/${hotelId}`, {
         state: {
           roomType,
+          roomTypeId,
           total,
           nights,
           guests: Number.isFinite(guests) ? guests : 2,
