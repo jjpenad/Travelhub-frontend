@@ -1,0 +1,63 @@
+package com.example.travelhub.data.remote.dto
+
+import com.google.gson.annotations.SerializedName
+
+// GET /service-core/accommodations/hotels
+data class HotelDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    val address: String,
+    val city: String,
+    val stars: Int,
+    val rating: String,
+    @SerializedName("total_reviews") val totalReviews: Int,
+    val active: Boolean
+)
+
+// GET /service-core/accommodations/search?city=&check_in=&check_out=
+data class HotelSearchResultDto(
+    @SerializedName("hotel_id") val hotelId: String,
+    @SerializedName("hotel_name") val hotelName: String,
+    val description: String,
+    val address: String,
+    val city: String,
+    val stars: Int,
+    val rating: String,
+    @SerializedName("check_in_time") val checkInTime: String?,
+    @SerializedName("check_out_time") val checkOutTime: String?,
+    @SerializedName("available_room_types") val availableRoomTypes: List<RoomTypeDto>
+)
+
+// GET /service-core/accommodations/hotels/{id}/availability?check_in=&check_out=
+data class HotelAvailabilityDto(
+    @SerializedName("hotel_id") val hotelId: String,
+    @SerializedName("hotel_name") val hotelName: String,
+    val description: String,
+    val city: String,
+    val stars: Int,
+    val rating: String,
+    @SerializedName("check_in_time") val checkInTime: String?,
+    @SerializedName("check_out_time") val checkOutTime: String?,
+    val nights: Int,
+    @SerializedName("available_room_types") val availableRoomTypes: List<RoomTypeDto>
+)
+
+data class RoomTypeDto(
+    val id: String,
+    val name: String,
+    val description: String,
+    @SerializedName("max_capacity") val maxCapacity: Int,
+    @SerializedName("bed_type") val bedType: String,
+    @SerializedName("size_sqm") val sizeSqm: String,
+    @SerializedName("price_per_night") val pricePerNight: String,
+    @SerializedName("total_price") val totalPrice: String,
+    @SerializedName("currency_code") val currencyCode: String,
+    @SerializedName("minimum_stay") val minimumStay: Int,
+    val amenities: List<AmenityDto>
+)
+
+data class AmenityDto(
+    val name: String,
+    val icon: String
+)
