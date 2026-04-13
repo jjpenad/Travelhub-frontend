@@ -1,0 +1,84 @@
+# CI del frontend (Vite + React en travelhub-web).
+# Monorepo: añade workflows separados cuando exista travelhub-mobile.
+
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - "travelhub-web/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "travelhub-web/**"
+
+permissions:
+  contents: read
+
+# Despliegue Amplify: opcional. Crea la variable del repo ENABLE_AMPLIFY_DEPLOY=true
+# y los secretos listados en el job Deploy_Amplify. Sin la variable, solo corre CI.
+
+defaults:
+  run:
+    working-directory: ./travelhub-web
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Lint_Test_Build:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: travelhub-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run unit tests (Vitest)
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+#  Deploy_Amplify:
+#    name: Trigger Amplify deploy (main only)
+#    needs: Lint_Test_Build
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 10
+#    permissions:
+#      contents: read
+#      id-token: write
+#    steps:
+#      - name: Configure AWS credentials (OIDC)
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+#          aws-region: ${{ secrets.AWS_REGION }}
+
+#      - name: Start Amplify release job
+#        env:
+#          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+#        run: |
+#          aws amplify start-job \
+#            --app-id "$AMPLIFY_APP_ID" \
+#            --branch-name main \
+#            --job-type RELEASE

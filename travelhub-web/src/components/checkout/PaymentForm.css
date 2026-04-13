@@ -1,0 +1,208 @@
+/* Block: payment-form */
+
+.payment-form {
+  padding: var(--section-gap-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  font-family: var(--sans);
+}
+
+.payment-form__title {
+  margin: 0 0 var(--section-gap-sm);
+  font-family: var(--heading);
+  font-size: var(--type-section);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  color: var(--text-h);
+}
+
+.payment-form__fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.payment-form__legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.payment-form__methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.payment-form__method {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.payment-form__method--selected {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.payment-form__method:focus-within {
+  outline: none;
+}
+
+.payment-form__method--selected:focus-within {
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 3px var(--accent-bg);
+}
+
+.payment-form__radio {
+  margin: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.payment-form__method-label {
+  font-size: var(--type-body);
+  font-weight: 700;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+}
+
+.payment-form__method--selected .payment-form__method-label {
+  color: var(--accent);
+}
+
+.payment-form__card-fields {
+  margin-top: var(--section-gap-sm);
+  padding-top: var(--section-gap-sm);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--section-gap-sm);
+}
+
+.payment-form__card-fields--no-method-row {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.payment-form__card-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(5.5rem, 7rem);
+  gap: var(--section-gap-sm);
+  align-items: start;
+}
+
+.payment-form__card-row--number-titular {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* Misma anchura de columnas que número | titular: expiración alineada con número de tarjeta */
+.payment-form__card-row--expiry-cvv {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.payment-form__card-row--expiry-cvv .payment-form__field--cvv {
+  justify-self: start;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .payment-form__card-row--number-titular {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-form__card-row--expiry-cvv {
+    grid-template-columns: 1fr;
+  }
+}
+
+.payment-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.payment-form__field--cvv {
+  max-width: 7rem;
+}
+
+.payment-form__field-label {
+  font-size: var(--type-body-muted);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.payment-form__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+  transition: border-color 0.2s ease;
+}
+
+.payment-form__input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
+.payment-form__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.payment-form__input--error {
+  border-color: var(--error);
+}
+
+.payment-form__input--error:focus {
+  border-color: var(--error);
+}
+
+.payment-form__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--error);
+  line-height: 1.35;
+}
+
+@media (max-width: 480px) {
+  .payment-form__card-row {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-form__field--cvv {
+    max-width: none;
+  }
+}

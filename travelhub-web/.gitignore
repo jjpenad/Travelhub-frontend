@@ -1,0 +1,52 @@
+# Dependencias
+node_modules
+
+# Build y salida de producción
+dist
+dist-ssr
+build
+*.local
+
+# Pruebas y cobertura
+coverage
+.nyc_output
+
+# Variables de entorno (secretos / solo máquina local)
+.env
+.env.*
+!.env.example
+
+# Cachés de herramientas
+.cache
+.eslintcache
+*.tsbuildinfo
+.vite
+.turbo
+.parcel-cache
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor e IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Despliegues locales (Vercel, Netlify, etc.)
+.vercel
+.netlify

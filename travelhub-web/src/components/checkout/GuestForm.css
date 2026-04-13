@@ -1,0 +1,122 @@
+/* Block: guest-form */
+
+.guest-form {
+  padding: var(--section-gap-sm);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  font-family: var(--sans);
+}
+
+.guest-form__title {
+  margin: 0 0 var(--section-gap-sm);
+  font-family: var(--heading);
+  font-size: var(--type-section);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  color: var(--text-h);
+}
+
+.guest-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--section-gap-sm);
+}
+
+.guest-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.guest-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.guest-form__label {
+  font-size: var(--type-body-muted);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  line-height: var(--leading-tight);
+}
+
+.guest-form__input,
+.guest-form__textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+  transition: border-color 0.2s ease;
+}
+
+.guest-form__textarea {
+  resize: vertical;
+  min-height: 6rem;
+}
+
+.guest-form__textarea-wrap {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.guest-form__textarea--counter {
+  padding-bottom: 2rem;
+}
+
+.guest-form__char-count {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.guest-form__input::placeholder,
+.guest-form__textarea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
+.guest-form__input:focus,
+.guest-form__textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.guest-form__input--error,
+.guest-form__textarea.guest-form__input--error {
+  border-color: var(--error);
+}
+
+.guest-form__input--error:focus,
+.guest-form__textarea.guest-form__input--error:focus {
+  border-color: var(--error);
+}
+
+.guest-form__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--error);
+  line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+  .guest-form__grid {
+    grid-template-columns: 1fr;
+  }
+}

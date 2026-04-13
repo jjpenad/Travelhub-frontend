@@ -1,0 +1,23 @@
+/* Block: hotel-description */
+
+.hotel-description {
+  margin: 0 0 var(--section-gap-sm);
+  min-width: 0;
+}
+
+.hotel-description__title {
+  margin: 0 0 0.65rem;
+  font-family: var(--heading);
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+}
+
+.hotel-description__text {
+  margin: 0;
+  font-size: var(--type-body);
+  color: var(--text);
+  line-height: var(--leading-body);
+}
