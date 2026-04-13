@@ -3,20 +3,22 @@
 # (raíz del repo), o configura la ruta a amplify.yml si la mueves.
 
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        - nvm install 20
-        - nvm use 20
-        - cd travelhub-web && npm ci
-    build:
-      commands:
-        - cd travelhub-web && npm run build
-  artifacts:
-    baseDirectory: travelhub-web/dist
-    files:
-      - "**/*"
-  cache:
-    paths:
-      - travelhub-web/node_modules/**/*
+applications:
+  - appRoot: travelhub-web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - nvm install 20
+            - nvm use 20
+            - npm ci
+        build:
+          commands:
+            - npm run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - node_modules/**/*
