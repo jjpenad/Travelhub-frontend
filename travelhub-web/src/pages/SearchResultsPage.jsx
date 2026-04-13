@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
@@ -22,43 +22,42 @@ function SearchResultsPage() {
   const cardCopy = searchResultsCopy.hotelCard;
 
   const [searchParams] = useSearchParams();
-  const [hotels, setHotels] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   const destination = searchParams.get("destination") || "";
   const checkIn = searchParams.get("checkIn") || "";
   const checkOut = searchParams.get("checkOut") || "";
 
-  useEffect(() => {
-    if (!destination || !checkIn || !checkOut) {
-      setHotels([]);
-      setLoading(false);
-      return;
+  const [state, dispatch] = useReducer(
+    (prev, action) => {
+      switch (action.type) {
+        case "loading": return { hotels: [], loading: true, error: null };
+        case "success": return { hotels: action.hotels, loading: false, error: null };
+        case "error": return { hotels: [], loading: false, error: action.error };
+        case "empty": return { hotels: [], loading: false, error: null };
+        default: return prev;
+      }
+    },
+    { hotels: [], loading: true, error: null },
+  );
+
+  const fetchHotels = useCallback(async (dest, ci, co, signal) => {
+    if (!dest || !ci || !co) { dispatch({ type: "empty" }); return; }
+    dispatch({ type: "loading" });
+    try {
+      const results = await searchAccommodations(dest, ci, co);
+      if (!signal.aborted) dispatch({ type: "success", hotels: results });
+    } catch (err) {
+      if (!signal.aborted) dispatch({ type: "error", error: err.message });
     }
+  }, []);
 
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchHotels(destination, checkIn, checkOut, ac.signal);
+    return () => ac.abort();
+  }, [destination, checkIn, checkOut, fetchHotels]);
 
-    searchAccommodations(destination, checkIn, checkOut)
-      .then((results) => {
-        if (!cancelled) {
-          setHotels(results);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.error("Search failed:", err);
-          setError(err.message);
-          setHotels([]);
-          setLoading(false);
-        }
-      });
-
-    return () => { cancelled = true; };
-  }, [destination, checkIn, checkOut]);
+  const { hotels, loading, error } = state;
 
   return (
     <div className="search-results-page">

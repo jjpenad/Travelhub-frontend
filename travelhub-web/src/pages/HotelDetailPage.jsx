@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import BookingWidget from "../components/hotel/BookingWidget";
 import GuestReviews from "../components/hotel/GuestReviews";
@@ -134,12 +134,20 @@ function HotelDetailPage() {
   const [searchParams] = useSearchParams();
   const hotelId = hotelIdParam ? decodeURIComponent(hotelIdParam) : "";
 
-  const [hotel, setHotel] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
   const checkIn = searchParams.get("checkIn") || "";
   const checkOut = searchParams.get("checkOut") || "";
+
+  const [state, dispatch] = useReducer(
+    (prev, action) => {
+      switch (action.type) {
+        case "loading": return { hotel: null, loading: true, error: null };
+        case "success": return { hotel: action.hotel, loading: false, error: null };
+        case "error": return { hotel: null, loading: false, error: action.error };
+        default: return prev;
+      }
+    },
+    { hotel: null, loading: true, error: null },
+  );
 
   const searchSuffix = useMemo(() => {
     const s = searchParams.toString();
@@ -151,22 +159,28 @@ function HotelDetailPage() {
     [searchParams],
   );
 
-  useEffect(() => {
-    if (!hotelId) return;
-    let cancelled = false;
-    setLoading(true);
-
-    if (checkIn && checkOut) {
-      getHotelAvailability(hotelId, checkIn, checkOut)
-        .then((data) => { if (!cancelled) { setHotel(data); setLoading(false); } })
-        .catch((err) => { if (!cancelled) { setError(err.message); setLoading(false); } });
-    } else {
-      setError("Selecciona fechas para ver disponibilidad.");
-      setLoading(false);
+  const fetchHotel = useCallback(async (id, ci, co, signal) => {
+    if (!id) return;
+    dispatch({ type: "loading" });
+    if (!ci || !co) {
+      dispatch({ type: "error", error: "Selecciona fechas para ver disponibilidad." });
+      return;
     }
+    try {
+      const data = await getHotelAvailability(id, ci, co);
+      if (!signal.aborted) dispatch({ type: "success", hotel: data });
+    } catch (err) {
+      if (!signal.aborted) dispatch({ type: "error", error: err.message });
+    }
+  }, []);
 
-    return () => { cancelled = true; };
-  }, [hotelId, checkIn, checkOut]);
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchHotel(hotelId, checkIn, checkOut, ac.signal);
+    return () => ac.abort();
+  }, [hotelId, checkIn, checkOut, fetchHotel]);
+
+  const { hotel, loading, error } = state;
 
   if (loading) {
     return (
