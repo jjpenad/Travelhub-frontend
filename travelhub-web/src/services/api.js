@@ -88,7 +88,7 @@ export async function createReservation({
   nights,
   guestFirstName,
   guestLastName,
-  guestEmail,
+  // guestEmail — not sent to API, only used in confirmation UI
   cardNumber,
 }) {
   const body = {
