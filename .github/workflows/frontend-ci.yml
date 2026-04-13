@@ -62,10 +62,6 @@ jobs:
   Deploy_Amplify:
     name: Trigger Amplify deploy (main only)
     needs: Lint_Test_Build
-    if: >-
-      github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      vars.ENABLE_AMPLIFY_DEPLOY == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
