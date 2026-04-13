@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
+import { AVAILABLE_CITIES } from "../../services/api";
 import { IconCalendar, IconMapPin, IconSearch, IconUsers } from "./HeroIcons";
 import "./Hero.css";
 
@@ -286,22 +287,24 @@ function Hero() {
                 <div className="home-hero__field-wrap">
                   <div className="home-hero__field-control">
                     <IconMapPin className="home-hero__field-icon" aria-hidden="true" />
-                    <input
+                    <select
                       id="hero-destination"
-                      type="text"
-                      autoComplete="off"
-                      placeholder="¿A dónde vas?"
                       className={
                         shouldShowError("destination")
-                          ? "home-hero__field-input home-hero__field-input--error"
-                          : "home-hero__field-input"
+                          ? "home-hero__field-select home-hero__field-select--error"
+                          : "home-hero__field-select"
                       }
                       aria-invalid={shouldShowError("destination")}
                       aria-describedby={
                         shouldShowError("destination") ? "hero-destination-error" : undefined
                       }
                       {...withClearError(destReg, clearErrors, "destination")}
-                    />
+                    >
+                      <option value="">¿A dónde vas?</option>
+                      {AVAILABLE_CITIES.map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </select>
                   </div>
                   {shouldShowError("destination") && (
                     <p

@@ -1,11 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createReservation } from "../../services/api";
 import "./BookingSummaryCard.css";
-
-function buildReservationReference() {
-  const year = new Date().getFullYear();
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `TRV-${year}-${num}`;
-}
 
 function buildPaymentLabel(
   paymentMethod,
@@ -70,7 +66,9 @@ function formatDateLabel(iso) {
 
 function BookingSummaryCard({
   hotel,
+  hotelId = "",
   roomType,
+  roomTypeId = "",
   checkIn = "",
   checkOut = "",
   guests: guestsProp = 2,
@@ -85,9 +83,14 @@ function BookingSummaryCard({
   paymentFormValid = false,
   paymentMethod = "card",
   cardNumber = "",
+  guestFirstName = "",
+  guestLastName = "",
   onConfirm,
 }) {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState(null);
+
   const name = hotel?.name ?? "Hotel";
   const locationText = hotel?.location ?? "—";
   const imageSrc = hotel?.image;
@@ -100,43 +103,68 @@ function BookingSummaryCard({
   const guests = Number(guestsProp);
   const guestCount = Number.isFinite(guests) ? guests : 2;
 
-  function handleConfirm() {
+  async function handleConfirm() {
     onConfirm?.();
-    const reference = buildReservationReference();
-    const hotelPayload = hotel
-      ? {
-          id: hotel.id,
-          name: hotel.name,
-          location: hotel.location,
-          image: hotel.image,
-          rating: hotel.rating,
-        }
-      : null;
+    setSubmitting(true);
+    setApiError(null);
 
-    navigate("/confirmation", {
-      state: {
-        reference,
-        total: Number(total),
-        hotel: hotelPayload,
-        roomType: roomType || null,
+    try {
+      const response = await createReservation({
+        hotelId: hotelId || hotel?.id || "",
+        roomTypeId,
         checkIn,
         checkOut,
         guests: guestCount,
-        nights: Number(nights),
+        totalPrice: Number(total),
         pricePerNight: Number(pricePerNight),
-        cleaningFee: Number(cleaningFee),
-        serviceFee: Number(serviceFee),
-        taxes: Number(taxes),
-        guestEmail:
-          typeof guestEmail === "string" && guestEmail.trim() !== ""
-            ? guestEmail.trim()
-            : null,
-        paymentMethod,
-        paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
-        checkInTime: "15:00",
-        checkOutTime: "11:00",
-      },
-    });
+        nights: Number(nights),
+        guestFirstName: guestFirstName || "Guest",
+        guestLastName: guestLastName || "",
+        guestEmail: guestEmail || "",
+        cardNumber: cardNumber || "4242424242424242",
+      });
+
+      const reference = response?.result?.confirmation_code || response?.result?.confirmationCode || "N/A";
+
+      const hotelPayload = hotel
+        ? {
+            id: hotel.id,
+            name: hotel.name,
+            location: hotel.location,
+            image: hotel.image,
+            rating: hotel.rating,
+          }
+        : null;
+
+      navigate("/confirmation", {
+        state: {
+          reference,
+          total: Number(total),
+          hotel: hotelPayload,
+          roomType: roomType || null,
+          checkIn,
+          checkOut,
+          guests: guestCount,
+          nights: Number(nights),
+          pricePerNight: Number(pricePerNight),
+          cleaningFee: Number(cleaningFee),
+          serviceFee: Number(serviceFee),
+          taxes: Number(taxes),
+          guestEmail:
+            typeof guestEmail === "string" && guestEmail.trim() !== ""
+              ? guestEmail.trim()
+              : null,
+          paymentMethod,
+          paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
+          checkInTime: "15:00",
+          checkOutTime: "11:00",
+        },
+      });
+    } catch (err) {
+      console.error("Reservation failed:", err);
+      setApiError(err.message || "Error al crear la reserva");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -231,14 +259,20 @@ function BookingSummaryCard({
         </div>
       </div>
 
+      {apiError && (
+        <p style={{ color: "#e53935", fontSize: "0.875rem", margin: "0.5rem 0", textAlign: "center" }}>
+          {apiError}
+        </p>
+      )}
+
       <button
         type="button"
         className="booking-summary-card__confirm"
-        disabled={!guestFormValid || !paymentFormValid}
+        disabled={!guestFormValid || !paymentFormValid || submitting}
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />
-        Confirmar y Pagar
+        {submitting ? "Procesando..." : "Confirmar y Pagar"}
       </button>
 
       <footer className="booking-summary-card__footer">
