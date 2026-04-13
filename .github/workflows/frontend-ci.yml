@@ -59,26 +59,26 @@ jobs:
       - name: Production build
         run: npm run build
 
-  Deploy_Amplify:
-    name: Trigger Amplify deploy (main only)
-    needs: Lint_Test_Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
+#  Deploy_Amplify:
+#    name: Trigger Amplify deploy (main only)
+#    needs: Lint_Test_Build
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 10
+#    permissions:
+#      contents: read
+#      id-token: write
+#    steps:
+#      - name: Configure AWS credentials (OIDC)
+#        uses: aws-actions/configure-aws-credentials@v4
+#        with:
+#          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+#          aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Start Amplify release job
-        env:
-          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
-        run: |
-          aws amplify start-job \
-            --app-id "$AMPLIFY_APP_ID" \
-            --branch-name main \
-            --job-type RELEASE
+#      - name: Start Amplify release job
+#        env:
+#          AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }}
+#        run: |
+#          aws amplify start-job \
+#            --app-id "$AMPLIFY_APP_ID" \
+#            --branch-name main \
+#            --job-type RELEASE
