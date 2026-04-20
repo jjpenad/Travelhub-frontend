@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer } from "react";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import FilterSidebar from "../components/search/FilterSidebar";
 import HotelCard from "../components/search/HotelCard";
 import ResultsToolbar from "../components/search/ResultsToolbar";
 import SearchSummary from "../components/search/SearchSummary";
@@ -10,14 +11,13 @@ import { searchResultsCopy } from "../data/searchResultsCopy";
 import "./SearchResults.css";
 
 /** MVP: oculta la columna de filtros; pon en true para mostrar el sidebar */
-const showFiltersSidebar = false;
+const showFiltersSidebar = true;
 
 function SearchResultsPage() {
   const {
-    sidebarTitle,
-    sidebarPlaceholder,
     resultsRegionLabel,
     toolbar: toolbarCopy,
+    filters: filtersCopy,
   } = searchResultsCopy;
   const cardCopy = searchResultsCopy.hotelCard;
 
@@ -73,17 +73,7 @@ function SearchResultsPage() {
               (showFiltersSidebar ? "" : " results__grid--no-sidebar")
             }
           >
-            {showFiltersSidebar ? (
-              <aside
-                className="results__sidebar"
-                aria-labelledby="results-sidebar-heading"
-              >
-                <h2 id="results-sidebar-heading" className="results__sidebar-title">
-                  {sidebarTitle}
-                </h2>
-                <p className="results__sidebar-placeholder">{sidebarPlaceholder}</p>
-              </aside>
-            ) : null}
+            {showFiltersSidebar ? <FilterSidebar copy={filtersCopy} /> : null}
 
             <div
               className="results__list"
