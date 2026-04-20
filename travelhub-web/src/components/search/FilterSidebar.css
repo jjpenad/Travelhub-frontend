@@ -1,0 +1,403 @@
+.filter-sidebar {
+  position: sticky;
+  top: calc(var(--nav-height) + 0.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.35rem 1.35rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.filter-sidebar__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.filter-sidebar__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.01em;
+}
+
+.filter-sidebar__reset {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--accent);
+  font-size: var(--type-body-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.filter-sidebar__reset:hover {
+  text-decoration: underline;
+}
+.filter-sidebar__reset:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.filter-sidebar__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+.filter-sidebar__section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.filter-sidebar__section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: -0.005em;
+}
+
+/* ---------- Price range dual slider ---------- */
+.filter-sidebar__range {
+  --range-left: 0%;
+  --range-right: 0%;
+  position: relative;
+  height: 28px;
+  padding: 0 6px;
+}
+
+.filter-sidebar__range-track {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  pointer-events: none;
+}
+
+.filter-sidebar__range-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--range-left);
+  right: var(--range-right);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.filter-sidebar__range-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  appearance: none;
+  pointer-events: none;
+  margin: 0;
+}
+
+.filter-sidebar__range-input::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+  height: 100%;
+}
+.filter-sidebar__range-input::-moz-range-track {
+  background: transparent;
+  border: none;
+  height: 100%;
+}
+
+.filter-sidebar__range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fbbf24;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+  margin-top: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.filter-sidebar__range-input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fbbf24;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
+
+.filter-sidebar__range-input:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+.filter-sidebar__range-input:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.filter-sidebar__range-legend {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.filter-sidebar__range-current {
+  color: var(--text-h);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* ---------- Star rating ---------- */
+.filter-sidebar__stars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-sidebar__star-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.3rem 0.35rem;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.filter-sidebar__star-row:hover {
+  background: var(--surface);
+}
+.filter-sidebar__star-row--active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+.filter-sidebar__star-row:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.filter-sidebar__star-icons {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.filter-sidebar__star {
+  width: 16px;
+  height: 16px;
+  color: #e2e8f0;
+}
+.filter-sidebar__star--filled {
+  color: #fbbf24;
+}
+
+.filter-sidebar__star-label {
+  font-size: var(--type-body-muted);
+  color: var(--text-muted);
+}
+.filter-sidebar__star-row--active .filter-sidebar__star-label {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+/* ---------- Checklist (property type + amenities) ---------- */
+.filter-sidebar__checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filter-sidebar__check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.15rem 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-sidebar__check-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.filter-sidebar__check-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #ffffff;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+.filter-sidebar__check-box svg {
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.filter-sidebar__check-input:checked + .filter-sidebar__check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.filter-sidebar__check-input:checked + .filter-sidebar__check-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.filter-sidebar__check-input:focus-visible + .filter-sidebar__check-box {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.filter-sidebar__amenity-icon {
+  display: inline-flex;
+  width: 20px;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.filter-sidebar__check-label {
+  font-size: var(--type-body-muted);
+  color: var(--text-h);
+}
+
+/* ---------- Guest rating select ---------- */
+.filter-sidebar__select-wrap {
+  position: relative;
+}
+
+.filter-sidebar__select {
+  appearance: none;
+  width: 100%;
+  padding: 0.55rem 2.2rem 0.55rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-h);
+  font: inherit;
+  font-size: var(--type-body-muted);
+  cursor: pointer;
+}
+.filter-sidebar__select:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+  border-color: var(--accent-border-focus);
+}
+
+.filter-sidebar__select-chevron {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  pointer-events: none;
+  color: var(--text-muted);
+}
+.filter-sidebar__select-chevron-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Apply filters footer ---------- */
+.filter-sidebar__apply {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.25rem;
+}
+
+.filter-sidebar__apply-button {
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+  background: var(--accent);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--accent-shadow-sm);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.filter-sidebar__apply-button:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 6px 18px var(--accent-shadow-md);
+}
+.filter-sidebar__apply-button:active {
+  transform: translateY(1px);
+}
+.filter-sidebar__apply-button:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.filter-sidebar__active-count {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.filter-sidebar__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .filter-sidebar {
+    position: static;
+  }
+}
