@@ -4,11 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.SearchFilters
+import com.example.travelhub.domain.model.SortOption
+import com.example.travelhub.domain.model.applySort
 import com.example.travelhub.domain.usecase.SearchPropertiesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -23,6 +28,7 @@ class SearchViewModel @Inject constructor(
         val AVAILABLE_CITIES = listOf(
             "Bogotá", "Lima", "Quito", "Santiago", "Buenos Aires", "Ciudad de México"
         )
+        val DEFAULT_SORT = SortOption.PRICE_ASC
     }
 
     private val _selectedCity = MutableStateFlow("")
@@ -40,8 +46,14 @@ class SearchViewModel @Inject constructor(
     private val _rooms = MutableStateFlow(1)
     val rooms: StateFlow<Int> = _rooms.asStateFlow()
 
-    private val _results = MutableStateFlow<List<Property>>(emptyList())
-    val results: StateFlow<List<Property>> = _results.asStateFlow()
+    private val _rawResults = MutableStateFlow<List<Property>>(emptyList())
+
+    private val _sortOption = MutableStateFlow(DEFAULT_SORT)
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+
+    val results: StateFlow<List<Property>> = combine(_rawResults, _sortOption) { raw, sort ->
+        raw.applySort(sort)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -59,6 +71,7 @@ class SearchViewModel @Inject constructor(
     fun onCheckOutChange(date: LocalDate) { _checkOut.value = date }
     fun onGuestsChange(value: Int) { _guests.value = value.coerceAtLeast(1) }
     fun onRoomsChange(value: Int) { _rooms.value = value.coerceAtLeast(1) }
+    fun onSortChange(option: SortOption) { _sortOption.value = option }
 
     fun search() {
         viewModelScope.launch {
@@ -70,7 +83,7 @@ class SearchViewModel @Inject constructor(
                 guests = _guests.value,
                 rooms = _rooms.value
             )
-            _results.value = searchPropertiesUseCase(filters)
+            _rawResults.value = searchPropertiesUseCase(filters)
             _hasSearched.value = true
             _isLoading.value = false
         }
