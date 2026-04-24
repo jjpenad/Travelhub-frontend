@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { appendLocalReservation } from "../../bookings/localReservations";
 import { processPayment, registerUser } from "../../services/api";
 import "./BookingSummaryCard.css";
 
@@ -66,10 +67,10 @@ function formatDateLabel(iso) {
 
 function BookingSummaryCard({
   hotel,
-  hotelId = "",
+  hotelId: _hotelId = "",
   reservationId = "",
   roomType,
-  roomTypeId = "",
+  roomTypeId: _roomTypeId = "",
   checkIn = "",
   checkOut = "",
   guests: guestsProp = 2,
@@ -117,16 +118,16 @@ function BookingSummaryCard({
         primary_guest: {
           first_name: guestFirstName || "Huésped",
           last_name: guestLastName || "",
-          document_type: "CC", 
+          document_type: "CC",
           document_number: "1234567890", // Debería capturarse en el form si es real
           nationality: "COL",
-          email: guestEmail || "guest@example.com"
+          email: guestEmail || "guest@example.com",
         },
         payment: {
           amount: Number(total).toFixed(2),
           currency_code: "USD",
-          payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`
-        }
+          payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
+        },
       };
 
       const response = await processPayment(paymentPayload);
@@ -134,17 +135,18 @@ function BookingSummaryCard({
       // Verificamos si el pago fue exitoso según la respuesta del backend
       // El backend devuelve 200 OK pero con success: false en caso de error
       const result = response.result || {};
-      
+
       if (result.success === false) {
         setSubmitting(false);
-        setErrorModal({ 
-          show: true, 
-          message: result.error || "No se pudo procesar el pago" 
+        setErrorModal({
+          show: true,
+          message: result.error || "No se pudo procesar el pago",
         });
         return;
       }
 
-      const reference = result.confirmation_code || result.reservation_id || "N/A";
+      const reference =
+        result.confirmation_code || result.reservation_id || "N/A";
 
       // Si el usuario autorizó la creación de cuenta, la creamos en segundo plano
       if (createAccount) {
@@ -155,36 +157,45 @@ function BookingSummaryCard({
           last_name: guestLastName || "",
           user_type: "traveler",
           phone: "+573001234567",
-          country_id: null
-        }).catch(err => console.error("Registro automático falló:", err));
+          country_id: null,
+        }).catch((err) => console.error("Registro automático falló:", err));
       }
 
-      navigate("/confirmation", {
-        state: {
-          reference,
-          total: Number(total),
-          hotel: hotel ? {
+      const hotelPayload = hotel
+        ? {
             id: hotel.id,
             name: hotel.name,
             location: hotel.location,
             image: hotel.image,
             rating: hotel.rating,
-          } : null,
-          roomType: roomType || null,
-          checkIn,
-          checkOut,
-          guests: guestCount,
-          nights: Number(nights),
-          pricePerNight: Number(pricePerNight),
-          cleaningFee: Number(cleaningFee),
-          serviceFee: Number(serviceFee),
-          taxes: Number(taxes),
-          guestEmail: guestEmail || null,
-          paymentMethod,
-          paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
-          checkInTime: "15:00",
-          checkOutTime: "11:00",
-        },
+          }
+        : null;
+
+      // Misma forma que develop envía a /confirmation (no perder campos)
+      const confirmationState = {
+        reference,
+        total: Number(total),
+        hotel: hotelPayload,
+        roomType: roomType || null,
+        checkIn,
+        checkOut,
+        guests: guestCount,
+        nights: Number(nights),
+        pricePerNight: Number(pricePerNight),
+        cleaningFee: Number(cleaningFee),
+        serviceFee: Number(serviceFee),
+        taxes: Number(taxes),
+        guestEmail: guestEmail || null,
+        paymentMethod,
+        paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
+        checkInTime: "15:00",
+        checkOutTime: "11:00",
+      };
+
+      appendLocalReservation(confirmationState);
+
+      navigate("/confirmation", {
+        state: confirmationState,
       });
     } catch (err) {
       console.error("Reservation failed:", err);
@@ -303,14 +314,14 @@ function BookingSummaryCard({
 
       <div className="booking-summary-card__account-check">
         <label className="booking-summary-card__check-label">
-          <input 
-            type="checkbox" 
+          <input
+            type="checkbox"
             checked={createAccount}
             onChange={(e) => setCreateAccount(e.target.checked)}
             className="booking-summary-card__checkbox"
           />
           <span className="booking-summary-card__check-text">
-            Autorizo la creación de una cuenta para gestionar mis reservas. 
+            Autorizo la creación de una cuenta para gestionar mis reservas.
             <small className="booking-summary-card__check-note">
               De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
             </small>
@@ -331,13 +342,14 @@ function BookingSummaryCard({
           <div className="booking-modal booking-modal--error">
             <div className="booking-modal__icon">
               <svg viewBox="0 0 24 24" width="48" height="48">
-                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
               </svg>
             </div>
             <h3 className="booking-modal__title">No se pudo completar el pago</h3>
             <p className="booking-modal__text">{errorModal.message}</p>
-            <button 
-              className="booking-modal__button" 
+            <button
+              type="button"
+              className="booking-modal__button"
               onClick={() => {
                 setErrorModal({ show: false, message: "" });
                 navigate("/");

@@ -32,3 +32,8 @@ export function isLoggedIn() {
   const r = getSessionRole();
   return r === ROLE_HOTEL || r === ROLE_TRAVELER;
 }
+
+/** Sesión del portal de viajeros (no incluye rol hotel). */
+export function isTravelerLoggedIn() {
+  return getSessionRole() === ROLE_TRAVELER;
+}

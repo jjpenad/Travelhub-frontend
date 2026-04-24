@@ -1,11 +1,17 @@
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
-import { PATH_TRAVELERS_HOME } from "./constants/routes";
+import {
+  PATH_MY_TRIPS,
+  PATH_MY_TRIPS_RESERVATION,
+  PATH_TRAVELERS_HOME,
+} from "./constants/routes";
 import CheckoutPage from "./pages/CheckoutPage";
 import ConfirmationPage from "./pages/ConfirmationPage";
 import Home from "./pages/Home";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import HotelPortalPage from "./pages/HotelPortalPage";
 import LoginPage from "./pages/LoginPage";
+import MyTripsPage from "./pages/MyTripsPage";
+import TripDetailPage from "./pages/TripDetailPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import SignupPage from "./pages/SignupPage";
 
@@ -15,6 +21,11 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to={PATH_TRAVELERS_HOME} replace />} />
         <Route path={PATH_TRAVELERS_HOME} element={<Home />} />
+        <Route
+          path={`${PATH_MY_TRIPS_RESERVATION}/:bookingSlug`}
+          element={<TripDetailPage />}
+        />
+        <Route path={PATH_MY_TRIPS} element={<MyTripsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/portal-hoteles" element={<HotelPortalPage />} />
         <Route path="/signup" element={<SignupPage />} />

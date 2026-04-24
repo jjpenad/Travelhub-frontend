@@ -16,6 +16,9 @@ coverage
 .env.*
 !.env.example
 
+# Opcional: datos mock grandes solo en tu máquina (no develop)
+src/data/mockReservations.local.js
+
 # Cachés de herramientas
 .cache
 .eslintcache

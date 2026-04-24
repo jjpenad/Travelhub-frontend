@@ -5,14 +5,15 @@ import {
   AUTH_ROLE_KEY,
   clearSessionUser,
   isLoggedIn,
+  isTravelerLoggedIn,
 } from "../../auth/sessionAuth";
-import { PATH_TRAVELERS_HOME } from "../../constants/routes";
+import { PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 import NavbarUserIcon from "./NavbarUserIcon";
 import "./Navbar.css";
 
-/** MVP: oculta Estancias y Mis viajes; pon en true para mostrar el menú completo */
-const showFullMenu = false;
+/** MVP: desactiva la entrada Mis viajes (solo viajeros logueados la ven si está en true) */
+const showMyTripsNav = true;
 
 /** MVP: oculta la búsqueda del header; pon en true para mostrarla */
 const showSearchBar = false;
@@ -20,20 +21,23 @@ const showSearchBar = false;
 /** MVP: oculta Iniciar sesión y Registrarse; pon en true para mostrarlos */
 const showAuthButtons = true;
 
-const navLinks = [
-  { label: "Estancias", href: "#stays" },
-  { label: "Mis viajes", href: "#my-trips" },
-];
-
 function Navbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === PATH_TRAVELERS_HOME;
+  const isMyTrips =
+    pathname === PATH_MY_TRIPS || pathname.startsWith(`${PATH_MY_TRIPS}/`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
     void sessionVersion;
     return isLoggedIn();
+  }, [pathname, sessionVersion]);
+
+  const showMyTripsLink = useMemo(() => {
+    void pathname;
+    void sessionVersion;
+    return showMyTripsNav && isTravelerLoggedIn();
   }, [pathname, sessionVersion]);
 
   useEffect(() => {
@@ -87,15 +91,20 @@ function Navbar() {
                   Explorar
                 </Link>
               </li>
-              {showFullMenu
-                ? navLinks.map(({ label, href }) => (
-                    <li key={label}>
-                      <a className="navbar__link" href={href}>
-                        {label}
-                      </a>
-                    </li>
-                  ))
-                : null}
+              {showMyTripsLink ? (
+                <li>
+                  <Link
+                    className={
+                      "navbar__link" +
+                      (isMyTrips ? " navbar__link--active" : "")
+                    }
+                    to={PATH_MY_TRIPS}
+                    aria-current={isMyTrips ? "page" : undefined}
+                  >
+                    Mis viajes
+                  </Link>
+                </li>
+              ) : null}
             </ul>
           </nav>
         </div>
