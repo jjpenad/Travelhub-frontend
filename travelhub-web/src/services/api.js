@@ -3,9 +3,7 @@
  * Centralizes all backend calls. Replace VITE_API_URL in .env to point to a different backend.
  */
 
-const BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://k8s-travelhubdev-3d982ad1bb-1861797429.us-east-2.elb.amazonaws.com";
 
 const CITY_COUNTRY_MAP = {
   "Bogotá": "Colombia",
