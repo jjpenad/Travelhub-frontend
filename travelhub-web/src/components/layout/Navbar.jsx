@@ -9,7 +9,7 @@ const showFullMenu = false;
 const showSearchBar = false;
 
 /** MVP: oculta Iniciar sesión y Registrarse; pon en true para mostrarlos */
-const showAuthButtons = false;
+const showAuthButtons = true;
 
 const navLinks = [
   { label: "Estancias", href: "#stays" },
@@ -90,15 +90,15 @@ function Navbar() {
 
         {showAuthButtons ? (
           <div className="navbar__actions">
-            <a
+            <Link
               className="navbar__btn navbar__btn--primary navbar__sign-in"
-              href="/login"
+              to="/login"
             >
               Iniciar sesión
-            </a>
-            <a className="navbar__btn navbar__btn--register" href="/signup">
+            </Link>
+            <Link className="navbar__btn navbar__btn--register" to="/signup">
               Registrarse
-            </a>
+            </Link>
           </div>
         ) : null}
       </div>
