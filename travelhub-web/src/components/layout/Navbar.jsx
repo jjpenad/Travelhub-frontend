@@ -25,7 +25,8 @@ function Navbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === PATH_TRAVELERS_HOME;
-  const isMyTrips = pathname === PATH_MY_TRIPS;
+  const isMyTrips =
+    pathname === PATH_MY_TRIPS || pathname.startsWith(`${PATH_MY_TRIPS}/`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;

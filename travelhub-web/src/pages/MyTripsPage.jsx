@@ -9,6 +9,7 @@ import {
   IconTicket,
   IconWallet,
 } from "../components/home/HeroIcons";
+import { encodeBookingDetailSlug } from "../bookings/bookingDetailSlug";
 import {
   getLocalReservations,
   LOCAL_RESERVATIONS_KEY,
@@ -22,7 +23,10 @@ import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
-import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import {
+  PATH_MY_TRIPS_RESERVATION,
+  PATH_TRAVELERS_HOME,
+} from "../constants/routes";
 import "./MyTripsPage.css";
 
 function parseISODate(iso) {
@@ -118,7 +122,7 @@ function StarRow({ value }) {
   );
 }
 
-function TripCard({ r, index, hotelId }) {
+function TripCard({ r, index }) {
   const past = isReservationPast(r);
   const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
   const name = hotel?.name ?? "Alojamiento";
@@ -204,19 +208,17 @@ function TripCard({ r, index, hotelId }) {
           </span>
         </p>
 
-        {hotelId ? (
-          <div className="my-trips-card__actions">
-            <Link
-              className="my-trips-card__btn my-trips-card__btn--primary"
-              to={`/hotel/${encodeURIComponent(hotelId)}`}
-            >
-              Ver detalles
-              <span className="my-trips-card__btn-arrow" aria-hidden="true">
-                →
-              </span>
-            </Link>
-          </div>
-        ) : null}
+        <div className="my-trips-card__actions">
+          <Link
+            className="my-trips-card__btn my-trips-card__btn--primary"
+            to={`${PATH_MY_TRIPS_RESERVATION}/${encodeBookingDetailSlug(r)}`}
+          >
+            Ver detalles
+            <span className="my-trips-card__btn-arrow" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        </div>
       </div>
 
       <aside className="my-trips-card__aside" aria-label="Resumen de pago">
@@ -380,21 +382,9 @@ function MyTripsPage() {
               ) : (
                 <ul className="my-trips__list" aria-label="Reservas">
                   {sorted.map((r, index) => {
-                    const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
-                    const hotelId =
-                      hotel?.id != null && String(hotel.id).trim() !== ""
-                        ? String(hotel.id)
-                        : "";
                     const ref = r.reference != null ? String(r.reference) : "";
                     const key = `${ref}-${r.savedAt ?? index}`;
-                    return (
-                      <TripCard
-                        key={key}
-                        r={r}
-                        index={index}
-                        hotelId={hotelId}
-                      />
-                    );
+                    return <TripCard key={key} r={r} index={index} />;
                   })}
                 </ul>
               )}
