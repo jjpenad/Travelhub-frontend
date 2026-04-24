@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AUTH_EMAIL_KEY,
@@ -29,17 +29,17 @@ function Navbar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === PATH_TRAVELERS_HOME;
-  const [, setSessionBump] = useState(0);
-  const loggedIn = isLoggedIn();
-
-  useEffect(() => {
-    setSessionBump((b) => b + 1);
-  }, [pathname]);
+  const [sessionVersion, setSessionVersion] = useState(0);
+  const loggedIn = useMemo(() => {
+    void pathname;
+    void sessionVersion;
+    return isLoggedIn();
+  }, [pathname, sessionVersion]);
 
   useEffect(() => {
     function onStorage(e) {
       if (e.key === AUTH_ROLE_KEY || e.key === AUTH_EMAIL_KEY) {
-        setSessionBump((b) => b + 1);
+        setSessionVersion((v) => v + 1);
       }
     }
     window.addEventListener("storage", onStorage);
@@ -48,7 +48,7 @@ function Navbar() {
 
   function handleLogout() {
     clearSessionUser();
-    setSessionBump((b) => b + 1);
+    setSessionVersion((v) => v + 1);
     navigate(PATH_TRAVELERS_HOME, { replace: true });
   }
 
