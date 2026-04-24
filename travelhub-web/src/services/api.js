@@ -3,9 +3,7 @@
  * Centralizes all backend calls. Replace VITE_API_URL in .env to point to a different backend.
  */
 
-const BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://k8s-travelhubdev-3d982ad1bb-1861797429.us-east-2.elb.amazonaws.com";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://k8s-travelhubdev-3d982ad1bb-1861797429.us-east-2.elb.amazonaws.com";
 
 const CITY_COUNTRY_MAP = {
   "Bogotá": "Colombia",
@@ -23,12 +21,31 @@ function countryForCity(city) {
 }
 
 /**
+ * Retrieves or generates a unique guest ID for the session to identify the user
+ * even if they are not logged in.
+ */
+function getGuestId() {
+  let guestId = localStorage.getItem("travelhub_guest_id");
+  if (!guestId) {
+    guestId = typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 15);
+    localStorage.setItem("travelhub_guest_id", guestId);
+  }
+  return guestId;
+}
+
+/**
  * Generic fetch wrapper with JSON parsing and error handling.
  */
 async function apiFetch(path, options = {}) {
   const url = `${BASE_URL}${path}`;
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...options.headers },
+    headers: {
+      "Content-Type": "application/json",
+      "X-Guest-Id": getGuestId(),
+      ...options.headers
+    },
     ...options,
   });
   if (!res.ok) {
@@ -56,7 +73,9 @@ export async function listHotels() {
 export async function searchAccommodations(city, checkIn, checkOut) {
   const params = new URLSearchParams({ city, check_in: checkIn, check_out: checkOut });
   const data = await apiFetch(`/service-core/accommodations/search?${params}`);
-  return data.map(mapSearchResultDto);
+  // The API now returns an object with a 'result' array
+  const resultsArray = data.result || [];
+  return resultsArray.map(mapSearchResultDto);
 }
 
 /**
@@ -72,6 +91,27 @@ export async function getHotelAvailability(hotelId, checkIn, checkOut) {
 }
 
 // ─── Reservations ────────────────────────────────────────
+
+export async function createBooking(bookingInfo) {
+  return apiFetch("/service-core/reservation-flow/create", {
+    method: "POST",
+    body: JSON.stringify(bookingInfo),
+  });
+}
+
+export async function processPayment(paymentInfo) {
+  return apiFetch("/service-core/reservation-flow/payment", {
+    method: "POST",
+    body: JSON.stringify(paymentInfo),
+  });
+}
+
+export async function registerUser(userData) {
+  return apiFetch("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
+}
 
 /**
  * POST /service-core/reservation-flow/create

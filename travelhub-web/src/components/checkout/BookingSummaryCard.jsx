@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { appendLocalReservation } from "../../bookings/localReservations";
-import { createReservation } from "../../services/api";
+import { processPayment, registerUser } from "../../services/api";
 import "./BookingSummaryCard.css";
 
 function buildPaymentLabel(
@@ -68,6 +68,7 @@ function formatDateLabel(iso) {
 function BookingSummaryCard({
   hotel,
   hotelId = "",
+  reservationId = "",
   roomType,
   roomTypeId = "",
   checkIn = "",
@@ -91,6 +92,8 @@ function BookingSummaryCard({
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [errorModal, setErrorModal] = useState({ show: false, message: "" });
+  const [createAccount, setCreateAccount] = useState(true);
 
   const name = hotel?.name ?? "Hotel";
   const locationText = hotel?.location ?? "—";
@@ -110,22 +113,53 @@ function BookingSummaryCard({
     setApiError(null);
 
     try {
-      const response = await createReservation({
-        hotelId: hotelId || hotel?.id || "",
-        roomTypeId,
-        checkIn,
-        checkOut,
-        guests: guestCount,
-        totalPrice: Number(total),
-        pricePerNight: Number(pricePerNight),
-        nights: Number(nights),
-        guestFirstName: guestFirstName || "Guest",
-        guestLastName: guestLastName || "",
-        guestEmail: guestEmail || "",
-        cardNumber: cardNumber || "4242424242424242",
-      });
+      const paymentPayload = {
+        reservation_id: reservationId,
+        primary_guest: {
+          first_name: guestFirstName || "Huésped",
+          last_name: guestLastName || "",
+          document_type: "CC",
+          document_number: "1234567890", // Debería capturarse en el form si es real
+          nationality: "COL",
+          email: guestEmail || "guest@example.com",
+        },
+        payment: {
+          amount: Number(total).toFixed(2),
+          currency_code: "USD",
+          payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
+        },
+      };
 
-      const reference = response?.result?.confirmation_code || response?.result?.confirmationCode || "N/A";
+      const response = await processPayment(paymentPayload);
+
+      // Verificamos si el pago fue exitoso según la respuesta del backend
+      // El backend devuelve 200 OK pero con success: false en caso de error
+      const result = response.result || {};
+
+      if (result.success === false) {
+        setSubmitting(false);
+        setErrorModal({
+          show: true,
+          message: result.error || "No se pudo procesar el pago",
+        });
+        return;
+      }
+
+      const reference =
+        result.confirmation_code || result.reservation_id || "N/A";
+
+      // Si el usuario autorizó la creación de cuenta, la creamos en segundo plano
+      if (createAccount) {
+        registerUser({
+          email: guestEmail || "guest@example.com",
+          password: Math.random().toString(36).slice(-10), // Generar contraseña aleatoria
+          first_name: guestFirstName || "Huésped",
+          last_name: guestLastName || "",
+          user_type: "traveler",
+          phone: "+573001234567",
+          country_id: null,
+        }).catch((err) => console.error("Registro automático falló:", err));
+      }
 
       const hotelPayload = hotel
         ? {
@@ -137,6 +171,7 @@ function BookingSummaryCard({
           }
         : null;
 
+      // Misma forma que develop envía a /confirmation (no perder campos)
       const confirmationState = {
         reference,
         total: Number(total),
@@ -150,10 +185,7 @@ function BookingSummaryCard({
         cleaningFee: Number(cleaningFee),
         serviceFee: Number(serviceFee),
         taxes: Number(taxes),
-        guestEmail:
-          typeof guestEmail === "string" && guestEmail.trim() !== ""
-            ? guestEmail.trim()
-            : null,
+        guestEmail: guestEmail || null,
         paymentMethod,
         paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
         checkInTime: "15:00",
@@ -280,6 +312,23 @@ function BookingSummaryCard({
         {submitting ? "Procesando..." : "Confirmar y Pagar"}
       </button>
 
+      <div className="booking-summary-card__account-check">
+        <label className="booking-summary-card__check-label">
+          <input
+            type="checkbox"
+            checked={createAccount}
+            onChange={(e) => setCreateAccount(e.target.checked)}
+            className="booking-summary-card__checkbox"
+          />
+          <span className="booking-summary-card__check-text">
+            Autorizo la creación de una cuenta para gestionar mis reservas.
+            <small className="booking-summary-card__check-note">
+              De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
+            </small>
+          </span>
+        </label>
+      </div>
+
       <footer className="booking-summary-card__footer">
         <p className="booking-summary-card__cancellation">Cancelación gratuita</p>
         <p className="booking-summary-card__ssl">
@@ -287,6 +336,30 @@ function BookingSummaryCard({
           <span>Pago seguro con SSL</span>
         </p>
       </footer>
+
+      {errorModal.show && (
+        <div className="booking-modal-overlay">
+          <div className="booking-modal booking-modal--error">
+            <div className="booking-modal__icon">
+              <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+            </div>
+            <h3 className="booking-modal__title">No se pudo completar el pago</h3>
+            <p className="booking-modal__text">{errorModal.message}</p>
+            <button
+              type="button"
+              className="booking-modal__button"
+              onClick={() => {
+                setErrorModal({ show: false, message: "" });
+                navigate("/");
+              }}
+            >
+              Volver a buscar
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

@@ -210,6 +210,44 @@
   flex-shrink: 0;
 }
 
+.booking-summary-card__account-check {
+  margin: 0 0 var(--section-gap-sm);
+  padding: 0.75rem;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.booking-summary-card__check-label {
+  display: flex;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.booking-summary-card__checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.booking-summary-card__check-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 1.4;
+}
+
+.booking-summary-card__check-note {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
 .booking-summary-card__footer {
   display: flex;
   flex-direction: column;
