@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import { IconChevronDown, IconStar } from "../home/HeroIcons";
+import { IconStar } from "../home/HeroIcons";
 import "./FilterSidebar.css";
 
 const PRICE_MIN = 50;
@@ -14,30 +14,19 @@ function FilterSidebar({ copy }) {
   const headingId = useId();
   const priceMinId = useId();
   const priceMaxId = useId();
-  const guestRatingId = useId();
 
   const [priceMin, setPriceMin] = useState(120);
   const [priceMax, setPriceMax] = useState(480);
   const [starRating, setStarRating] = useState(null);
-  const [propertyTypes, setPropertyTypes] = useState({
-    hotel: true,
-    resort: true,
-  });
-  const [amenities, setAmenities] = useState({
-    pool: true,
-    breakfast: true,
-  });
-  const [guestRating, setGuestRating] = useState("any");
+  const [amenities, setAmenities] = useState({});
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (priceMin !== PRICE_MIN || priceMax !== PRICE_MAX) count += 1;
     if (starRating) count += 1;
-    if (Object.values(propertyTypes).some(Boolean)) count += 1;
     if (Object.values(amenities).some(Boolean)) count += 1;
-    if (guestRating && guestRating !== "any") count += 1;
     return count;
-  }, [priceMin, priceMax, starRating, propertyTypes, amenities, guestRating]);
+  }, [priceMin, priceMax, starRating, amenities]);
 
   const rangeLeftPct = ((priceMin - PRICE_MIN) / (PRICE_MAX - PRICE_MIN)) * 100;
   const rangeRightPct =
@@ -52,8 +41,6 @@ function FilterSidebar({ copy }) {
     setPriceMax(next);
   };
 
-  const togglePropertyType = (key) =>
-    setPropertyTypes((prev) => ({ ...prev, [key]: !prev[key] }));
   const toggleAmenity = (key) =>
     setAmenities((prev) => ({ ...prev, [key]: !prev[key] }));
 
@@ -61,9 +48,7 @@ function FilterSidebar({ copy }) {
     setPriceMin(PRICE_MIN);
     setPriceMax(PRICE_MAX);
     setStarRating(null);
-    setPropertyTypes({});
     setAmenities({});
-    setGuestRating("any");
   };
 
   return (
@@ -173,37 +158,6 @@ function FilterSidebar({ copy }) {
       </section>
 
       <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">{copy.propertyType}</h3>
-        <ul className="filter-sidebar__checklist">
-          {copy.propertyTypeOptions.map(({ key, label }) => (
-            <li key={key}>
-              <label className="filter-sidebar__check">
-                <input
-                  type="checkbox"
-                  className="filter-sidebar__check-input"
-                  checked={Boolean(propertyTypes[key])}
-                  onChange={() => togglePropertyType(key)}
-                />
-                <span className="filter-sidebar__check-box" aria-hidden="true">
-                  <svg viewBox="0 0 16 16" width="12" height="12">
-                    <path
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 8.5l3.2 3.2L13 4.8"
-                    />
-                  </svg>
-                </span>
-                <span className="filter-sidebar__check-label">{label}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="filter-sidebar__section">
         <h3 className="filter-sidebar__section-title">{copy.amenities}</h3>
         <ul className="filter-sidebar__checklist">
           {copy.amenityOptions.map(({ key, label, icon }) => (
@@ -238,33 +192,6 @@ function FilterSidebar({ copy }) {
             </li>
           ))}
         </ul>
-      </section>
-
-      <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">{copy.guestRating}</h3>
-        <div className="filter-sidebar__select-wrap">
-          <label
-            htmlFor={guestRatingId}
-            className="filter-sidebar__visually-hidden"
-          >
-            {copy.guestRating}
-          </label>
-          <select
-            id={guestRatingId}
-            className="filter-sidebar__select"
-            value={guestRating}
-            onChange={(e) => setGuestRating(e.target.value)}
-          >
-            {copy.guestRatingOptions.map(({ value, label }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <span className="filter-sidebar__select-chevron" aria-hidden="true">
-            <IconChevronDown className="filter-sidebar__select-chevron-icon" />
-          </span>
-        </div>
       </section>
 
       <div className="filter-sidebar__apply">
