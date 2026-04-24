@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { appendLocalReservation } from "../../bookings/localReservations";
 import { createReservation } from "../../services/api";
 import "./BookingSummaryCard.css";
 
@@ -136,29 +137,33 @@ function BookingSummaryCard({
           }
         : null;
 
+      const confirmationState = {
+        reference,
+        total: Number(total),
+        hotel: hotelPayload,
+        roomType: roomType || null,
+        checkIn,
+        checkOut,
+        guests: guestCount,
+        nights: Number(nights),
+        pricePerNight: Number(pricePerNight),
+        cleaningFee: Number(cleaningFee),
+        serviceFee: Number(serviceFee),
+        taxes: Number(taxes),
+        guestEmail:
+          typeof guestEmail === "string" && guestEmail.trim() !== ""
+            ? guestEmail.trim()
+            : null,
+        paymentMethod,
+        paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
+        checkInTime: "15:00",
+        checkOutTime: "11:00",
+      };
+
+      appendLocalReservation(confirmationState);
+
       navigate("/confirmation", {
-        state: {
-          reference,
-          total: Number(total),
-          hotel: hotelPayload,
-          roomType: roomType || null,
-          checkIn,
-          checkOut,
-          guests: guestCount,
-          nights: Number(nights),
-          pricePerNight: Number(pricePerNight),
-          cleaningFee: Number(cleaningFee),
-          serviceFee: Number(serviceFee),
-          taxes: Number(taxes),
-          guestEmail:
-            typeof guestEmail === "string" && guestEmail.trim() !== ""
-              ? guestEmail.trim()
-              : null,
-          paymentMethod,
-          paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
-          checkInTime: "15:00",
-          checkOutTime: "11:00",
-        },
+        state: confirmationState,
       });
     } catch (err) {
       console.error("Reservation failed:", err);
