@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
-import { IconStar } from "../components/home/HeroIcons";
+import {
+  IconCalendar,
+  IconMapPin,
+  IconStar,
+  IconTicket,
+  IconWallet,
+} from "../components/home/HeroIcons";
 import {
   getLocalReservations,
   LOCAL_RESERVATIONS_KEY,
@@ -70,139 +76,16 @@ function fmtMoney(n) {
   return `$${Number(n).toLocaleString("es-ES")}`;
 }
 
-function fmtMoneyCompact(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  const num = Number(n);
-  if (num >= 1000) return `$${(num / 1000).toFixed(1)}k`;
-  return fmtMoney(num);
-}
-
-function useTripStats(reservations) {
+function useUpcomingPastCounts(reservations) {
   return useMemo(() => {
-    const year = new Date().getFullYear();
     let upcoming = 0;
     let past = 0;
-    const destinations = new Set();
-    let ratingSum = 0;
-    let ratingCount = 0;
-    let totalYear = 0;
-    let bookingsThisYear = 0;
-
     for (const r of reservations) {
       if (isReservationPast(r)) past += 1;
       else upcoming += 1;
-
-      const loc = r.hotel && typeof r.hotel.location === "string" ? r.hotel.location.trim() : "";
-      if (loc) destinations.add(loc);
-
-      const rt =
-        r.hotel && typeof r.hotel.rating === "number" && !Number.isNaN(r.hotel.rating)
-          ? r.hotel.rating
-          : null;
-      if (rt != null) {
-        ratingSum += rt;
-        ratingCount += 1;
-      }
-
-      const ci = parseISODate(r.checkIn);
-      if (ci && ci.getFullYear() === year && typeof r.total === "number" && !Number.isNaN(r.total)) {
-        totalYear += r.total;
-        bookingsThisYear += 1;
-      }
     }
-
-    const avgRating = ratingCount ? Math.round((ratingSum / ratingCount) * 10) / 10 : null;
-    const avgPerTrip =
-      bookingsThisYear > 0 ? Math.round(totalYear / bookingsThisYear) : null;
-
-    return {
-      upcoming,
-      past,
-      distinctDestinations: destinations.size,
-      avgRating,
-      totalSpentYear: totalYear,
-      year,
-      bookingsThisYear,
-      avgPerTrip,
-    };
+    return { upcoming, past };
   }, [reservations]);
-}
-
-function IconSuitcase({ className }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M10 18h4v-2h-4v2zm-7-12v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-4V3c0-.55-.45-1-1-1H8c-.55 0-1 .45-1 1v1H5c-1.1 0-2 .9-2 2zm2 0h14v14H5V6zm8-2V4H11v2h2z"
-      />
-    </svg>
-  );
-}
-
-function IconGlobe({ className }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.45 2.1 1.17 2.83l1.07-1.07-1.24-1.24zm6.9-1.08c-.31-.11-.65-.17-1-.17h-1.5v-2h2.34l1.39-1.39C18.4 14.55 19 13.33 19 12c0-1.88-.73-3.59-1.91-4.89L15.5 9H14V7.5c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5V9h-2V6.5c0-.28-.22-.5-.5-.5h-1c-.28 0-.5.22-.5.5V9H7.5L6.11 7.61C7.27 5.73 9.46 4.5 12 4.5c2.17 0 4.11.94 5.47 2.43L16.5 8H15v4h3.32l.91.91c.12.57.21 1.16.21 1.79 0 2.41-.97 4.59-2.53 6.17l-1.2-1.2z"
-      />
-    </svg>
-  );
-}
-
-function IconMoneyBag({ className }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2h2.09c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.1c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"
-      />
-    </svg>
-  );
-}
-
-function IconMapPinMuted({ className }) {
-  return (
-    <svg className={className} width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"
-      />
-    </svg>
-  );
-}
-
-function IconCalendarMuted({ className }) {
-  return (
-    <svg className={className} width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"
-      />
-    </svg>
-  );
-}
-
-function IconTicket({ className }) {
-  return (
-    <svg className={className} width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-2 .89-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-4v12H4V6h16zm-2 6h-2v2h2v-2zm0-4h-2v2h2V8z"
-      />
-    </svg>
-  );
-}
-
-function IconWallet({ className }) {
-  return (
-    <svg className={className} width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8h-10v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
-      />
-    </svg>
-  );
 }
 
 function IconPlane({ className }) {
@@ -212,15 +95,6 @@ function IconPlane({ className }) {
         fill="currentColor"
         d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"
       />
-    </svg>
-  );
-}
-
-function IconSearchMuted({ className }) {
-  return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M16 16l5 5" />
     </svg>
   );
 }
@@ -301,14 +175,14 @@ function TripCard({ r, index, hotelId }) {
       <div className="my-trips-card__main">
         <h2 className="my-trips-card__title">{name}</h2>
         <p className="my-trips-card__row my-trips-card__row--muted">
-          <IconMapPinMuted className="my-trips-card__row-icon" />
+          <IconMapPin className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
             {locationText}
             {roomType ? ` · ${roomType}` : ""}
           </span>
         </p>
         <p className="my-trips-card__row">
-          <IconCalendarMuted className="my-trips-card__row-icon" />
+          <IconCalendar className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
             {formatDateRangeShort(checkIn, checkOut)}
             {nights != null
@@ -320,18 +194,18 @@ function TripCard({ r, index, hotelId }) {
           </span>
         </p>
         <p className="my-trips-card__row my-trips-card__row--ref">
-          <IconTicket className="my-trips-card__row-icon my-trips-card__row-icon--ticket" />
+          <IconTicket className="my-trips-card__row-icon" aria-hidden="true" />
           <span>#{ref || "—"}</span>
         </p>
         <p className="my-trips-card__row my-trips-card__row--payment">
-          <IconWallet className="my-trips-card__row-icon my-trips-card__row-icon--wallet" />
+          <IconWallet className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
             {fmtMoney(r.total)} pagado · {paymentLabel}
           </span>
         </p>
 
-        <div className="my-trips-card__actions">
-          {hotelId ? (
+        {hotelId ? (
+          <div className="my-trips-card__actions">
             <Link
               className="my-trips-card__btn my-trips-card__btn--primary"
               to={`/hotel/${encodeURIComponent(hotelId)}`}
@@ -341,40 +215,8 @@ function TripCard({ r, index, hotelId }) {
                 →
               </span>
             </Link>
-          ) : null}
-          <button
-            type="button"
-            className="my-trips-card__btn my-trips-card__btn--ghost"
-            disabled
-            title="Próximamente"
-          >
-            QR check-in
-          </button>
-          <button
-            type="button"
-            className="my-trips-card__btn my-trips-card__btn--ghost"
-            disabled
-            title="Próximamente"
-          >
-            Modificar
-          </button>
-          <button
-            type="button"
-            className="my-trips-card__btn my-trips-card__btn--ghost"
-            disabled
-            title="Próximamente"
-          >
-            Calendario
-          </button>
-          <button
-            type="button"
-            className="my-trips-card__btn my-trips-card__btn--danger"
-            disabled
-            title="Próximamente"
-          >
-            Cancelar
-          </button>
-        </div>
+          </div>
+        ) : null}
       </div>
 
       <aside className="my-trips-card__aside" aria-label="Resumen de pago">
@@ -400,7 +242,6 @@ function MyTripsPage() {
     getLocalReservations(),
   );
   const [tab, setTab] = useState("upcoming");
-  const [query, setQuery] = useState("");
   const [sort, setSort] = useState("checkin-asc");
 
   useEffect(() => {
@@ -439,22 +280,17 @@ function MyTripsPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, [navigate]);
 
-  const stats = useTripStats(reservations);
+  const { upcoming: upcomingCount, past: pastCount } =
+    useUpcomingPastCounts(reservations);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     return reservations.filter((r) => {
       const past = isReservationPast(r);
       if (tab === "upcoming" && past) return false;
       if (tab === "past" && !past) return false;
-      if (!q) return true;
-      const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
-      const name = (hotel?.name ?? "").toLowerCase();
-      const loc = (typeof hotel?.location === "string" ? hotel.location : "").toLowerCase();
-      const ref = (r.reference != null ? String(r.reference) : "").toLowerCase();
-      return name.includes(q) || loc.includes(q) || ref.includes(q);
+      return true;
     });
-  }, [reservations, tab, query]);
+  }, [reservations, tab]);
 
   const sorted = useMemo(() => {
     const arr = [...filtered];
@@ -486,53 +322,6 @@ function MyTripsPage() {
 
           {hasAny ? (
             <>
-              <section className="my-trips-stats" aria-label="Resumen">
-                <article className="my-trips-stat">
-                  <span className="my-trips-stat__icon-wrap" aria-hidden="true">
-                    <IconSuitcase className="my-trips-stat__icon" />
-                  </span>
-                  <p className="my-trips-stat__value">{stats.upcoming}</p>
-                  <p className="my-trips-stat__label">Próximos viajes</p>
-                  <p className="my-trips-stat__meta my-trips-stat__meta--success">
-                    {stats.bookingsThisYear > 0
-                      ? `${stats.bookingsThisYear} en ${stats.year}`
-                      : `Ninguno en ${stats.year}`}
-                  </p>
-                </article>
-                <article className="my-trips-stat">
-                  <span className="my-trips-stat__icon-wrap" aria-hidden="true">
-                    <IconGlobe className="my-trips-stat__icon" />
-                  </span>
-                  <p className="my-trips-stat__value">{stats.distinctDestinations}</p>
-                  <p className="my-trips-stat__label">Destinos distintos</p>
-                  <p className="my-trips-stat__meta">En tus reservas guardadas</p>
-                </article>
-                <article className="my-trips-stat">
-                  <span className="my-trips-stat__icon-wrap" aria-hidden="true">
-                    <IconStar className="my-trips-stat__icon" />
-                  </span>
-                  <p className="my-trips-stat__value">
-                    {stats.avgRating != null ? stats.avgRating.toFixed(1) : "—"}
-                  </p>
-                  <p className="my-trips-stat__label">Valoración media</p>
-                  <p className="my-trips-stat__meta">Según alojamientos reservados</p>
-                </article>
-                <article className="my-trips-stat">
-                  <span className="my-trips-stat__icon-wrap" aria-hidden="true">
-                    <IconMoneyBag className="my-trips-stat__icon" />
-                  </span>
-                  <p className="my-trips-stat__value">
-                    {fmtMoneyCompact(stats.totalSpentYear)}
-                  </p>
-                  <p className="my-trips-stat__label">Total gastado ({stats.year})</p>
-                  <p className="my-trips-stat__meta">
-                    {stats.avgPerTrip != null
-                      ? `Prom. ${fmtMoney(stats.avgPerTrip)} / reserva`
-                      : "Sin datos del año"}
-                  </p>
-                </article>
-              </section>
-
               <div className="my-trips-toolbar">
                 <div className="my-trips-tabs" role="tablist" aria-label="Filtrar por estado">
                   <button
@@ -548,7 +337,7 @@ function MyTripsPage() {
                       setSort("checkin-asc");
                     }}
                   >
-                    Próximos ({stats.upcoming})
+                    Próximos ({upcomingCount})
                   </button>
                   <button
                     type="button"
@@ -563,22 +352,10 @@ function MyTripsPage() {
                       setSort("checkin-desc");
                     }}
                   >
-                    Pasados ({stats.past})
+                    Pasados ({pastCount})
                   </button>
                 </div>
                 <div className="my-trips-toolbar__end">
-                  <label className="my-trips-search">
-                    <IconSearchMuted className="my-trips-search__icon" />
-                    <span className="visually-hidden">Buscar en tus viajes</span>
-                    <input
-                      type="search"
-                      className="my-trips-search__input"
-                      placeholder="Buscar viajes…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      autoComplete="off"
-                    />
-                  </label>
                   <div className="my-trips-sort-wrap">
                     <label htmlFor="my-trips-sort" className="visually-hidden">
                       Ordenar
@@ -598,7 +375,7 @@ function MyTripsPage() {
 
               {sorted.length === 0 ? (
                 <p className="my-trips__empty-list">
-                  No hay reservas en esta pestaña con los filtros actuales.
+                  No hay reservas en esta pestaña.
                 </p>
               ) : (
                 <ul className="my-trips__list" aria-label="Reservas">
