@@ -101,6 +101,20 @@ export async function createBooking(bookingInfo) {
   });
 }
 
+export async function processPayment(paymentInfo) {
+  return apiFetch("/service-core/reservation-flow/payment", {
+    method: "POST",
+    body: JSON.stringify(paymentInfo),
+  });
+}
+
+export async function registerUser(userData) {
+  return apiFetch("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
+}
+
 /**
  * POST /service-core/reservation-flow/create
  * Create a new reservation.

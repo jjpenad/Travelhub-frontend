@@ -169,6 +169,7 @@ function CheckoutPage() {
               <BookingSummaryCard
                 hotel={hotel}
                 hotelId={hotelId}
+                reservationId={detailState?.bookingResponse?.result?.reservation_id || ""}
                 roomType={summary.roomType}
                 roomTypeId={detailState?.roomTypeId || ""}
                 checkIn={summary.checkIn}
