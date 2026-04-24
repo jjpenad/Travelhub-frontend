@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import "./AuthPage.css";
 
 function isValidEmail(email) {
@@ -142,8 +143,8 @@ function SignupPage() {
         </p>
         <p className="auth-card__legal">
           Al registrarte, aceptas los{" "}
-          <Link to="/">Términos de uso</Link> y la{" "}
-          <Link to="/">Política de privacidad</Link>.
+          <Link to={PATH_TRAVELERS_HOME}>Términos de uso</Link> y la{" "}
+          <Link to={PATH_TRAVELERS_HOME}>Política de privacidad</Link>.
         </p>
       </div>
     </AuthSplitLayout>

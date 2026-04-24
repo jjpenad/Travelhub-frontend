@@ -7,6 +7,7 @@ import {
   IconSearch,
   IconUsers,
 } from "../home/HeroIcons";
+import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import {
   formatFriendlyDate,
   formatGuestsLabel,
@@ -34,7 +35,7 @@ function SearchSummary() {
   const checkOutDisplay = formatFriendlyDate(checkOut);
 
   const handleEditSearch = useCallback(() => {
-    navigate({ pathname: "/", search: searchParams.toString() });
+    navigate({ pathname: PATH_TRAVELERS_HOME, search: searchParams.toString() });
   }, [navigate, searchParams]);
 
   return (

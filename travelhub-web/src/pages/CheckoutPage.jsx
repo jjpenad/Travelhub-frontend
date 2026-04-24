@@ -6,6 +6,7 @@ import GuestForm from "../components/checkout/GuestForm";
 import PaymentForm from "../components/checkout/PaymentForm";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
 // TODO(backend): mockHotels removed — hotel data now comes from location.state via BookingWidget
 import "./CheckoutPage.css";
 
@@ -112,7 +113,7 @@ function CheckoutPage() {
       <PageContainer>
         <div className="checkout">
           <nav className="checkout__breadcrumb" aria-label="Migas de pan">
-            <Link className="checkout__breadcrumb-link" to="/">
+            <Link className="checkout__breadcrumb-link" to={PATH_TRAVELERS_HOME}>
               Inicio
             </Link>
             <span className="checkout__breadcrumb-sep" aria-hidden="true">

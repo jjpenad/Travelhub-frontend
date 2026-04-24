@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 
 const features = [
@@ -25,7 +26,7 @@ function AuthMarketingAside() {
     <aside className="auth-marketing" aria-label="TravelHub">
       <div className="auth-marketing__bg" aria-hidden="true" />
       <div className="auth-marketing__inner">
-        <Link className="auth-marketing__brand" to="/">
+        <Link className="auth-marketing__brand" to={PATH_TRAVELERS_HOME}>
           <span className="auth-marketing__logo-wrap" aria-hidden="true">
             <img
               className="auth-marketing__logo"
