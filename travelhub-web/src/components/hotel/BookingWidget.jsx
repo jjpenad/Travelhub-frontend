@@ -64,7 +64,7 @@ function BookingWidget({
   roomTypeId = "",
 }) {
   const navigate = useNavigate();
-  const [userState, setUserState] = useState(null);
+  const [, setUserState] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ show: false, message: "" });
   const pricePerNight = pricePerNightProp ?? hotel?.price ?? 380;
@@ -99,7 +99,7 @@ function BookingWidget({
       : hotel?.availableRooms ?? [];
 
   const hotelId = hotel?.id;
-  const roomType =
+  const _roomType =
     availableRooms.length > 0
       ? (selectedRoom ?? availableRooms[0] ?? "")
       : "";

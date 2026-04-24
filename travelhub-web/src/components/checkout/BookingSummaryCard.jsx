@@ -67,10 +67,10 @@ function formatDateLabel(iso) {
 
 function BookingSummaryCard({
   hotel,
-  hotelId = "",
+  hotelId: _hotelId = "",
   reservationId = "",
   roomType,
-  roomTypeId = "",
+  roomTypeId: _roomTypeId = "",
   checkIn = "",
   checkOut = "",
   guests: guestsProp = 2,
