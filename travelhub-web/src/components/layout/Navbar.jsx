@@ -1,5 +1,14 @@
-import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  AUTH_EMAIL_KEY,
+  AUTH_ROLE_KEY,
+  clearSessionUser,
+  isLoggedIn,
+} from "../../auth/sessionAuth";
+import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
+import NavbarUserIcon from "./NavbarUserIcon";
 import "./Navbar.css";
 
 /** MVP: oculta Estancias y Mis viajes; pon en true para mostrar el menú completo */
@@ -18,13 +27,36 @@ const navLinks = [
 
 function Navbar() {
   const { pathname } = useLocation();
-  const isHome = pathname === "/";
+  const navigate = useNavigate();
+  const isHome = pathname === PATH_TRAVELERS_HOME;
+  const [, setSessionBump] = useState(0);
+  const loggedIn = isLoggedIn();
+
+  useEffect(() => {
+    setSessionBump((b) => b + 1);
+  }, [pathname]);
+
+  useEffect(() => {
+    function onStorage(e) {
+      if (e.key === AUTH_ROLE_KEY || e.key === AUTH_EMAIL_KEY) {
+        setSessionBump((b) => b + 1);
+      }
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  function handleLogout() {
+    clearSessionUser();
+    setSessionBump((b) => b + 1);
+    navigate(PATH_TRAVELERS_HOME, { replace: true });
+  }
 
   return (
     <header className="navbar">
       <div className="navbar__inner navbar__inner--compact">
         <div className="navbar__start">
-          <a className="navbar__brand" href="/">
+          <Link className="navbar__brand" to={PATH_TRAVELERS_HOME}>
             <span className="navbar__brand-container">
               <span className="navbar__logo" aria-hidden="true">
                 <img
@@ -40,7 +72,7 @@ function Navbar() {
                 <span className="navbar__brand-text--accent">Hub</span>
               </span>
             </span>
-          </a>
+          </Link>
 
           <nav className="navbar__menu" aria-label="Principal">
             <ul className="navbar__menu-list">
@@ -49,7 +81,7 @@ function Navbar() {
                   className={
                     "navbar__link" + (isHome ? " navbar__link--active" : "")
                   }
-                  to="/#explore"
+                  to={`${PATH_TRAVELERS_HOME}#explore`}
                   aria-current={isHome ? "page" : undefined}
                 >
                   Explorar
@@ -88,7 +120,24 @@ function Navbar() {
           </form>
         ) : null}
 
-        {showAuthButtons ? (
+        {loggedIn ? (
+          <div className="navbar__actions navbar__actions--logged">
+            <button
+              type="button"
+              className="navbar__btn navbar__btn--logout"
+              onClick={handleLogout}
+            >
+              Cerrar sesión
+            </button>
+            <span
+              className="navbar__user-badge"
+              role="img"
+              aria-label="Sesión iniciada"
+            >
+              <NavbarUserIcon className="navbar__user-badge-icon" />
+            </span>
+          </div>
+        ) : showAuthButtons ? (
           <div className="navbar__actions">
             <Link
               className="navbar__btn navbar__btn--primary navbar__sign-in"

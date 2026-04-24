@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import AuthMarketingAside from "./AuthMarketingAside";
 
 function AuthSplitLayout({ children }) {
@@ -14,13 +15,13 @@ function AuthSplitLayout({ children }) {
             © {new Date().getFullYear()} <strong>TravelHub</strong>
           </p>
           <nav className="auth-split__footer-nav" aria-label="Legal">
-            <Link to="/">Privacidad</Link>
+            <Link to={PATH_TRAVELERS_HOME}>Privacidad</Link>
             <span aria-hidden="true">·</span>
-            <Link to="/">Términos</Link>
+            <Link to={PATH_TRAVELERS_HOME}>Términos</Link>
             <span aria-hidden="true">·</span>
-            <Link to="/">Ayuda</Link>
+            <Link to={PATH_TRAVELERS_HOME}>Ayuda</Link>
             <span aria-hidden="true">·</span>
-            <Link to="/">Contacto</Link>
+            <Link to={PATH_TRAVELERS_HOME}>Contacto</Link>
           </nav>
           <p className="auth-split__footer-tagline">Hecho con cuidado para viajeros</p>
         </div>

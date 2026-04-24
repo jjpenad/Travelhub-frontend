@@ -222,6 +222,32 @@
   align-items: center;
 }
 
+/* Sesión iniciada: derecha del header (misma zona que login/registro) */
+.navbar__actions--logged {
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+}
+
+.navbar__user-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, #ffffff 88%, var(--border));
+  color: #f97316;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.navbar__user-badge-icon {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 .navbar__btn {
   display: inline-flex;
   align-items: center;
@@ -272,6 +298,24 @@
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
+/* Cerrar sesión: mismo cuerpo que Registrarse / Iniciar sesión, color naranja */
+.navbar__btn--logout {
+  color: #ffffff;
+  background: #f97316;
+  border: 1px solid color-mix(in srgb, #ea580c 70%, #ffffff 30%);
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.38);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.navbar__btn--logout:hover {
+  color: #ffffff;
+  background: #fb923c;
+  border-color: color-mix(in srgb, #fb923c 75%, #ffffff 25%);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.45);
+}
+
 .navbar__btn--primary {
   color: #fff;
   background: var(--accent);
@@ -286,7 +330,8 @@
 
 .navbar__btn--primary:active,
 .navbar__btn--ghost:active,
-.navbar__btn--register:active {
+.navbar__btn--register:active,
+.navbar__btn--logout:active {
   transform: scale(0.98);
 }
 
@@ -294,6 +339,11 @@
 .navbar__btn--ghost:focus-visible,
 .navbar__btn--register:focus-visible {
   outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}
+
+.navbar__btn--logout:focus-visible {
+  outline: 2px solid #fdba74;
   outline-offset: 2px;
 }
 

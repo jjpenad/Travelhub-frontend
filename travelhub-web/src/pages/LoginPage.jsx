@@ -1,7 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
+import {
+  ROLE_HOTEL,
+  ROLE_TRAVELER,
+  setSessionUser,
+} from "../auth/sessionAuth";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import "./AuthPage.css";
+
+/** Demo portal hoteles (sustituir por respuesta del API) */
+const HOTEL_PORTAL_EMAIL = "admin@gmail.com";
+const HOTEL_PORTAL_PASSWORD = "12345678";
+
+/** Demo portal viajeros (sustituir por respuesta del API) */
+const TRAVELER_PORTAL_EMAIL = "travel@travel.com";
+const TRAVELER_PORTAL_PASSWORD = "12345678";
 
 function isValidEmail(email) {
   const t = email.trim();
@@ -27,6 +41,7 @@ function IconEye({ open }) {
 }
 
 function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -44,7 +59,39 @@ function LoginPage() {
       setError("Introduce tu contraseña.");
       return;
     }
-    // TODO(backend): llamar al API de autenticación
+
+    const emailNorm = email.trim().toLowerCase();
+
+    if (emailNorm === HOTEL_PORTAL_EMAIL) {
+      if (password === HOTEL_PORTAL_PASSWORD) {
+        setSessionUser({
+          role: ROLE_HOTEL,
+          email: emailNorm,
+          remember,
+        });
+        navigate("/portal-hoteles", { replace: true });
+      } else {
+        setError("Contraseña incorrecta.");
+      }
+      return;
+    }
+
+    if (emailNorm === TRAVELER_PORTAL_EMAIL) {
+      if (password === TRAVELER_PORTAL_PASSWORD) {
+        setSessionUser({
+          role: ROLE_TRAVELER,
+          email: emailNorm,
+          remember,
+        });
+        navigate(PATH_TRAVELERS_HOME, { replace: true });
+      } else {
+        setError("Contraseña incorrecta.");
+      }
+      return;
+    }
+
+    setError("Correo o contraseña incorrectos.");
+    // TODO(backend): autenticación real y rol desde el servidor
   }
 
   return (
@@ -107,7 +154,7 @@ function LoginPage() {
               />
               Recordarme
             </label>
-            <Link className="auth-card__link-muted" to="/">
+            <Link className="auth-card__link-muted" to={PATH_TRAVELERS_HOME}>
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
@@ -123,8 +170,8 @@ function LoginPage() {
         </p>
         <p className="auth-card__legal">
           Al continuar, aceptas los{" "}
-          <Link to="/">Términos de uso</Link> y la{" "}
-          <Link to="/">Política de privacidad</Link> de TravelHub.
+          <Link to={PATH_TRAVELERS_HOME}>Términos de uso</Link> y la{" "}
+          <Link to={PATH_TRAVELERS_HOME}>Política de privacidad</Link> de TravelHub.
         </p>
       </div>
     </AuthSplitLayout>

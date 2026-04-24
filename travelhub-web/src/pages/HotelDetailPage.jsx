@@ -7,6 +7,7 @@ import HotelGallery from "../components/hotel/HotelGallery";
 import HotelHeader from "../components/hotel/HotelHeader";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getHotelAvailability } from "../services/api";
 import { parseBookingFromSearchParams } from "../utils/searchUrlParams";
 import "./HotelDetailPage.css";
@@ -32,7 +33,9 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
           <nav className="hotel-detail__breadcrumb" aria-label="Migas de pan">
             <ol className="hotel-detail__breadcrumb-list">
               <li className="hotel-detail__breadcrumb-item">
-                <Link className="hotel-detail__breadcrumb-link" to="/">Inicio</Link>
+                <Link className="hotel-detail__breadcrumb-link" to={PATH_TRAVELERS_HOME}>
+                  Inicio
+                </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
                 <Link className="hotel-detail__breadcrumb-link" to={`/search${searchSuffix}`}>
