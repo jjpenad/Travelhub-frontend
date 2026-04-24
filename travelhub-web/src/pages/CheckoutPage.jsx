@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import BookingSummaryCard from "../components/checkout/BookingSummaryCard";
 import CheckoutStepper from "../components/checkout/CheckoutStepper";
@@ -21,63 +21,30 @@ const DEFAULT_TAXES = 62;
  * Si no hay state (p. ej. F5), los precios y el nombre salen de mockHotels[hotelId].
  */
 function buildBookingSummaryData(locationState, hotelFromMock) {
-  const nav =
-    locationState != null && typeof locationState === "object"
-      ? locationState
-      : {};
+  const nav = locationState || {};
+  const bookingRes = nav.bookingResponse?.result || {};
+  const pricing = bookingRes.pricing || {};
 
-  const nightsRaw = nav.nights;
-  const nights =
-    nightsRaw != null && Number.isFinite(Number(nightsRaw))
-      ? Number(nightsRaw)
-      : DEFAULT_NIGHTS;
+  // Priorizamos la información del backend (bookingResponse)
+  const nights = Number(pricing.nights || nav.nights || DEFAULT_NIGHTS);
+  const guests = Number(pricing.guests || nav.guests || DEFAULT_GUESTS);
+  const pricePerNight = Number(pricing.price_per_night || nav.pricePerNight || hotelFromMock?.price || 0);
+  const cleaningFee = Number(nav.cleaningFee || DEFAULT_CLEANING);
+  const serviceFee = Number(nav.serviceFee || DEFAULT_SERVICE);
+  const taxes = Number(pricing.taxes || nav.taxes || DEFAULT_TAXES);
+  
+  const checkIn = bookingRes.check_in || nav.checkIn || "";
+  const checkOut = bookingRes.check_out || nav.checkOut || "";
+  
+  const roomType = bookingRes.room_type?.name || nav.roomType || hotelFromMock?.availableRooms?.[0] || "";
+  
+  const total = Number(pricing.total || nav.total || (pricePerNight * nights + cleaningFee + serviceFee + taxes));
 
-  const guestsRaw = nav.guests;
-  const guests =
-    guestsRaw != null && Number.isFinite(Number(guestsRaw))
-      ? Number(guestsRaw)
-      : DEFAULT_GUESTS;
-
-  const pricePerNight =
-    nav.pricePerNight != null && Number.isFinite(Number(nav.pricePerNight))
-      ? Number(nav.pricePerNight)
-      : hotelFromMock?.price ?? 0;
-
-  const cleaningFee =
-    nav.cleaningFee != null && Number.isFinite(Number(nav.cleaningFee))
-      ? Number(nav.cleaningFee)
-      : DEFAULT_CLEANING;
-
-  const serviceFee =
-    nav.serviceFee != null && Number.isFinite(Number(nav.serviceFee))
-      ? Number(nav.serviceFee)
-      : DEFAULT_SERVICE;
-
-  const taxes =
-    nav.taxes != null && Number.isFinite(Number(nav.taxes))
-      ? Number(nav.taxes)
-      : DEFAULT_TAXES;
-
-  const checkIn =
-    typeof nav.checkIn === "string" ? nav.checkIn : "";
-  const checkOut =
-    typeof nav.checkOut === "string" ? nav.checkOut : "";
-
-  const roomTypeFromNav = nav.roomType;
-  const roomType =
-    typeof roomTypeFromNav === "string" && roomTypeFromNav.trim() !== ""
-      ? roomTypeFromNav
-      : hotelFromMock?.availableRooms?.[0] ?? "";
-
-  const roomSubtotal = pricePerNight * nights;
-  const totalFromNav = nav.total;
-  const total =
-    totalFromNav != null && Number.isFinite(Number(totalFromNav))
-      ? Number(totalFromNav)
-      : roomSubtotal + cleaningFee + serviceFee + taxes;
+  // Combinamos la información del hotel del backend con el mock si es necesario
+  const hotel = bookingRes.hotel || hotelFromMock;
 
   return {
-    hotel: hotelFromMock,
+    hotel,
     roomType,
     checkIn,
     checkOut,
@@ -98,10 +65,31 @@ function CheckoutPage() {
   const [paymentFormValid, setPaymentFormValid] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [cardNumber, setCardNumber] = useState("");
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutos en segundos
   const { hotelId } = useParams();
   const location = useLocation();
   /** Datos enviados desde BookingWidget al navegar a /checkout/:hotelId */
   const detailState = location.state;
+  
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
+  const getTimerColor = () => {
+    if (timeLeft >= 240) return "#22c55e"; // Verde (5:00 - 4:00)
+    if (timeLeft >= 120) return "#eab308"; // Amarillo (4:00 - 2:00)
+    return "#ef4444"; // Rojo (< 2:00)
+  };
 
   const summary = buildBookingSummaryData(detailState, null);
 
@@ -153,6 +141,31 @@ function CheckoutPage() {
               />
             </div>
             <div className="checkout__aside">
+              <div className="checkout__timer" style={{
+                background: "#fff",
+                padding: "1rem",
+                borderRadius: "12px",
+                marginBottom: "1rem",
+                border: "1px solid #e5e7eb",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "0.25rem",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+              }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Tiempo restante para completar la reserva
+                </span>
+                <span style={{ 
+                  fontSize: "1.75rem", 
+                  fontWeight: 800, 
+                  color: getTimerColor(),
+                  fontVariantNumeric: "tabular-nums",
+                  transition: "color 0.3s ease"
+                }}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
               <BookingSummaryCard
                 hotel={hotel}
                 hotelId={hotelId}

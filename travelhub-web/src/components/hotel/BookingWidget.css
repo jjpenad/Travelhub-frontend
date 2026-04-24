@@ -304,3 +304,117 @@
     color: #4ade80;
   }
 }
+
+/* Success Modal */
+.booking-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease;
+}
+
+.booking-modal {
+  background: #fff;
+  padding: 2.5rem;
+  border-radius: 1.5rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.booking-modal__icon {
+  margin-bottom: 1.5rem;
+}
+
+.booking-modal__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1a202c;
+  margin-bottom: 0.75rem;
+}
+
+.booking-modal__text {
+  color: #4a5568;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+.booking-modal__loader {
+  width: 100%;
+  height: 4px;
+  background: #edf2f7;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.booking-modal__loader::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 30%;
+  background: #4caf50;
+  border-radius: 2px;
+  animation: progress 2s linear forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .booking-modal {
+    background: #1e293b;
+  }
+  .booking-modal__title {
+    color: #f1f5f9;
+  }
+  .booking-modal__text {
+    color: #94a3b8;
+  }
+  .booking-modal__loader {
+    background: #334155;
+  }
+}
+
+.booking-modal__button {
+  width: 100%;
+  padding: 0.85rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.booking-modal__button:hover {
+  background: var(--accent-hover);
+}

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatFriendlyDate, formatGuestsLabel } from "../../utils/searchUrlParams";
+import { createBooking } from "../../services/api";
 import "./BookingWidget.css";
 
 /** En `false` se ocultan tarifa de limpieza, tarifa de servicio e impuestos del desglose (y no se suman al total). */
@@ -62,6 +64,9 @@ function BookingWidget({
   roomTypeId = "",
 }) {
   const navigate = useNavigate();
+  const [userState, setUserState] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorModal, setErrorModal] = useState({ show: false, message: "" });
   const pricePerNight = pricePerNightProp ?? hotel?.price ?? 380;
   const rating = ratingProp ?? hotel?.rating ?? 4.9;
   const cancellationText =
@@ -99,32 +104,75 @@ function BookingWidget({
       ? (selectedRoom ?? availableRooms[0] ?? "")
       : "";
 
-  function handleSubmit(e) {
+  const [isBooking, setIsBooking] = useState(false);
+
+  async function handleSubmit(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const checkIn = String(fd.get("checkIn") ?? "");
-    const checkOut = String(fd.get("checkOut") ?? "");
+    
+    const checkIn = String(fd.get("checkIn") ?? defaultCheckIn);
+    const checkOut = String(fd.get("checkOut") ?? defaultCheckOut);
     const guestsRaw = fd.get("guests");
-    const guests = guestsRaw != null ? Number(guestsRaw) : 2;
+    const guests = guestsRaw != null ? Number(guestsRaw) : Number(defaultGuests);
 
-    if (hotelId) {
-      navigate(`/checkout/${hotelId}`, {
-        state: {
-          roomType,
-          roomTypeId,
-          total,
-          nights,
-          guests: Number.isFinite(guests) ? guests : 2,
-          checkIn,
-          checkOut,
-          pricePerNight,
-          cleaningFee: cleaningFeeApplied,
-          serviceFee: serviceFeeApplied,
-          taxes: taxesApplied,
-          roomSubtotal,
-        },
-      });
+    // Validación de datos requeridos
+    if (!hotelId || !roomTypeId || !checkIn || !checkOut) {
+      alert("Por favor completa la selección de fechas y habitación antes de continuar.");
+      return;
     }
+
+    const bookingPayload = {
+      hotel_id: hotelId,
+      room_type_id: roomTypeId,
+      check_in: checkIn,
+      check_out: checkOut,
+      guests: guests,
+      base_price: roomSubtotal.toFixed(2),
+      taxes: taxesApplied.toFixed(2),
+      discounts: "0.00",
+      total_price: total.toFixed(2),
+      currency_code: "USD",
+      special_requests: "" // Se puede expandir en el futuro
+    };
+
+    setIsBooking(true);
+    try {
+      const response = await createBooking(bookingPayload);
+      
+      // Caso 1: La reserva no puede proceder (ej: No hay agenda disponible)
+      if (response.result?.proceed === false) {
+        console.warn("Reserva rechazada:", response.result.message);
+        setErrorModal({ 
+          show: true, 
+          message: response.result.message || "No hay disponibilidad para las fechas seleccionadas." 
+        });
+        return;
+      }
+
+      // Caso 2: Éxito
+      setUserState(response);
+      console.log("Reserva creada con éxito:", response);
+      
+      setShowSuccessModal(true);
+      
+      setTimeout(() => {
+        navigate(`/checkout/${hotelId}`, { 
+          state: { 
+            bookingResponse: response 
+          } 
+        });
+      }, 2000);
+      
+    } catch (err) {
+      console.error("Error al crear la reserva:", err);
+      setErrorModal({ 
+        show: true, 
+        message: "Hubo un problema al procesar tu reserva. Por favor intenta de nuevo." 
+      });
+    } finally {
+      setIsBooking(false);
+    }
+    
     onReserve?.(e);
   }
 
@@ -237,9 +285,13 @@ function BookingWidget({
           </div>
         </div>
 
-        <button type="submit" className="booking-widget__reserve">
+        <button 
+          type="submit" 
+          className="booking-widget__reserve"
+          disabled={isBooking}
+        >
           <IconLock className="booking-widget__reserve-icon" />
-          Reservar ahora
+          {isBooking ? "Procesando..." : "Reservar ahora"}
         </button>
       </form>
 
@@ -250,6 +302,44 @@ function BookingWidget({
           <span>Pago seguro con SSL</span>
         </p>
       </footer>
+
+      {showSuccessModal && (
+        <div className="booking-modal-overlay">
+          <div className="booking-modal">
+            <div className="booking-modal__icon">
+              <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#4caf50" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+              </svg>
+            </div>
+            <h3 className="booking-modal__title">¡Ya está hecha la reserva!</h3>
+            <p className="booking-modal__text">Estamos preparando todo para tu viaje. Redirigiéndote al pago...</p>
+            <div className="booking-modal__loader"></div>
+          </div>
+        </div>
+      )}
+
+      {errorModal.show && (
+        <div className="booking-modal-overlay">
+          <div className="booking-modal booking-modal--error">
+            <div className="booking-modal__icon">
+              <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <h3 className="booking-modal__title">No se pudo completar</h3>
+            <p className="booking-modal__text">{errorModal.message}</p>
+            <button 
+              className="booking-modal__button" 
+              onClick={() => {
+                setErrorModal({ show: false, message: "" });
+                navigate("/");
+              }}
+            >
+              Volver a buscar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
