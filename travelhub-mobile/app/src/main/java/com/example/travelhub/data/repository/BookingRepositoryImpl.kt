@@ -1,5 +1,6 @@
 package com.example.travelhub.data.repository
 
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.local.dao.BookingDao
 import com.example.travelhub.data.mapper.toDomain
 import com.example.travelhub.data.mapper.toEntity
@@ -15,7 +16,8 @@ import javax.inject.Singleton
 @Singleton
 class BookingRepositoryImpl @Inject constructor(
     private val bookingDao: BookingDao,
-    private val api: AccommodationApi
+    private val api: AccommodationApi,
+    private val guestSessionStore: GuestSessionStore
 ) : BookingRepository {
 
     override suspend fun create(booking: Booking): Result<Booking> {
@@ -34,6 +36,8 @@ class BookingRepositoryImpl @Inject constructor(
     override suspend fun createReservation(request: CreateReservationRequest): Result<CreateReservationResponse> {
         return try {
             val response = api.createReservation(request)
+            // Persist the latest guest session id if the backend echoed one back.
+            response.userSession?.takeIf { it.isNotBlank() }?.let { guestSessionStore.update(it) }
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)

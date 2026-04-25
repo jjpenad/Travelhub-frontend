@@ -7,10 +7,16 @@
   },
   "item": [
     {
-      "name": "BUscar Acomodacion",
+      "name": "Buscar Acomodacion",
       "request": {
         "method": "GET",
-        "header": [],
+        "header": [
+          {
+            "key": "X-Guest-Id",
+            "value": "d4c8cf4e-9fcd-4b14-b0c1-f3e0b7aa8762",
+            "type": "text"
+          }
+        ],
         "url": {
           "raw": "{{baseUrl}}/service-core/accommodations/search?check_in=2026-05-01&check_out=2026-05-05&city=Lima",
           "host": [
@@ -24,18 +30,15 @@
           "query": [
             {
               "key": "check_in",
-              "value": "2026-05-01",
-              "type": "text"
+              "value": "2026-05-01"
             },
             {
               "key": "check_out",
-              "value": "2026-05-05",
-              "type": "text"
+              "value": "2026-05-05"
             },
             {
               "key": "city",
-              "value": "Lima",
-              "type": "text"
+              "value": "Lima"
             }
           ]
         }
@@ -107,7 +110,13 @@
           "name": "Successful",
           "originalRequest": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "X-Guest-Id",
+                "value": "d4c8cf4e-9fcd-4b14-b0c1-f3e0b7aa8762",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/service-core/accommodations/search?check_in=2026-05-01&check_out=2026-05-05&city=Lima",
               "host": [
@@ -140,7 +149,7 @@
           "header": [
             {
               "key": "Date",
-              "value": "Sun, 12 Apr 2026 23:38:53 GMT"
+              "value": "Sat, 25 Apr 2026 04:02:20 GMT"
             },
             {
               "key": "Content-Type",
@@ -148,7 +157,7 @@
             },
             {
               "key": "Content-Length",
-              "value": "1977"
+              "value": "2076"
             },
             {
               "key": "Connection",
@@ -160,7 +169,7 @@
             }
           ],
           "cookie": [],
-          "body": "[\n    {\n        \"hotel_id\": \"b1000000-0000-0000-0000-000000000002\",\n        \"hotel_name\": \"Casa Sol Lima\",\n        \"description\": \"Hotel de lujo frente al Océano Pacífico en el distrito de Miraflores. Disfrute de vistas panorámicas al mar, gastronomía de primer nivel y acceso directo al Parque del Amor.\",\n        \"address\": \"Malecón de la Reserva 1035, Miraflores\",\n        \"city\": \"Lima\",\n        \"stars\": 5,\n        \"rating\": \"4.8\",\n        \"check_in_time\": \"14:00:00\",\n        \"check_out_time\": \"12:00:00\",\n        \"available_room_types\": [\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000201\",\n                \"name\": \"Ocean Room\",\n                \"description\": \"Habitación con vista directa al Océano Pacífico, cama king, ducha lluvia y deck privado.\",\n                \"max_capacity\": 2,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"35.0\",\n                \"price_per_night\": \"247.50\",\n                \"total_price\": \"990.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"minibar\",\n                        \"icon\": \"local_bar\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"rain_shower\",\n                        \"icon\": \"shower\"\n                    },\n                    {\n                        \"name\": \"tv\",\n                        \"icon\": \"tv\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000202\",\n                \"name\": \"Deluxe Ocean View\",\n                \"description\": \"Habitación amplia con vista panorámica al mar, bañera independiente, sala de estar y servicio de mayordomo.\",\n                \"max_capacity\": 3,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"55.0\",\n                \"price_per_night\": \"427.50\",\n                \"total_price\": \"1710.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"balcony\",\n                        \"icon\": \"balcony\"\n                    },\n                    {\n                        \"name\": \"bathtub\",\n                        \"icon\": \"bathtub\"\n                    },\n                    {\n                        \"name\": \"minibar\",\n                        \"icon\": \"local_bar\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"tv\",\n                        \"icon\": \"tv\"\n                    }\n                ]\n            },\n            {\n                \"id\": \"c1000000-0000-0000-0000-000000000203\",\n                \"name\": \"Penthouse Suite\",\n                \"description\": \"Suite exclusiva en planta alta con terraza privada frente al mar, piscina personal y acceso VIP al spa.\",\n                \"max_capacity\": 4,\n                \"bed_type\": \"king\",\n                \"size_sqm\": \"120.0\",\n                \"price_per_night\": \"956.25\",\n                \"total_price\": \"3825.00\",\n                \"currency_code\": \"USD\",\n                \"minimum_stay\": 1,\n                \"amenities\": [\n                    {\n                        \"name\": \"butler\",\n                        \"icon\": \"concierge\"\n                    },\n                    {\n                        \"name\": \"kitchen\",\n                        \"icon\": \"kitchen\"\n                    },\n                    {\n                        \"name\": \"ocean_view\",\n                        \"icon\": \"waves\"\n                    },\n                    {\n                        \"name\": \"private_pool\",\n                        \"icon\": \"pool\"\n                    },\n                    {\n                        \"name\": \"terrace\",\n                        \"icon\": \"deck\"\n                    }\n                ]\n            }\n        ]\n    }\n]"
+          "body": "{\n    \"user_session\": \"d4c8cf4e-9fcd-4b14-b0c1-f3e0b7aa8762\",\n    \"page\": 1,\n    \"page_size\": 20,\n    \"total\": 1,\n    \"result\": [\n        {\n            \"hotel_id\": \"b1000000-0000-0000-0000-000000000002\",\n            \"hotel_name\": \"Casa Sol Lima\",\n            \"description\": \"Hotel de lujo frente al Océano Pacífico en el distrito de Miraflores. Disfrute de vistas panorámicas al mar, gastronomía de primer nivel y acceso directo al Parque del Amor.\",\n            \"address\": \"Malecón de la Reserva 1035, Miraflores\",\n            \"city\": \"Lima\",\n            \"stars\": 5,\n            \"rating\": \"4.8\",\n            \"check_in_time\": \"14:00:00\",\n            \"check_out_time\": \"12:00:00\",\n            \"available_room_types\": [\n                {\n                    \"id\": \"c1000000-0000-0000-0000-000000000201\",\n                    \"name\": \"Ocean Room\",\n                    \"description\": \"Habitación con vista directa al Océano Pacífico, cama king, ducha lluvia y deck privado.\",\n                    \"max_capacity\": 2,\n                    \"bed_type\": \"king\",\n                    \"size_sqm\": \"35.0\",\n                    \"price_per_night\": \"247.50\",\n                    \"total_price\": \"990.00\",\n                    \"currency_code\": \"USD\",\n                    \"minimum_stay\": 1,\n                    \"amenities\": [\n                        {\n                            \"name\": \"minibar\",\n                            \"icon\": \"local_bar\"\n                        },\n                        {\n                            \"name\": \"ocean_view\",\n                            \"icon\": \"waves\"\n                        },\n                        {\n                            \"name\": \"rain_shower\",\n                            \"icon\": \"shower\"\n                        },\n                        {\n                            \"name\": \"tv\",\n                            \"icon\": \"tv\"\n                        }\n                    ]\n                },\n                {\n                    \"id\": \"c1000000-0000-0000-0000-000000000202\",\n                    \"name\": \"Deluxe Ocean View\",\n                    \"description\": \"Habitación amplia con vista panorámica al mar, bañera independiente, sala de estar y servicio de mayordomo.\",\n                    \"max_capacity\": 3,\n                    \"bed_type\": \"king\",\n                    \"size_sqm\": \"55.0\",\n                    \"price_per_night\": \"427.50\",\n                    \"total_price\": \"1710.00\",\n                    \"currency_code\": \"USD\",\n                    \"minimum_stay\": 1,\n                    \"amenities\": [\n                        {\n                            \"name\": \"balcony\",\n                            \"icon\": \"balcony\"\n                        },\n                        {\n                            \"name\": \"bathtub\",\n                            \"icon\": \"bathtub\"\n                        },\n                        {\n                            \"name\": \"minibar\",\n                            \"icon\": \"local_bar\"\n                        },\n                        {\n                            \"name\": \"ocean_view\",\n                            \"icon\": \"waves\"\n                        },\n                        {\n                            \"name\": \"tv\",\n                            \"icon\": \"tv\"\n                        }\n                    ]\n                },\n                {\n                    \"id\": \"c1000000-0000-0000-0000-000000000203\",\n                    \"name\": \"Penthouse Suite\",\n                    \"description\": \"Suite exclusiva en planta alta con terraza privada frente al mar, piscina personal y acceso VIP al spa.\",\n                    \"max_capacity\": 4,\n                    \"bed_type\": \"king\",\n                    \"size_sqm\": \"120.0\",\n                    \"price_per_night\": \"956.25\",\n                    \"total_price\": \"3825.00\",\n                    \"currency_code\": \"USD\",\n                    \"minimum_stay\": 1,\n                    \"amenities\": [\n                        {\n                            \"name\": \"butler\",\n                            \"icon\": \"concierge\"\n                        },\n                        {\n                            \"name\": \"kitchen\",\n                            \"icon\": \"kitchen\"\n                        },\n                        {\n                            \"name\": \"ocean_view\",\n                            \"icon\": \"waves\"\n                        },\n                        {\n                            \"name\": \"private_pool\",\n                            \"icon\": \"pool\"\n                        },\n                        {\n                            \"name\": \"terrace\",\n                            \"icon\": \"deck\"\n                        }\n                    ]\n                }\n            ]\n        }\n    ]\n}"
         }
       ]
     },

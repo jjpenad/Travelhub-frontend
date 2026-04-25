@@ -4,7 +4,7 @@ import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
 import com.example.travelhub.data.remote.dto.HotelAvailabilityDto
 import com.example.travelhub.data.remote.dto.HotelDto
-import com.example.travelhub.data.remote.dto.HotelSearchResultDto
+import com.example.travelhub.data.remote.dto.HotelSearchResponseDto
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -21,7 +21,7 @@ interface AccommodationApi {
         @Query("city") city: String,
         @Query("check_in") checkIn: String,
         @Query("check_out") checkOut: String
-    ): List<HotelSearchResultDto>
+    ): HotelSearchResponseDto
 
     @GET("service-core/accommodations/hotels/{hotelId}/availability")
     suspend fun getHotelAvailability(

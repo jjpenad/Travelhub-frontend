@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.kapt")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -50,10 +51,90 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // Make Android SDK stubs return defaults (e.g. android.util.Log) in JVM unit tests
+    // instead of throwing "Method not mocked". Saves us from mocking Log in every test.
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 kapt {
     correctErrorTypes = true
+}
+
+// Kover — code coverage. CI runs `./gradlew koverXmlReport koverHtmlReport koverVerify`.
+// Threshold: 80% line coverage applied to the *testable* layer (data + domain + VMs).
+// Compose UI, navigation graphs and theme are excluded because they require instrumented
+// tests (Robolectric / Compose UI tests) which don't run in this JVM-only pipeline.
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+        filters {
+            excludes {
+                classes(
+                    // ── Generated / framework boilerplate ───────────────────────
+                    "*.BuildConfig",
+                    "*.databinding.*",
+                    "*.R",
+                    "*.R\$*",
+                    // Hilt
+                    "*_Hilt*",
+                    "Hilt_*",
+                    "*_Factory",
+                    "*_Factory\$*",
+                    "*_MembersInjector",
+                    "dagger.hilt.internal.*",
+                    "hilt_aggregated_deps.*",
+                    // Compose tooling
+                    "*ComposableSingletons*",
+                    "*\$Companion",
+
+                    // ── App-side exclusions ────────────────────────────────────
+                    // DI modules — almost entirely @Provides plumbing
+                    "com.example.travelhub.di.*",
+                    // Compose UI: screens, components, navigation, theme — these
+                    // need Compose UI tests / Robolectric, not JVM unit tests.
+                    "com.example.travelhub.ui.components.*",
+                    "com.example.travelhub.ui.navigation.*",
+                    "com.example.travelhub.ui.theme.*",
+                    "com.example.travelhub.ui.screens.*Screen*",
+                    "com.example.travelhub.ui.screens.*ScreenKt*",
+                    "com.example.travelhub.MainActivity*",
+                    "com.example.travelhub.TravelHubApp*",
+                    // Mock data fixtures (not production logic)
+                    "com.example.travelhub.data.mock.*",
+                    // DTOs / Entities are pure data carriers (Gson / Room handle them)
+                    "com.example.travelhub.data.remote.dto.*",
+                    "com.example.travelhub.data.local.entity.*",
+                    // ConnectivityObserver wraps Android ConnectivityManager + NetworkCallback;
+                    // it can't be exercised meaningfully without Robolectric / instrumented tests.
+                    "com.example.travelhub.data.network.ConnectivityObserver*",
+                    // Retrofit interfaces have no implementation to cover — they're metadata.
+                    "com.example.travelhub.data.remote.api.*",
+                    // Room DAO interfaces compile to auto-generated *_Impl classes that bind
+                    // SQLite calls — only exercisable via instrumented / Robolectric tests.
+                    "com.example.travelhub.data.local.dao.*",
+                    "com.example.travelhub.data.local.dao.*_Impl*",
+                    "*_Impl",
+                    "*_Impl\$*",
+                    // Room database abstract class — Room generates the impl at build time.
+                    "com.example.travelhub.data.local.TravelHubDatabase*",
+                    // Application + MainActivity are wiring-only (Hilt + Compose entry points)
+                    // and are exercised by instrumented tests, not JVM units.
+                    "com.example.travelhub.MainActivity",
+                    "com.example.travelhub.MainActivity\$*",
+                    "com.example.travelhub.TravelHubApp",
+                    "com.example.travelhub.ComposableSingletons*"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
