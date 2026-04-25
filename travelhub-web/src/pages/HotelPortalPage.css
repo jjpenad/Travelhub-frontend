@@ -1,106 +1,72 @@
-.hotel-portal-page {
+/* Dashboard del administrador hotelero (home portal) */
+
+.hotel-portal-dashboard {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--page-bg);
 }
 
-.hotel-portal-hero {
-  margin: 0;
-  padding: 0;
-  border-radius: 0;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 88%, #1e1b4b) 0%,
-    #5d44bd 48%,
-    #4a36a3 100%
-  );
-  color: #f8fafc;
+.hotel-portal-dashboard__shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: stretch;
 }
 
-.hotel-portal-hero__inner {
-  max-width: 56rem;
+.hotel-portal-dashboard__main {
+  flex: 1;
+  min-width: 0;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: clamp(1.75rem, 4vw, 2.75rem) var(--page-padding-x);
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(1.25rem, 3vw, 1.75rem) var(--page-padding-x)
+    clamp(2rem, 5vw, 3rem);
 }
 
-.hotel-portal-hero__eyebrow {
-  margin: 0 0 0.5rem;
-  font-size: var(--type-eyebrow);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(248, 250, 252, 0.75);
-}
-
-.hotel-portal-hero__title {
-  margin: 0 0 0.5rem;
-  font-family: var(--heading);
-  font-size: clamp(1.65rem, 3.2vw, 2.15rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: var(--leading-tight);
-  color: #ffffff;
-}
-
-.hotel-portal-hero__lead {
-  margin: 0 0 1.25rem;
-  max-width: 40ch;
-  font-size: var(--type-body-muted);
-  line-height: var(--leading-body);
-  color: rgba(248, 250, 252, 0.88);
-}
-
-.hotel-portal-hero__actions {
+/* Título + selector de mes: selector a la derecha, alineado al título y sobre la columna de la última KPI (huéspedes) */
+.hotel-portal-dashboard__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.65rem 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin-bottom: clamp(1.5rem, 3.5vw, 2.35rem);
 }
 
-.hotel-portal-hero__user {
-  margin: 0;
-  font-size: 0.8125rem;
-  color: rgba(248, 250, 252, 0.82);
-}
-
-.hotel-portal-hero__user strong {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.hotel-portal-body {
+.hotel-portal-dashboard__top .hp-dash-header {
   flex: 1;
+  min-width: min(100%, 16rem);
 }
 
-.hotel-portal-grid {
+.hotel-portal-dashboard__month-wrap {
+  flex-shrink: 0;
+  /* Alineación óptica con la primera línea del título "Dashboard" */
+  padding-top: 0.15rem;
+}
+
+.hotel-portal-dashboard__mid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: var(--section-gap-sm);
-  margin-top: var(--section-gap);
+  grid-template-columns: minmax(0, 1.65fr) minmax(240px, 0.95fr);
+  gap: 1.25rem;
+  margin-top: 1.35rem;
+  align-items: stretch;
 }
 
-.hotel-portal-card {
-  padding: var(--section-gap-sm);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  box-shadow: var(--shadow-sm);
+.hotel-portal-dashboard__arrivals {
+  margin-top: 1.35rem;
 }
 
-.hotel-portal-card h2 {
-  margin: 0 0 0.35rem;
-  font-family: var(--heading);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-h);
+@media (max-width: 960px) {
+  .hotel-portal-dashboard__mid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.hotel-portal-card p {
-  margin: 0;
-  font-size: var(--type-body-muted);
-  line-height: var(--leading-body);
-  color: var(--text-muted);
+@media (max-width: 900px) {
+  .hotel-portal-dashboard__shell {
+    flex-direction: column;
+  }
 }

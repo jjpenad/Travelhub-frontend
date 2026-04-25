@@ -1,0 +1,156 @@
+.hp-arrivals {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.25rem 1.1rem;
+}
+
+.hp-arrivals__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.hp-arrivals__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.hp-arrivals__link-all {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.hp-arrivals__link-all:hover {
+  text-decoration: underline;
+}
+
+.hp-arrivals__table-wrap {
+  overflow-x: auto;
+  margin: 0 -0.25rem;
+  padding: 0 0.25rem;
+}
+
+.hp-arrivals__table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.hp-arrivals__table th {
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.5rem 0.65rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.hp-arrivals__table td {
+  padding: 0.85rem 0.65rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.hp-arrivals__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.hp-arrivals__guest {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hp-arrivals__guest-avatar {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.hp-arrivals__guest-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.hp-arrivals__guest-name {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.hp-arrivals__guest-email {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hp-arrivals__cell-muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.hp-arrivals__cell-strong {
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.hp-arrivals__badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.hp-arrivals__badge--confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hp-arrivals__badge--pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.hp-arrivals__btn {
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+
+.hp-arrivals__btn--primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.hp-arrivals__btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.hp-arrivals__btn--primary:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+}

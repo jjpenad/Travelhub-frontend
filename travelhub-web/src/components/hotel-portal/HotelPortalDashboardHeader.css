@@ -1,0 +1,23 @@
+.hp-dash-header {
+  margin-bottom: 0;
+}
+
+.hp-dash-header__titles {
+  min-width: 0;
+}
+
+.hp-dash-header__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 800;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+}
+
+.hp-dash-header__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 36rem;
+  line-height: 1.45;
+}
