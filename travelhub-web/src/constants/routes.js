@@ -7,6 +7,11 @@ export const PATH_HOTEL_PORTAL_HOME = "/hoteles/inicio";
 /** Listado y gestión de reservas (portal hotelero) */
 export const PATH_HOTEL_MANAGE_RESERVATIONS = "/hoteles/reservas";
 
+/** Detalle de una reserva (portal hotelero). `id` ej. r-1 */
+export function pathHotelReservationDetail(id) {
+  return `${PATH_HOTEL_MANAGE_RESERVATIONS}/${encodeURIComponent(id)}`;
+}
+
 /** Ruta histórica: redirige a {@link PATH_HOTEL_PORTAL_HOME} */
 export const PATH_HOTEL_PORTAL_LEGACY = "/portal-hoteles";
 

@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import HotelManageReservationsPage from "./pages/HotelManageReservationsPage";
 import HotelPortalPage from "./pages/HotelPortalPage";
+import HotelReservationDetailPage from "./pages/HotelReservationDetailPage";
 import LoginPage from "./pages/LoginPage";
 import MyTripsPage from "./pages/MyTripsPage";
 import TripDetailPage from "./pages/TripDetailPage";
@@ -32,6 +33,7 @@ function App() {
         <Route path={PATH_MY_TRIPS} element={<MyTripsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path={PATH_HOTEL_PORTAL_HOME} element={<HotelPortalPage />} />
+        <Route path={`${PATH_HOTEL_MANAGE_RESERVATIONS}/:reservationId`} element={<HotelReservationDetailPage />} />
         <Route path={PATH_HOTEL_MANAGE_RESERVATIONS} element={<HotelManageReservationsPage />} />
         <Route
           path={PATH_HOTEL_PORTAL_LEGACY}
