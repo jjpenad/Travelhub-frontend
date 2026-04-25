@@ -111,7 +111,12 @@ kover {
                     "com.example.travelhub.data.mock.*",
                     // DTOs / Entities are pure data carriers (Gson / Room handle them)
                     "com.example.travelhub.data.remote.dto.*",
-                    "com.example.travelhub.data.local.entity.*"
+                    "com.example.travelhub.data.local.entity.*",
+                    // ConnectivityObserver wraps Android ConnectivityManager + NetworkCallback;
+                    // it can't be exercised meaningfully without Robolectric / instrumented tests.
+                    "com.example.travelhub.data.network.ConnectivityObserver*",
+                    // Retrofit interfaces have no implementation to cover — they're metadata.
+                    "com.example.travelhub.data.remote.api.*"
                 )
             }
         }
