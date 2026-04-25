@@ -9,7 +9,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -25,7 +25,9 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
+    // Unconfined dispatcher so StateFlow emissions propagate eagerly through combine +
+    // stateIn without having to advance the dispatcher after every onSortChange().
+    private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var useCase: SearchPropertiesUseCase
     private lateinit var vm: SearchViewModel
 
@@ -137,9 +139,12 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `results StateFlow emits when sort changes`() = runTest {
+    fun `results StateFlow emits a new value when sort changes`() = runTest {
+        // Two items — PRICE_ASC vs PRICE_DESC are guaranteed to differ.
+        // Only assert sorts that produce a DIFFERENT list, otherwise StateFlow's
+        // distinct-until-changed semantics would (correctly) skip the emission.
         val raw = listOf(
-            property("a", 200.0, 4.5, 50),
+            property("a", 200.0, 4.0, 50),
             property("b", 100.0, 4.9, 10)
         )
         coEvery { useCase(any<SearchFilters>()) } returns raw
@@ -150,9 +155,6 @@ class SearchViewModelTest {
 
         vm.results.test {
             // First emission: current sorted list (PRICE_ASC).
-            assertEquals(listOf("b", "a"), awaitItem().map { it.id })
-
-            vm.onSortChange(SortOption.RATING)
             assertEquals(listOf("b", "a"), awaitItem().map { it.id })
 
             vm.onSortChange(SortOption.PRICE_DESC)
