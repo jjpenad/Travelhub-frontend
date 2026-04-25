@@ -5,28 +5,14 @@ import "./ResultsToolbar.css";
 const FILTER_ITEMS = [
   { id: "price", labelKey: "filterPrice", icon: "money" },
   { id: "rating", labelKey: "filterRating", icon: "star" },
-  { id: "amenities", labelKey: "filterAmenities", icon: null },
-  { id: "map", labelKey: "filterMap", icon: null },
 ];
-
-/** MVP: en false solo se muestra el filtro Precio (resto de filtros ocultos, código conservado abajo) */
-const showExtendedFilterButtons = false;
-
-/** MVP: en false se oculta el desplegable "Mejor coincidencia" */
-const showSortDropdown = false;
 
 function ResultsToolbar({ copy }) {
   const sortId = useId();
   const [activeFilter, setActiveFilter] = useState("price");
-  const soloPriceToolbar = !showExtendedFilterButtons && !showSortDropdown;
 
   return (
-    <div
-      className={
-        "results-toolbar" +
-        (soloPriceToolbar ? " results-toolbar--solo-price" : "")
-      }
-    >
+    <div className="results-toolbar">
       <div className="results-toolbar__summary">
         <p className="results-toolbar__summary-lead">{copy.summaryLead}</p>
         {copy.summaryMeta ? (
@@ -39,10 +25,7 @@ function ResultsToolbar({ copy }) {
         role="toolbar"
         aria-label={copy.filtersToolbarLabel}
       >
-        {(showExtendedFilterButtons
-          ? FILTER_ITEMS
-          : FILTER_ITEMS.filter((item) => item.id === "price")
-        ).map(({ id, labelKey, icon }) => {
+        {FILTER_ITEMS.map(({ id, labelKey, icon }) => {
           const isActive = activeFilter === id;
           const isPriceActive = isActive && id === "price";
           const label = copy[labelKey];
@@ -95,29 +78,26 @@ function ResultsToolbar({ copy }) {
         })}
       </div>
 
-      {showSortDropdown ? (
-        <div className="results-toolbar__sort">
-          <label htmlFor={sortId} className="results-toolbar__visually-hidden">
-            {copy.sortLabel}
-          </label>
-          <div className="results-toolbar__select-wrap">
-            <select
-              id={sortId}
-              className="results-toolbar__select"
-              name="sort"
-              defaultValue="best"
-            >
-              <option value="best">{copy.sortBestMatch}</option>
-              <option value="price-asc">{copy.sortPriceLow}</option>
-              <option value="price-desc">{copy.sortPriceHigh}</option>
-              <option value="rating">{copy.sortRating}</option>
-            </select>
-            <span className="results-toolbar__chevron" aria-hidden="true">
-              <IconChevronDown className="results-toolbar__chevron-icon" />
-            </span>
-          </div>
+      <div className="results-toolbar__sort">
+        <label htmlFor={sortId} className="results-toolbar__visually-hidden">
+          {copy.sortLabel}
+        </label>
+        <div className="results-toolbar__select-wrap">
+          <select
+            id={sortId}
+            className="results-toolbar__select"
+            name="sort"
+            defaultValue="best"
+          >
+            <option value="best">{copy.sortBestMatch}</option>
+            <option value="price-asc">{copy.sortPriceLow}</option>
+            <option value="price-desc">{copy.sortPriceHigh}</option>
+          </select>
+          <span className="results-toolbar__chevron" aria-hidden="true">
+            <IconChevronDown className="results-toolbar__chevron-icon" />
+          </span>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

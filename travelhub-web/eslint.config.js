@@ -23,7 +23,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': [
+        'error',
+        {
+          varsIgnorePattern: '^[A-Z_]',
+          // Misma regla para parámetros (p. ej. props destructurados en `function Card({ … })`)
+          argsIgnorePattern: '^[A-Z_]',
+        },
+      ],
     },
   },
   {

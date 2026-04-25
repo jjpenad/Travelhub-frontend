@@ -4,6 +4,7 @@ import CheckoutStepper from "../components/checkout/CheckoutStepper";
 import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import "./ConfirmationPage.css";
 
 /** MVP: en `false` oculta «Ver detalles del viaje», «Descargar recibo» y la nota del QR asociada. */
@@ -137,7 +138,7 @@ function ConfirmationPage() {
   const tripDetailsTo =
     hotel?.id != null && hotel.id !== ""
       ? `/hotel/${encodeURIComponent(String(hotel.id))}`
-      : "/";
+      : PATH_TRAVELERS_HOME;
 
   return (
     <div className="confirmation-page">
@@ -227,7 +228,7 @@ function ConfirmationPage() {
                   </div>
                 ) : null}
 
-                <Link className="confirmation-card__cta" to="/">
+                <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
                   Volver al inicio
                 </Link>
               </div>
@@ -238,7 +239,7 @@ function ConfirmationPage() {
                   No hay datos de reserva. Si acabas de completar el pago, vuelve
                   desde el checkout.
                 </p>
-                <Link className="confirmation-card__cta" to="/">
+                <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
                   Ir al inicio
                 </Link>
               </div>
