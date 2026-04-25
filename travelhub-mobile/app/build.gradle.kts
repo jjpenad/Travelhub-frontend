@@ -116,7 +116,21 @@ kover {
                     // it can't be exercised meaningfully without Robolectric / instrumented tests.
                     "com.example.travelhub.data.network.ConnectivityObserver*",
                     // Retrofit interfaces have no implementation to cover — they're metadata.
-                    "com.example.travelhub.data.remote.api.*"
+                    "com.example.travelhub.data.remote.api.*",
+                    // Room DAO interfaces compile to auto-generated *_Impl classes that bind
+                    // SQLite calls — only exercisable via instrumented / Robolectric tests.
+                    "com.example.travelhub.data.local.dao.*",
+                    "com.example.travelhub.data.local.dao.*_Impl*",
+                    "*_Impl",
+                    "*_Impl\$*",
+                    // Room database abstract class — Room generates the impl at build time.
+                    "com.example.travelhub.data.local.TravelHubDatabase*",
+                    // Application + MainActivity are wiring-only (Hilt + Compose entry points)
+                    // and are exercised by instrumented tests, not JVM units.
+                    "com.example.travelhub.MainActivity",
+                    "com.example.travelhub.MainActivity\$*",
+                    "com.example.travelhub.TravelHubApp",
+                    "com.example.travelhub.ComposableSingletons*"
                 )
             }
         }
