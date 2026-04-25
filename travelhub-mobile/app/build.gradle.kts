@@ -51,6 +51,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    // Make Android SDK stubs return defaults (e.g. android.util.Log) in JVM unit tests
+    // instead of throwing "Method not mocked". Saves us from mocking Log in every test.
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 kapt {
