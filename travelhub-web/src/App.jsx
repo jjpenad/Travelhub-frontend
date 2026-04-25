@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import {
+  PATH_HOTEL_PORTAL_HOME,
+  PATH_HOTEL_PORTAL_LEGACY,
   PATH_MY_TRIPS,
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
@@ -27,7 +29,11 @@ function App() {
         />
         <Route path={PATH_MY_TRIPS} element={<MyTripsPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/portal-hoteles" element={<HotelPortalPage />} />
+        <Route path={PATH_HOTEL_PORTAL_HOME} element={<HotelPortalPage />} />
+        <Route
+          path={PATH_HOTEL_PORTAL_LEGACY}
+          element={<Navigate to={PATH_HOTEL_PORTAL_HOME} replace />}
+        />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/hotel/:hotelId" element={<HotelDetailPage />} />

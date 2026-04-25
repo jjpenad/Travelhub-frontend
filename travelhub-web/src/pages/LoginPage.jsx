@@ -6,7 +6,7 @@ import {
   ROLE_TRAVELER,
   setSessionUser,
 } from "../auth/sessionAuth";
-import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
 import "./AuthPage.css";
 
 /** Demo portal hoteles (sustituir por respuesta del API) */
@@ -69,7 +69,7 @@ function LoginPage() {
           email: emailNorm,
           remember,
         });
-        navigate("/portal-hoteles", { replace: true });
+        navigate(PATH_HOTEL_PORTAL_HOME, { replace: true });
       } else {
         setError("Contraseña incorrecta.");
       }

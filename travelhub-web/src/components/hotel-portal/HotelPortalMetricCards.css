@@ -1,0 +1,105 @@
+.hp-metric-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .hp-metric-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .hp-metric-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hp-metric-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.15rem 1.15rem;
+  min-height: 7.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+}
+
+.hp-metric-card::before {
+  content: "";
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.22);
+  pointer-events: none;
+}
+
+.hp-metric-card__label {
+  display: block;
+  margin-left: 2.85rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.hp-metric-card__value {
+  display: block;
+  margin: 0.5rem 0 0 2.85rem;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.hp-metric-card__meta {
+  margin: 0.45rem 0 0 2.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hp-metric-card__hint {
+  opacity: 0.95;
+}
+
+.hp-metric-card__trend {
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.hp-metric-card__trend--up {
+  color: #bbf7d0;
+}
+
+.hp-metric-card__trend--down {
+  color: #fecaca;
+}
+
+.hp-metric-card--purple {
+  background: linear-gradient(145deg, #6d28d9 0%, #5b21b6 45%, #4c1d95 100%);
+}
+
+.hp-metric-card--green {
+  background: linear-gradient(145deg, #059669 0%, #047857 50%, #065f46 100%);
+}
+
+.hp-metric-card--blue {
+  background: linear-gradient(145deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+}
+
+.hp-metric-card--orange {
+  background: linear-gradient(145deg, #ea580c 0%, #c2410c 55%, #9a3412 100%);
+}

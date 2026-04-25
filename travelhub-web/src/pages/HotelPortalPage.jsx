@@ -1,9 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
-import PageContainer from "../components/layout/PageContainer";
+import HotelPortalDashboardHeader from "../components/hotel-portal/HotelPortalDashboardHeader";
+import HotelPortalMetricCards from "../components/hotel-portal/HotelPortalMetricCards";
+import HotelPortalMonthSelect from "../components/hotel-portal/HotelPortalMonthSelect";
+import HotelPortalReservationStatus from "../components/hotel-portal/HotelPortalReservationStatus";
+import HotelPortalRevenueChart from "../components/hotel-portal/HotelPortalRevenueChart";
+import HotelPortalSidebar from "../components/hotel-portal/HotelPortalSidebar";
+import HotelPortalUpcomingArrivals from "../components/hotel-portal/HotelPortalUpcomingArrivals";
 import { getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
+import {
+  dashboardMetrics,
+  reservationStatusSegments,
+  revenueBarsJanuary,
+  upcomingArrivalsRows,
+} from "../data/hotelPortalDashboardData";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { displayNameFromEmail, welcomeNameFromEmail } from "../utils/hotelPortalFormat";
 import "./HotelPortalPage.css";
 
 function HotelPortalPage() {
@@ -16,55 +29,39 @@ function HotelPortalPage() {
     }
   }, [navigate]);
 
+  const firstName = useMemo(() => welcomeNameFromEmail(email), [email]);
+  const sidebarDisplayName = useMemo(() => displayNameFromEmail(email), [email]);
+
   if (getSessionRole() !== ROLE_HOTEL) {
     return null;
   }
 
   return (
-    <div className="hotel-portal-page">
+    <div className="hotel-portal-dashboard">
       <Navbar />
-      <header className="hotel-portal-hero">
-        <div className="hotel-portal-hero__inner">
-          <p className="hotel-portal-hero__eyebrow">TravelHub para socios</p>
-          <h1 className="hotel-portal-hero__title">Portal de hoteles</h1>
-          <p className="hotel-portal-hero__lead">
-            Gestiona tu inventario, tarifas y reservas. Esta vista es el espacio de
-            trabajo para establecimientos asociados.
-          </p>
-          <div className="hotel-portal-hero__actions">
-            <p className="hotel-portal-hero__user">
-              Sesión: <strong>{email}</strong>
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <main className="hotel-portal-body">
-        <PageContainer>
-          <section aria-labelledby="hotel-portal-blocks-title">
-            <h2 id="hotel-portal-blocks-title" className="visually-hidden">
-              Accesos rápidos
-            </h2>
-            <div className="hotel-portal-grid">
-              <article className="hotel-portal-card">
-                <h2>Propiedades</h2>
-                <p>
-                  Aquí podrás listar y editar tus alojamientos cuando exista conexión con el
-                  backend.
-                </p>
-              </article>
-              <article className="hotel-portal-card">
-                <h2>Reservas</h2>
-                <p>Consulta calendario y ocupación en una próxima iteración.</p>
-              </article>
-              <article className="hotel-portal-card">
-                <h2>Rendimiento</h2>
-                <p>Indicadores e informes estarán disponibles más adelante.</p>
-              </article>
+      <div className="hotel-portal-dashboard__shell">
+        <HotelPortalSidebar
+          activeId="dashboard"
+          displayName={sidebarDisplayName}
+          propertyLabel="Establecimiento asociado"
+        />
+        <main className="hotel-portal-dashboard__main">
+          <div className="hotel-portal-dashboard__top">
+            <HotelPortalDashboardHeader firstName={firstName} />
+            <div className="hotel-portal-dashboard__month-wrap">
+              <HotelPortalMonthSelect defaultMonth="Enero" defaultYear="2026" />
             </div>
-          </section>
-        </PageContainer>
-      </main>
+          </div>
+          <HotelPortalMetricCards items={dashboardMetrics} />
+          <div className="hotel-portal-dashboard__mid">
+            <HotelPortalRevenueChart title="Ingresos mes Enero" bars={revenueBarsJanuary} />
+            <HotelPortalReservationStatus segments={reservationStatusSegments} />
+          </div>
+          <div className="hotel-portal-dashboard__arrivals">
+            <HotelPortalUpcomingArrivals rows={upcomingArrivalsRows} />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

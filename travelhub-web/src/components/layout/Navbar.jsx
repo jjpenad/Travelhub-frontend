@@ -7,7 +7,12 @@ import {
   isLoggedIn,
   isTravelerLoggedIn,
 } from "../../auth/sessionAuth";
-import { PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../../constants/routes";
+import {
+  PATH_HOTEL_PORTAL_HOME,
+  PATH_HOTEL_PORTAL_LEGACY,
+  PATH_MY_TRIPS,
+  PATH_TRAVELERS_HOME,
+} from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 import NavbarUserIcon from "./NavbarUserIcon";
 import "./Navbar.css";
@@ -27,6 +32,10 @@ function Navbar() {
   const isHome = pathname === PATH_TRAVELERS_HOME;
   const isMyTrips =
     pathname === PATH_MY_TRIPS || pathname.startsWith(`${PATH_MY_TRIPS}/`);
+  const isHotelPortalRoute =
+    pathname === PATH_HOTEL_PORTAL_LEGACY ||
+    pathname === PATH_HOTEL_PORTAL_HOME ||
+    pathname.startsWith("/hoteles/");
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
@@ -138,13 +147,15 @@ function Navbar() {
             >
               Cerrar sesión
             </button>
-            <span
-              className="navbar__user-badge"
-              role="img"
-              aria-label="Sesión iniciada"
-            >
-              <NavbarUserIcon className="navbar__user-badge-icon" />
-            </span>
+            {!isHotelPortalRoute ? (
+              <span
+                className="navbar__user-badge"
+                role="img"
+                aria-label="Sesión iniciada"
+              >
+                <NavbarUserIcon className="navbar__user-badge-icon" />
+              </span>
+            ) : null}
           </div>
         ) : showAuthButtons ? (
           <div className="navbar__actions">
