@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { PATH_HOTEL_PORTAL_HOME } from "../../constants/routes";
+import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_HOTEL_PORTAL_HOME } from "../../constants/routes";
 import { HotelPortalNavIcon } from "./HotelPortalNavIcons";
 import "./HotelPortalSidebar.css";
 
@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { id: "reports", label: "Reportes", to: "#reportes", icon: "reports" },
   { id: "notifications", label: "Notificaciones", to: "#notificaciones", icon: "notifications", badge: 3 },
   { id: "rates", label: "Tarifas", to: "#tarifas", icon: "rates" },
-  { id: "bookings", label: "Gestionar reservas", to: "#reservas", icon: "bookings" },
+  { id: "bookings", label: "Gestionar reservas", to: PATH_HOTEL_MANAGE_RESERVATIONS, icon: "bookings" },
   { id: "rooms", label: "Habitaciones", to: "#habitaciones", icon: "rooms" },
   { id: "guests", label: "Huéspedes", to: "#huespedes", icon: "guests" },
 ];

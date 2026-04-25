@@ -1,0 +1,136 @@
+function badgeClass(status) {
+  if (status === "confirmed") return "hp-mres-badge hp-mres-badge--confirmed";
+  if (status === "pending") return "hp-mres-badge hp-mres-badge--pending";
+  if (status === "cancelled") return "hp-mres-badge hp-mres-badge--cancelled";
+  return "hp-mres-badge hp-mres-badge--upcoming";
+}
+
+function rowStripeClass(status) {
+  if (status === "confirmed") return "hp-mres-table__row--stripe-confirmed";
+  if (status === "cancelled") return "hp-mres-table__row--stripe-cancelled";
+  if (status === "pending") return "hp-mres-table__row--stripe-pending";
+  return "hp-mres-table__row--stripe-confirmed";
+}
+
+/**
+ * @param {{ rows: object[], selectedId: string | null, onSelectRow: (id: string) => void }} props
+ */
+function HotelManageReservationsTable({ rows, selectedId, onSelectRow }) {
+  return (
+    <div className="hp-mres-table-card">
+      <div className="hp-mres-table-wrap">
+        <table className="hp-mres-table">
+          <thead>
+            <tr>
+              <th scope="col">Nº reserva</th>
+              <th scope="col">Huésped</th>
+              <th scope="col">Habitación</th>
+              <th scope="col">Fechas</th>
+              <th scope="col">Huéspedes</th>
+              <th scope="col">Monto</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="hp-mres-empty">
+                  No hay reservas que coincidan con tu búsqueda o filtro.
+                </td>
+              </tr>
+            ) : null}
+            {rows.map((r) => {
+              const selected = r.id === selectedId;
+              return (
+                <tr
+                  key={r.id}
+                  className={
+                    "hp-mres-table__row " +
+                    rowStripeClass(r.status) +
+                    (selected ? " hp-mres-table__row--selected" : "")
+                  }
+                  onClick={(e) => {
+                    if (e.target.closest(".hp-mres-actions")) return;
+                    onSelectRow(r.id);
+                  }}
+                >
+                  <td>
+                    <div className="hp-mres-ref-block">
+                      <span className="hp-mres-ref">{r.reference}</span>
+                      <span className="hp-mres-ref-sub">{r.bookedAt}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="hp-mres-guest">
+                      <span
+                        className="hp-mres-guest-avatar"
+                        style={{ background: r.avatarTone }}
+                        aria-hidden="true"
+                      >
+                        {r.initials}
+                      </span>
+                      <span className="hp-mres-guest-text">
+                        <span className="hp-mres-guest-name">{r.guestName}</span>
+                        <span className="hp-mres-guest-meta">{r.guestEmail}</span>
+                        <span className="hp-mres-guest-meta">{r.guestPhone}</span>
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="hp-mres-room">
+                      <span className="hp-mres-room-line">{r.roomHab}</span>
+                      <span className="hp-mres-room-line hp-mres-room-line--muted">{r.roomTipo}</span>
+                      <span className="hp-mres-room-line hp-mres-room-line--muted">{r.roomCamas}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="hp-mres-dates">
+                      <span className="hp-mres-dates-range">
+                        {r.dateFrom} → {r.dateTo}
+                      </span>
+                      <span className="hp-mres-dates-nights">
+                        {r.nights} {r.nights === 1 ? "noche" : "noches"}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="hp-mres-cell-strong">
+                    {r.guestCount} {r.guestCount === 1 ? "huésped" : "huéspedes"}
+                  </td>
+                  <td>
+                    <div className="hp-mres-amount">
+                      <span className="hp-mres-amount-value">{r.amount}</span>
+                      <span className="hp-mres-amount-sub">{r.paymentLabel}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={badgeClass(r.status)}>{r.statusLabel}</span>
+                  </td>
+                  <td>
+                    <div className="hp-mres-actions" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className="hp-mres-actions__detail">
+                        Ver detalle
+                      </button>
+                      {r.secondaryAction === "checkin" ? (
+                        <button type="button" className="hp-mres-actions__secondary">
+                          Check-in
+                        </button>
+                      ) : null}
+                      {r.secondaryAction === "confirm" ? (
+                        <button type="button" className="hp-mres-actions__secondary">
+                          Confirmar
+                        </button>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default HotelManageReservationsTable;

@@ -4,6 +4,9 @@ export const PATH_TRAVELERS_HOME = "/travelers";
 /** Inicio / dashboard del administrador hotelero (tras login rol hotel) */
 export const PATH_HOTEL_PORTAL_HOME = "/hoteles/inicio";
 
+/** Listado y gestión de reservas (portal hotelero) */
+export const PATH_HOTEL_MANAGE_RESERVATIONS = "/hoteles/reservas";
+
 /** Ruta histórica: redirige a {@link PATH_HOTEL_PORTAL_HOME} */
 export const PATH_HOTEL_PORTAL_LEGACY = "/portal-hoteles";
 

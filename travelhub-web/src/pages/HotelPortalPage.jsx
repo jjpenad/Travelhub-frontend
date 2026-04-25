@@ -15,7 +15,7 @@ import {
   revenueBarsJanuary,
   upcomingArrivalsRows,
 } from "../data/hotelPortalDashboardData";
-import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { displayNameFromEmail, welcomeNameFromEmail } from "../utils/hotelPortalFormat";
 import "./HotelPortalPage.css";
 
@@ -58,7 +58,7 @@ function HotelPortalPage() {
             <HotelPortalReservationStatus segments={reservationStatusSegments} />
           </div>
           <div className="hotel-portal-dashboard__arrivals">
-            <HotelPortalUpcomingArrivals rows={upcomingArrivalsRows} />
+            <HotelPortalUpcomingArrivals rows={upcomingArrivalsRows} viewAllTo={PATH_HOTEL_MANAGE_RESERVATIONS} />
           </div>
         </main>
       </div>

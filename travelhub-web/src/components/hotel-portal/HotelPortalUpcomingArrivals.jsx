@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "./HotelPortalUpcomingArrivals.css";
 
 /**
@@ -6,6 +7,7 @@ import "./HotelPortalUpcomingArrivals.css";
 function HotelPortalUpcomingArrivals({
   title = "Próximas llegadas",
   rows = [],
+  viewAllTo,
   viewAllHref = "#",
 }) {
   return (
@@ -14,9 +16,15 @@ function HotelPortalUpcomingArrivals({
         <h2 id="hp-arrivals-title" className="hp-arrivals__title">
           {title}
         </h2>
-        <a className="hp-arrivals__link-all" href={viewAllHref}>
-          Ver todas →
-        </a>
+        {viewAllTo ? (
+          <Link className="hp-arrivals__link-all" to={viewAllTo}>
+            Ver todas →
+          </Link>
+        ) : (
+          <a className="hp-arrivals__link-all" href={viewAllHref}>
+            Ver todas →
+          </a>
+        )}
       </div>
       <div className="hp-arrivals__table-wrap">
         <table className="hp-arrivals__table">
