@@ -72,16 +72,24 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest
 
-      - name: Coverage + verify 80% threshold
-        run: ./gradlew koverXmlReport koverHtmlReport koverVerify
+      # Generate reports first so they're on disk even if verification fails next.
+      - name: Coverage reports
+        run: ./gradlew koverXmlReport koverHtmlReport
 
-      - name: Upload coverage report
-        if: always()
+      - name: Verify 80% coverage threshold
+        run: ./gradlew koverVerify
+
+      # Upload coverage only when something failed earlier (tests or threshold),
+      # so devs can download the report and inspect what's missing. On a green
+      # run there's nothing to debug, so we save the artifact slot.
+      - name: Upload coverage report (on failure)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: travelhub-mobile-coverage
           path: travelhub-mobile/app/build/reports/kover
           retention-days: 14
+          if-no-files-found: ignore
 
       - name: Build APK (debug)
         if: ${{ !startsWith(github.ref, 'refs/tags/travelhub-mobile-v') }}
@@ -100,13 +108,15 @@ jobs:
           fi
           ./gradlew assembleRelease
 
+      # Only runs when the APK build succeeded (default GH Actions behavior:
+      # subsequent steps are skipped after a failure unless `if:` overrides it).
       - name: Upload APK artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: travelhub-mobile-apk
           path: travelhub-mobile/app/build/outputs/apk/**/*.apk
           retention-days: 14
+          if-no-files-found: error
 
       - name: Attach APK to GitHub Release
         if: startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
