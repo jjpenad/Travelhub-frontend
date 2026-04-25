@@ -65,7 +65,9 @@ kapt {
 }
 
 // Kover — code coverage. CI runs `./gradlew koverXmlReport koverHtmlReport koverVerify`.
-// Threshold: 80% line coverage on the Debug build, excluding generated/DI boilerplate.
+// Threshold: 80% line coverage applied to the *testable* layer (data + domain + VMs).
+// Compose UI, navigation graphs and theme are excluded because they require instrumented
+// tests (Robolectric / Compose UI tests) which don't run in this JVM-only pipeline.
 kover {
     reports {
         verify {
@@ -76,12 +78,12 @@ kover {
         filters {
             excludes {
                 classes(
-                    // Android generated
+                    // ── Generated / framework boilerplate ───────────────────────
                     "*.BuildConfig",
                     "*.databinding.*",
                     "*.R",
                     "*.R\$*",
-                    // Hilt generated
+                    // Hilt
                     "*_Hilt*",
                     "Hilt_*",
                     "*_Factory",
@@ -89,11 +91,27 @@ kover {
                     "*_MembersInjector",
                     "dagger.hilt.internal.*",
                     "hilt_aggregated_deps.*",
-                    // Compose tooling / previews
+                    // Compose tooling
                     "*ComposableSingletons*",
                     "*\$Companion",
-                    // DI modules (mostly @Provides plumbing)
-                    "com.example.travelhub.di.*"
+
+                    // ── App-side exclusions ────────────────────────────────────
+                    // DI modules — almost entirely @Provides plumbing
+                    "com.example.travelhub.di.*",
+                    // Compose UI: screens, components, navigation, theme — these
+                    // need Compose UI tests / Robolectric, not JVM unit tests.
+                    "com.example.travelhub.ui.components.*",
+                    "com.example.travelhub.ui.navigation.*",
+                    "com.example.travelhub.ui.theme.*",
+                    "com.example.travelhub.ui.screens.*Screen*",
+                    "com.example.travelhub.ui.screens.*ScreenKt*",
+                    "com.example.travelhub.MainActivity*",
+                    "com.example.travelhub.TravelHubApp*",
+                    // Mock data fixtures (not production logic)
+                    "com.example.travelhub.data.mock.*",
+                    // DTOs / Entities are pure data carriers (Gson / Room handle them)
+                    "com.example.travelhub.data.remote.dto.*",
+                    "com.example.travelhub.data.local.entity.*"
                 )
             }
         }

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/User/Desktop/Code/MaestriaMISO/Travelhub-frontend/travelhub-mobile/app/src/main/ -name __TRACKED_VAR__.kt -exec cat '{}' ';')",
+      "Bash(find \"C:/Users/User/Desktop/Code/MaestriaMISO/Travelhub-frontend/travelhub-mobile/app/src/main/\" -name \"PropertyDetailViewModel.kt\" -exec cat {} \\\\;)"
+    ]
+  }
+}
