@@ -40,7 +40,8 @@ data class PaymentRequestDto(
 data class CreateReservationResponse(
     val completed: Boolean,
     val step: String,
-    val result: ReservationResultDto
+    val result: ReservationResultDto,
+    @SerializedName("user_session") val userSession: String? = null
 )
 
 data class ReservationResultDto(

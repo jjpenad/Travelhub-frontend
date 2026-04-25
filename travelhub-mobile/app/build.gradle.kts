@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.kapt")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -54,6 +55,42 @@ android {
 
 kapt {
     correctErrorTypes = true
+}
+
+// Kover — code coverage. CI runs `./gradlew koverXmlReport koverHtmlReport koverVerify`.
+// Threshold: 80% line coverage on the Debug build, excluding generated/DI boilerplate.
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+        filters {
+            excludes {
+                classes(
+                    // Android generated
+                    "*.BuildConfig",
+                    "*.databinding.*",
+                    "*.R",
+                    "*.R\$*",
+                    // Hilt generated
+                    "*_Hilt*",
+                    "Hilt_*",
+                    "*_Factory",
+                    "*_Factory\$*",
+                    "*_MembersInjector",
+                    "dagger.hilt.internal.*",
+                    "hilt_aggregated_deps.*",
+                    // Compose tooling / previews
+                    "*ComposableSingletons*",
+                    "*\$Companion",
+                    // DI modules (mostly @Provides plumbing)
+                    "com.example.travelhub.di.*"
+                )
+            }
+        }
+    }
 }
 
 dependencies {

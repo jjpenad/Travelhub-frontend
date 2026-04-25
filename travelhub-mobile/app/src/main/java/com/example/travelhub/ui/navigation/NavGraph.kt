@@ -34,7 +34,9 @@ import com.example.travelhub.ui.screens.trips.TripDetailsScreen
 fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    startDestination: String = Screen.Login.route
+    // Guests start at Home. Login screens remain in the graph and reachable on demand
+    // (e.g. from Profile), but no longer gate the app.
+    startDestination: String = Screen.Home.route
 ) {
     NavHost(
         navController = navController,

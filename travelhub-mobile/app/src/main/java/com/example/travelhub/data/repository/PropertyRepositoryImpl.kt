@@ -1,6 +1,7 @@
 package com.example.travelhub.data.repository
 
 import android.util.Log
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.mapper.toDomain
 import com.example.travelhub.data.remote.api.AccommodationApi
 import com.example.travelhub.domain.model.Property
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 class PropertyRepositoryImpl @Inject constructor(
-    private val api: AccommodationApi
+    private val api: AccommodationApi,
+    private val guestSessionStore: GuestSessionStore
 ) : PropertyRepository {
 
     // Cache hotel list to avoid repeated calls for featured/popular/topStays
@@ -55,7 +57,10 @@ class PropertyRepositoryImpl @Inject constructor(
             }
 
             Log.d("PropertyRepo", "Searching: city=$city, checkIn=$checkIn, checkOut=$checkOut")
-            val results = api.searchAccommodations(city, checkIn, checkOut).map { it.toDomain() }
+            val response = api.searchAccommodations(city, checkIn, checkOut)
+            // Persist the latest guest session id (always overwrite — backend can rotate it).
+            response.userSession?.takeIf { it.isNotBlank() }?.let { guestSessionStore.update(it) }
+            val results = response.result.map { it.toDomain() }
             Log.d("PropertyRepo", "Search returned ${results.size} results")
             results
         } catch (e: Exception) {
