@@ -34,7 +34,8 @@ import javax.inject.Singleton
 class GuestSessionStore @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    /** Visible to tests so they can substitute a [kotlinx.coroutines.test.TestScope]. */
+    internal var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val cached = AtomicReference<String?>(null)
 
     /** Synchronous read for the OkHttp interceptor. Returns null if not yet hydrated. */

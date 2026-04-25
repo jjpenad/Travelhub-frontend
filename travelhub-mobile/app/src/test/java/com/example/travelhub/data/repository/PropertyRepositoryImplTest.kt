@@ -1,10 +1,14 @@
 package com.example.travelhub.data.repository
 
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.remote.api.AccommodationApi
 import com.example.travelhub.data.remote.dto.HotelDto
+import com.example.travelhub.data.remote.dto.HotelSearchResponseDto
+import com.example.travelhub.data.remote.dto.HotelSearchResultDto
 import com.example.travelhub.domain.model.SearchFilters
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -15,12 +19,14 @@ import java.time.LocalDate
 class PropertyRepositoryImplTest {
 
     private lateinit var api: AccommodationApi
+    private lateinit var guestSessionStore: GuestSessionStore
     private lateinit var repository: PropertyRepositoryImpl
 
     @Before
     fun setup() {
         api = mockk()
-        repository = PropertyRepositoryImpl(api)
+        guestSessionStore = mockk(relaxed = true)
+        repository = PropertyRepositoryImpl(api, guestSessionStore)
     }
 
     @Test
@@ -59,5 +65,63 @@ class PropertyRepositoryImplTest {
         val result = repository.getFeatured()
 
         assertEquals("Hotel B", result[0].name) // Higher rating first
+    }
+
+    @Test
+    fun `search unwraps response and persists user_session`() = runTest {
+        val response = HotelSearchResponseDto(
+            userSession = "guest-abc",
+            page = 1, pageSize = 20, total = 1,
+            result = listOf(
+                HotelSearchResultDto(
+                    hotelId = "h1", hotelName = "Casa Sol", description = "",
+                    address = "", city = "Lima", stars = 5, rating = "4.8",
+                    checkInTime = null, checkOutTime = null, availableRoomTypes = emptyList()
+                )
+            )
+        )
+        coEvery { api.searchAccommodations("Lima", "2026-05-01", "2026-05-05") } returns response
+
+        val results = repository.search(
+            SearchFilters(
+                destination = "Lima",
+                checkIn = LocalDate.of(2026, 5, 1),
+                checkOut = LocalDate.of(2026, 5, 5)
+            )
+        )
+
+        assertEquals(1, results.size)
+        assertEquals("Casa Sol", results[0].name)
+        verify { guestSessionStore.update("guest-abc") }
+    }
+
+    @Test
+    fun `search does not persist guest session when value is blank`() = runTest {
+        val response = HotelSearchResponseDto(
+            userSession = "",
+            page = 1, pageSize = 20, total = 0,
+            result = emptyList()
+        )
+        coEvery { api.searchAccommodations(any(), any(), any()) } returns response
+
+        repository.search(
+            SearchFilters(
+                destination = "Lima",
+                checkIn = LocalDate.of(2026, 5, 1),
+                checkOut = LocalDate.of(2026, 5, 5)
+            )
+        )
+
+        verify(exactly = 0) { guestSessionStore.update(any()) }
+    }
+
+    @Test
+    fun `search falls back to getAll when filters are incomplete`() = runTest {
+        coEvery { api.listHotels() } returns emptyList()
+
+        val results = repository.search(SearchFilters(destination = "")) // no dates, no city
+
+        assertTrue(results.isEmpty())
+        verify(exactly = 0) { guestSessionStore.update(any()) }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.travelhub.data.repository
 
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.local.dao.BookingDao
 import com.example.travelhub.data.local.entity.BookingEntity
 import com.example.travelhub.data.remote.api.AccommodationApi
@@ -14,6 +15,7 @@ import com.example.travelhub.domain.model.BookingStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,13 +27,15 @@ class BookingRepositoryImplTest {
 
     private lateinit var bookingDao: BookingDao
     private lateinit var api: AccommodationApi
+    private lateinit var guestSessionStore: GuestSessionStore
     private lateinit var bookingRepository: BookingRepositoryImpl
 
     @Before
     fun setup() {
         bookingDao = mockk(relaxed = true)
         api = mockk(relaxed = true)
-        bookingRepository = BookingRepositoryImpl(bookingDao, api)
+        guestSessionStore = mockk(relaxed = true)
+        bookingRepository = BookingRepositoryImpl(bookingDao, api, guestSessionStore)
     }
 
     @Test
@@ -83,7 +87,7 @@ class BookingRepositoryImplTest {
             completed = false, step = "validate",
             result = ReservationResultDto(
                 success = true, proceed = false, exists = false, overlap = false, fromKafka = true,
-                confirmationCode = "RES123", message = "OK",
+                confirmationCode = "RES123", reservationId = null, status = null, message = "OK",
                 reservation = ReservationDto("id1", "pending", "2026-05-01", "2026-05-05", "500.00")
             )
         )
@@ -93,5 +97,69 @@ class BookingRepositoryImplTest {
 
         assertTrue(result.isSuccess)
         assertEquals("RES123", result.getOrNull()?.result?.confirmationCode)
+    }
+
+    @Test
+    fun `createReservation persists user_session when present`() = runTest {
+        val request = CreateReservationRequest(
+            hotelId = "h1", roomTypeId = "r1", checkIn = "2026-05-01", checkOut = "2026-05-05",
+            guests = 2, basePrice = "500.00", totalPrice = "500.00",
+            primaryGuest = PrimaryGuestDto("John", "Doe"),
+            payment = PaymentRequestDto("500.00")
+        )
+        val response = CreateReservationResponse(
+            completed = true, step = "done",
+            result = ReservationResultDto(
+                success = true, proceed = true, exists = false, overlap = false, fromKafka = true,
+                confirmationCode = "RES999", reservationId = "id-999", status = "confirmed",
+                message = "OK", reservation = null
+            ),
+            userSession = "guest-from-reservation"
+        )
+        coEvery { api.createReservation(any()) } returns response
+
+        bookingRepository.createReservation(request)
+
+        verify { guestSessionStore.update("guest-from-reservation") }
+    }
+
+    @Test
+    fun `createReservation does not call store when user_session is null`() = runTest {
+        val request = CreateReservationRequest(
+            hotelId = "h1", roomTypeId = "r1", checkIn = "2026-05-01", checkOut = "2026-05-05",
+            guests = 2, basePrice = "500.00", totalPrice = "500.00",
+            primaryGuest = PrimaryGuestDto("John", "Doe"),
+            payment = PaymentRequestDto("500.00")
+        )
+        val response = CreateReservationResponse(
+            completed = false, step = "validate",
+            result = ReservationResultDto(
+                success = true, proceed = false, exists = false, overlap = false, fromKafka = true,
+                confirmationCode = null, reservationId = null, status = null, message = null,
+                reservation = null
+            ),
+            userSession = null
+        )
+        coEvery { api.createReservation(any()) } returns response
+
+        bookingRepository.createReservation(request)
+
+        verify(exactly = 0) { guestSessionStore.update(any()) }
+    }
+
+    @Test
+    fun `createReservation returns failure on API error`() = runTest {
+        val request = CreateReservationRequest(
+            hotelId = "h1", roomTypeId = "r1", checkIn = "2026-05-01", checkOut = "2026-05-05",
+            guests = 2, basePrice = "500.00", totalPrice = "500.00",
+            primaryGuest = PrimaryGuestDto("John", "Doe"),
+            payment = PaymentRequestDto("500.00")
+        )
+        coEvery { api.createReservation(any()) } throws RuntimeException("boom")
+
+        val result = bookingRepository.createReservation(request)
+
+        assertTrue(result.isFailure)
+        verify(exactly = 0) { guestSessionStore.update(any()) }
     }
 }
