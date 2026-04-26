@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import ProtectedTravelerRoute from "./auth/ProtectedTravelerRoute";
 import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
+  PATH_LOGIN,
   PATH_MY_TRIPS,
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
@@ -28,10 +30,21 @@ function App() {
         <Route path={PATH_TRAVELERS_HOME} element={<Home />} />
         <Route
           path={`${PATH_MY_TRIPS_RESERVATION}/:bookingSlug`}
-          element={<TripDetailPage />}
+          element={
+            <ProtectedTravelerRoute>
+              <TripDetailPage />
+            </ProtectedTravelerRoute>
+          }
         />
-        <Route path={PATH_MY_TRIPS} element={<MyTripsPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path={PATH_MY_TRIPS}
+          element={
+            <ProtectedTravelerRoute>
+              <MyTripsPage />
+            </ProtectedTravelerRoute>
+          }
+        />
+        <Route path={PATH_LOGIN} element={<LoginPage />} />
         <Route path={PATH_HOTEL_PORTAL_HOME} element={<HotelPortalPage />} />
         <Route path={`${PATH_HOTEL_MANAGE_RESERVATIONS}/:reservationId`} element={<HotelReservationDetailPage />} />
         <Route path={PATH_HOTEL_MANAGE_RESERVATIONS} element={<HotelManageReservationsPage />} />

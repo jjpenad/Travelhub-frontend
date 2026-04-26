@@ -14,6 +14,15 @@ export const AUTH_TOKEN_KEY = "travelhub-auth-token";
 export const ROLE_HOTEL = "hotel";
 export const ROLE_TRAVELER = "traveler";
 
+/** Evento DOM para sincronizar UI en la misma pestaña tras login/logout/registro. */
+export const SESSION_CHANGED_EVENT = "travelhub-session-changed";
+
+function dispatchSessionChanged() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(SESSION_CHANGED_EVENT));
+  }
+}
+
 function clearSessionRoleEmail() {
   for (const key of [AUTH_ROLE_KEY, AUTH_EMAIL_KEY, AUTH_USER_TYPE_KEY]) {
     sessionStorage.removeItem(key);
@@ -35,6 +44,23 @@ export function pathAfterAuthForUserType(userType) {
     : PATH_TRAVELERS_HOME;
 }
 
+/**
+ * Ruta de destino tras autenticación: `from` (solo paths internos) para viajeros, si no el home por rol.
+ * @param {string | undefined} from - p. ej. `location.state.from` desde ProtectedTravelerRoute
+ */
+export function getPostAuthDestination(userType, from) {
+  const role = roleFromApiUserType(userType);
+  if (
+    typeof from === "string" &&
+    from.startsWith("/") &&
+    !from.startsWith("//") &&
+    role === ROLE_TRAVELER
+  ) {
+    return from;
+  }
+  return pathAfterAuthForUserType(userType);
+}
+
 export function setAuthToken(token) {
   if (token) {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -43,6 +69,31 @@ export function setAuthToken(token) {
 
 export function getAuthToken() {
   return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+/**
+ * Usuario de sesión actual (email, rol y tipo API) leídos del almacenamiento.
+ * @returns {{ email: string | null, role: string | null, userType: string | null, hasToken: boolean } | null}
+ */
+export function getUser() {
+  const email = getSessionEmail();
+  const role = getSessionRole();
+  const userType = getSessionUserType();
+  const token = getAuthToken()?.trim() || null;
+  if (!token && !email && !role) {
+    return null;
+  }
+  return {
+    email: email ?? null,
+    role: role ?? null,
+    userType: userType ?? null,
+    hasToken: Boolean(token),
+  };
+}
+
+/** Hay token JWT guardado (llamadas autenticadas al API). */
+export function isAuthenticated() {
+  return Boolean(getAuthToken()?.trim());
 }
 
 export function clearAuthToken() {
@@ -69,6 +120,7 @@ export function persistSessionFromLogin({
   if (userType != null && String(userType).trim() !== "") {
     storage.setItem(AUTH_USER_TYPE_KEY, String(userType));
   }
+  dispatchSessionChanged();
 }
 
 export function setSessionUser({ role, email, remember, userType }) {
@@ -79,11 +131,13 @@ export function setSessionUser({ role, email, remember, userType }) {
   if (userType != null && String(userType).trim() !== "") {
     storage.setItem(AUTH_USER_TYPE_KEY, String(userType));
   }
+  dispatchSessionChanged();
 }
 
 export function clearSessionUser() {
   clearAuthToken();
   clearSessionRoleEmail();
+  dispatchSessionChanged();
 }
 
 export function getSessionUserType() {
@@ -106,4 +160,9 @@ export function isLoggedIn() {
 /** Sesión del portal de viajeros (no incluye rol hotel). */
 export function isTravelerLoggedIn() {
   return getSessionRole() === ROLE_TRAVELER;
+}
+
+/** Viajero con token: rutas como Mis viajes y detalle de reserva. */
+export function canAccessTravelerAccountRoutes() {
+  return isAuthenticated() && isTravelerLoggedIn();
 }

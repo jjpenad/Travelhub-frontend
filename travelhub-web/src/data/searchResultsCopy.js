@@ -35,7 +35,7 @@ export const searchResultsCopy = {
       { key: "parking", label: "Estacionamiento", icon: "🅿️" },
       { key: "air_conditioning", label: "Aire acondicionado", icon: "❄️" },
       { key: "gym", label: "Gimnasio", icon: "🏋️" },
-      { key: "pets_allowed", label: "Mascotas permitidas", icon: "🐾" },
+      { key: "pet_friendly", label: "Mascotas permitidas", icon: "🐾" },
     ],
     applyFilters: "Aplicar filtros",
     activeFilters: (count) =>

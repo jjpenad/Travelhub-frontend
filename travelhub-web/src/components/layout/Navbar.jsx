@@ -3,9 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
+  AUTH_TOKEN_KEY,
+  canAccessTravelerAccountRoutes,
   clearSessionUser,
+  isAuthenticated,
   isLoggedIn,
-  isTravelerLoggedIn,
+  SESSION_CHANGED_EVENT,
 } from "../../auth/sessionAuth";
 import {
   PATH_HOTEL_PORTAL_HOME,
@@ -40,23 +43,34 @@ function Navbar() {
   const loggedIn = useMemo(() => {
     void pathname;
     void sessionVersion;
-    return isLoggedIn();
+    return isAuthenticated() || isLoggedIn();
   }, [pathname, sessionVersion]);
 
   const showMyTripsLink = useMemo(() => {
     void pathname;
     void sessionVersion;
-    return showMyTripsNav && isTravelerLoggedIn();
+    return showMyTripsNav && canAccessTravelerAccountRoutes();
   }, [pathname, sessionVersion]);
 
   useEffect(() => {
+    function bump() {
+      setSessionVersion((v) => v + 1);
+    }
     function onStorage(e) {
-      if (e.key === AUTH_ROLE_KEY || e.key === AUTH_EMAIL_KEY) {
-        setSessionVersion((v) => v + 1);
+      if (
+        e.key === AUTH_ROLE_KEY ||
+        e.key === AUTH_EMAIL_KEY ||
+        e.key === AUTH_TOKEN_KEY
+      ) {
+        bump();
       }
     }
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener(SESSION_CHANGED_EVENT, bump);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(SESSION_CHANGED_EVENT, bump);
+    };
   }, []);
 
   function handleLogout() {

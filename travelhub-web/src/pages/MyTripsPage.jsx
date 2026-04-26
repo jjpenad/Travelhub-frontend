@@ -17,13 +17,15 @@ import {
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
-  isTravelerLoggedIn,
+  AUTH_TOKEN_KEY,
+  canAccessTravelerAccountRoutes,
 } from "../auth/sessionAuth";
 import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
 import {
+  PATH_LOGIN,
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
 } from "../constants/routes";
@@ -246,12 +248,6 @@ function MyTripsPage() {
   const [tab, setTab] = useState("upcoming");
   const [sort, setSort] = useState("checkin-asc");
 
-  useEffect(() => {
-    if (!isTravelerLoggedIn()) {
-      navigate(PATH_TRAVELERS_HOME, { replace: true });
-    }
-  }, [navigate]);
-
   const reservations = useMemo(() => {
     if (USE_MOCK_MY_TRIPS) {
       return [...mockMyTripsReservations, ...storedReservations];
@@ -271,10 +267,11 @@ function MyTripsPage() {
       if (
         e.key === AUTH_ROLE_KEY ||
         e.key === AUTH_EMAIL_KEY ||
+        e.key === AUTH_TOKEN_KEY ||
         e.key === null
       ) {
-        if (!isTravelerLoggedIn()) {
-          navigate(PATH_TRAVELERS_HOME, { replace: true });
+        if (!canAccessTravelerAccountRoutes()) {
+          navigate(PATH_LOGIN, { replace: true });
         }
       }
     }
@@ -305,10 +302,6 @@ function MyTripsPage() {
   }, [filtered, sort]);
 
   const hasAny = reservations.length > 0;
-
-  if (!isTravelerLoggedIn()) {
-    return null;
-  }
 
   return (
     <div className="my-trips-page">
