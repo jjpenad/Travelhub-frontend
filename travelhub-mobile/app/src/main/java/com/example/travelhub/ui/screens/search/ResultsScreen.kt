@@ -15,7 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -41,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.Room
 import com.example.travelhub.domain.model.SortOption
+import com.example.travelhub.ui.components.InfiniteScrollEffect
 import com.example.travelhub.ui.components.PropertyCard
 import com.example.travelhub.ui.theme.DividerColor
 import com.example.travelhub.ui.theme.Purple
@@ -59,6 +65,9 @@ fun ResultsScreen(
     val selectedCity by viewModel.selectedCity.collectAsStateWithLifecycle()
     val guests by viewModel.guests.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val total by viewModel.total.collectAsStateWithLifecycle()
     val sortOption by viewModel.sortOption.collectAsStateWithLifecycle()
 
     ResultsContent(
@@ -66,26 +75,51 @@ fun ResultsScreen(
         destination = selectedCity,
         dateRange = "${viewModel.checkInFormatted} → ${viewModel.checkOutFormatted}",
         guests = guests,
+        totalCount = total,
         isLoading = isLoading,
+        isLoadingMore = isLoadingMore,
+        isRefreshing = isRefreshing,
+        hasMore = viewModel.hasMore,
         sortOption = sortOption,
         onSortChange = viewModel::onSortChange,
+        onLoadMore = viewModel::loadMore,
+        onRefresh = viewModel::refresh,
         onPropertyClick = onPropertyClick,
         onBack = onBack
     )
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun ResultsContent(
     results: List<Property>,
     destination: String,
     dateRange: String,
     guests: Int,
+    totalCount: Int?,
     isLoading: Boolean,
+    isLoadingMore: Boolean,
+    isRefreshing: Boolean,
+    hasMore: Boolean,
     sortOption: SortOption,
     onSortChange: (SortOption) -> Unit,
+    onLoadMore: () -> Unit,
+    onRefresh: () -> Unit,
     onPropertyClick: (String) -> Unit,
     onBack: () -> Unit
 ) {
+    val listState = rememberLazyListState()
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = onRefresh
+    )
+
+    InfiniteScrollEffect(
+        listState = listState,
+        enabled = hasMore && !isRefreshing && !isLoadingMore && !isLoading,
+        onLoadMore = onLoadMore
+    )
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().background(White).padding(horizontal = 8.dp, vertical = 12.dp),
@@ -93,8 +127,17 @@ private fun ResultsContent(
         ) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back") }
             Column {
-                Text(text = if (destination.isNotBlank()) destination else "All Destinations", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text(text = "$dateRange · $guests guests · ${results.size} results", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(
+                    text = if (destination.isNotBlank()) destination else "All Destinations",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                val countLabel = totalCount?.let { "$it" } ?: "${results.size}+"
+                Text(
+                    text = "$dateRange · $guests guests · $countLabel results",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
             }
         }
 
@@ -104,24 +147,55 @@ private fun ResultsContent(
             enabled = !isLoading && results.isNotEmpty()
         )
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Purple)
-            }
-        } else if (results.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("No hotels available", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-                    Text("Try different dates or another city", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pullRefresh(pullRefreshState)
+        ) {
+            when {
+                isLoading && results.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Purple)
+                    }
+                }
+                results.isEmpty() -> {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("No hotels available", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                            Text("Try different dates or another city", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(results, key = { it.id }) { property ->
+                            PropertyCard(property = property, onClick = { onPropertyClick(property.id) })
+                        }
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = Purple, strokeWidth = 2.dp)
+                                }
+                            }
+                        }
+                        item { Spacer(modifier = Modifier.height(16.dp)) }
+                    }
                 }
             }
-        } else {
-            LazyColumn(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(results, key = { it.id }) { property ->
-                    PropertyCard(property = property, onClick = { onPropertyClick(property.id) })
-                }
-                item { Spacer(modifier = Modifier.height(16.dp)) }
-            }
+
+            PullRefreshIndicator(
+                refreshing = isRefreshing,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = Purple
+            )
         }
     }
 }
@@ -156,11 +230,7 @@ private fun SortBar(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Sort,
-                    contentDescription = null,
-                    tint = Purple
-                )
+                Icon(imageVector = Icons.Filled.Sort, contentDescription = null, tint = Purple)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = selected.label,
@@ -169,17 +239,10 @@ private fun SortBar(
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = "Open sort options",
-                    tint = TextSecondary
-                )
+                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "Open sort options", tint = TextSecondary)
             }
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 SortOption.values().forEach { option ->
                     DropdownMenuItem(
                         text = {
@@ -211,8 +274,11 @@ private fun ResultsScreenPreview() {
                     amenities = listOf("pool", "spa"),
                     rooms = listOf(Room("r1", "Ocean Room", price = 247.50, capacity = 2)))
             ),
-            destination = "Lima", dateRange = "May 01 → May 05", guests = 2, isLoading = false,
+            destination = "Lima", dateRange = "May 01 → May 05", guests = 2,
+            totalCount = 1,
+            isLoading = false, isLoadingMore = false, isRefreshing = false, hasMore = false,
             sortOption = SortOption.PRICE_ASC, onSortChange = {},
+            onLoadMore = {}, onRefresh = {},
             onPropertyClick = {}, onBack = {}
         )
     }

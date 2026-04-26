@@ -1,6 +1,7 @@
 package com.example.travelhub.ui.screens.booking
 
 import androidx.lifecycle.SavedStateHandle
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
 import com.example.travelhub.data.remote.dto.ReservationDto
@@ -31,12 +32,14 @@ class BookingViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var propertyRepository: PropertyRepository
     private lateinit var bookingRepository: BookingRepository
+    private lateinit var guestSessionStore: GuestSessionStore
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         propertyRepository = mockk()
         bookingRepository = mockk()
+        guestSessionStore = mockk(relaxed = true)
     }
 
     @After
@@ -67,7 +70,7 @@ class BookingViewModelTest {
             propertyRepository.getAvailability("p1", "2026-05-01", "2026-05-05")
         } returns propertyWithRoom()
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
 
         val state = vm.uiState.value
@@ -85,7 +88,7 @@ class BookingViewModelTest {
             propertyRepository.getAvailability(any(), any(), any())
         } returns null
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
 
         val state = vm.uiState.value
@@ -100,7 +103,7 @@ class BookingViewModelTest {
             propertyRepository.getAvailability(any(), any(), any())
         } returns emptyProp
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value is BookingUiState.Error)
@@ -123,7 +126,7 @@ class BookingViewModelTest {
             Result.success(response)
         coEvery { bookingRepository.create(any()) } answers { Result.success(firstArg()) }
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
 
         vm.confirmAndPay()
@@ -155,7 +158,7 @@ class BookingViewModelTest {
             Result.success(response)
         coEvery { bookingRepository.create(any()) } answers { Result.success(firstArg()) }
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
         vm.confirmAndPay()
         advanceUntilIdle()
@@ -172,7 +175,7 @@ class BookingViewModelTest {
         coEvery { bookingRepository.createReservation(any<CreateReservationRequest>()) } returns
             Result.failure(RuntimeException("boom"))
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
         vm.confirmAndPay()
         advanceUntilIdle()
@@ -187,7 +190,7 @@ class BookingViewModelTest {
         coEvery {
             propertyRepository.getAvailability(any(), any(), any())
         } returns null
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
         advanceUntilIdle()
         // VM is in Error state by now.
 

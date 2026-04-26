@@ -64,7 +64,7 @@ class PropertyRepositoryImplTest {
 
         val result = repository.getFeatured()
 
-        assertEquals("Hotel B", result[0].name) // Higher rating first
+        assertEquals("Hotel B", result[0].name)
     }
 
     @Test
@@ -80,18 +80,23 @@ class PropertyRepositoryImplTest {
                 )
             )
         )
-        coEvery { api.searchAccommodations("Lima", "2026-05-01", "2026-05-05") } returns response
+        coEvery {
+            api.searchAccommodations("Lima", "2026-05-01", "2026-05-05", 1, 20)
+        } returns response
 
-        val results = repository.search(
+        val paged = repository.search(
             SearchFilters(
                 destination = "Lima",
                 checkIn = LocalDate.of(2026, 5, 1),
                 checkOut = LocalDate.of(2026, 5, 5)
-            )
+            ),
+            page = 1, pageSize = 20
         )
 
-        assertEquals(1, results.size)
-        assertEquals("Casa Sol", results[0].name)
+        assertEquals(1, paged.items.size)
+        assertEquals(1, paged.total)
+        assertEquals(1, paged.nextOffset)
+        assertEquals("Casa Sol", paged.items[0].name)
         verify { guestSessionStore.update("guest-abc") }
     }
 
@@ -102,7 +107,7 @@ class PropertyRepositoryImplTest {
             page = 1, pageSize = 20, total = 0,
             result = emptyList()
         )
-        coEvery { api.searchAccommodations(any(), any(), any()) } returns response
+        coEvery { api.searchAccommodations(any(), any(), any(), any(), any()) } returns response
 
         repository.search(
             SearchFilters(
@@ -119,9 +124,9 @@ class PropertyRepositoryImplTest {
     fun `search falls back to getAll when filters are incomplete`() = runTest {
         coEvery { api.listHotels() } returns emptyList()
 
-        val results = repository.search(SearchFilters(destination = "")) // no dates, no city
+        val paged = repository.search(SearchFilters(destination = ""))
 
-        assertTrue(results.isEmpty())
+        assertTrue(paged.items.isEmpty())
         verify(exactly = 0) { guestSessionStore.update(any()) }
     }
 }
