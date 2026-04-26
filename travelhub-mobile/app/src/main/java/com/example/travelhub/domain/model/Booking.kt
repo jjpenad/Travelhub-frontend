@@ -15,7 +15,11 @@ data class Booking(
     val roomType: String = "Suite",
     val totalPrice: Double,
     val status: BookingStatus = BookingStatus.CONFIRMED,
-    val bookingRef: String = ""
+    val bookingRef: String = "",
+    /** Local-only marker. The backend doesn't track check-in state; we set this
+     *  flag when the guest completes self check-in via the app. Preserved across
+     *  reservation list refreshes (see BookingRepositoryImpl.getReservations). */
+    val isCheckedIn: Boolean = false
 )
 
 enum class BookingStatus {

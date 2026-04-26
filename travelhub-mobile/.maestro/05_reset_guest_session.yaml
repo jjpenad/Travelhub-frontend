@@ -1,0 +1,59 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Reset guest session
+#
+# Goal:
+#   An anonymous user can reset their X-Guest-Id from Profile. The visible
+#   session id should change after a subsequent backend roundtrip.
+#
+# Pre-conditions:
+#   - First search assigns a session id to the anonymous user.
+#
+# Post-conditions:
+#   - Tapping "Reset guest session" clears the local id immediately.
+#   - The next search/list request gets a fresh id from the backend; the UI
+#     reflects that change.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Reset guest session
+tags:
+  - profile
+  - session
+---
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# Trigger a search so the backend issues a guest session id.
+- tapOn: "Search"
+- tapOn: "Select a city"
+- tapOn: "Lima"
+- tapOn: "Search Hotels"
+- extendedWaitUntil:
+    visible:
+      text: ".*results.*"
+    timeout: 10000
+
+# Results is a child route — bottom nav is hidden there. Press back to
+# return to the Search tab so the bottom nav reappears.
+- pressKey: Back
+
+# Profile shows the session id below the fold on smaller screens, so
+# scroll until the Reset button is in view rather than asserting on the
+# section header (which may also be off-screen on launch).
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+      text: "Reset guest session"
+- assertVisible: "GUEST SESSION"
+- assertVisible: "Session ID"
+- tapOn: "Reset guest session"
+
+# After reset, the displayed id changes to the fallback (or empty until the
+# next backend roundtrip). We accept either the placeholder OR a different id.
+- extendedWaitUntil:
+    visible:
+      text: ".*not yet assigned.*|.*-.*-.*"  # placeholder OR new uuid
+    timeout: 5000

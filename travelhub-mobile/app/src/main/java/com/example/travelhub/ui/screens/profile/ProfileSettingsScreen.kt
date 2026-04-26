@@ -68,6 +68,8 @@ fun ProfileSettingsScreen(
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
     val guestSessionId by profileViewModel.guestSessionId.collectAsStateWithLifecycle()
+    val session by profileViewModel.session.collectAsStateWithLifecycle()
+    val isAuthenticated = session?.token?.isNotBlank() == true
 
     Column(
         modifier = Modifier
@@ -95,8 +97,22 @@ fun ProfileSettingsScreen(
                     Text("A", color = White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Alejandra Pinzon", color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("alejandra@email.com", color = White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                if (isAuthenticated) {
+                    val name = session?.fullName?.takeIf { it.isNotBlank() } ?: "Guest"
+                    Text(name, color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        text = session?.email.orEmpty(),
+                        color = White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text("Browsing as Guest", color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        "Sign in to track your trips across devices",
+                        color = White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
 
@@ -137,13 +153,19 @@ fun ProfileSettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        TravelHubOutlinedButton(
-            text = "Log Out",
-            onClick = onLogout,
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
+        // Logout — only when actually signed in. Anonymous users have nothing
+        // to log out from; their identity is the X-Guest-Id (reset below).
+        if (isAuthenticated) {
+            TravelHubOutlinedButton(
+                text = "Log Out",
+                onClick = {
+                    profileViewModel.logout()
+                    onLogout()
+                },
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
 
         // Guest session — shows the current X-Guest-Id and lets the user reset it.
         SectionTitle("GUEST SESSION")

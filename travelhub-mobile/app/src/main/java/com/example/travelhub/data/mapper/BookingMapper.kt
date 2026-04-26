@@ -20,7 +20,8 @@ fun BookingEntity.toDomain(): Booking = Booking(
     roomType = roomType,
     totalPrice = totalPrice,
     status = runCatching { BookingStatus.valueOf(status) }.getOrDefault(BookingStatus.PENDING),
-    bookingRef = bookingRef
+    bookingRef = bookingRef,
+    isCheckedIn = isCheckedIn
 )
 
 fun Booking.toEntity(): BookingEntity = BookingEntity(
@@ -36,7 +37,8 @@ fun Booking.toEntity(): BookingEntity = BookingEntity(
     roomType = roomType,
     totalPrice = totalPrice,
     status = status.name,
-    bookingRef = bookingRef
+    bookingRef = bookingRef,
+    isCheckedIn = isCheckedIn
 )
 
 /**

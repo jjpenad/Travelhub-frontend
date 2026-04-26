@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Logout
+#
+# Goal:
+#   A signed-in user can log out from Profile and end up back at the
+#   anonymous state.
+#
+# Pre-conditions:
+#   - This flow registers a fresh user inline (so it's standalone) before
+#     exercising the logout button.
+#
+# Post-conditions:
+#   - JWT is cleared.
+#   - User lands on the Login screen (NavGraph clears the stack on logout
+#     via popUpTo(0)), which is the unauthenticated entry point.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Logout from Profile
+tags:
+  - auth
+  - logout
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# Quick path to a signed-in state: My Trips → Sign in → Sign up.
+- tapOn: "Trips"
+- tapOn: "Sign in"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# ── Profile + logout ─────────────────────────────────────────────────────
+- tapOn: "Profile"
+
+# Header shows the user's display name (from registration).
+- assertVisible:
+    text: ".*${output.firstName}.*"
+
+# Log Out button lives below the fold on smaller screens, so scroll to it
+# first. The fact that it appears at all is implicit proof of the
+# authenticated state — no separate assertVisible needed.
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+- tapOn: "Log Out"
+
+# After logout, NavGraph routes to Login with popUpTo(0) — the back
+# stack is cleared and the bottom-nav tabs disappear. Landing on the
+# Login screen IS the anonymous-state proof: the JWT was cleared and
+# the unauthenticated entry point is back. We assert on the Login
+# screen's stable header copy instead of bouncing through My Trips.
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 10000

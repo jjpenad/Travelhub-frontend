@@ -46,15 +46,21 @@ fun TravelHubTextField(
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
+            // Using the OutlinedTextField's native `label` slot (instead of a
+            // standalone Text above it) so the label and the input share one
+            // accessibility node. That makes the field reachable by its label
+            // text from Maestro / TalkBack — `tapOn: "First name"` focuses
+            // the input and opens the IME against the correct field.
+            label = {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            },
             placeholder = {
                 Text(text = placeholder, color = TextSecondary)
             },

@@ -1,0 +1,149 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: QR + Complete Check-In
+#
+# Goal:
+#   Verify the full self check-in flow built in HU "QR for reservation":
+#     - The QR code is rendered (image visible).
+#     - The info icon opens a dialog with the decoded payload.
+#     - "Complete Check-In" calls the backend (PATCH status=confirmed) and
+#       flips the reservation locally to `isCheckedIn = true`.
+#     - The QR badge updates to "Checked in".
+#
+# Pre-conditions:
+#   - User has at least one bookable reservation. We register + book inline
+#     so the flow is self-contained.
+#
+# Post-conditions:
+#   - The reservation's local UI reflects "Checked in".
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: QR and Complete Check-In
+tags:
+  - qr
+  - checkin
+  - booking
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# ── Sign up so the booking is owned by an authenticated user ─────────────
+- tapOn: "Trips"
+- tapOn: "Sign in"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# ── Book a hotel ─────────────────────────────────────────────────────────
+- tapOn: "Search"
+- tapOn: "Select a city"
+- tapOn: "Lima"
+- tapOn: "Search Hotels"
+
+- extendedWaitUntil:
+    visible: "Book Now"
+    timeout: 10000
+- tapOn:
+    text: "Book Now"
+    index: 0
+
+- scrollUntilVisible:
+    element:
+      text: ".*guests.*"
+- tapOn:
+    text: ".*guests.*"
+    index: 0
+
+- extendedWaitUntil:
+    visible: "Complete Booking"
+    timeout: 10000
+
+# Authenticated → personal fields are pre-filled and read-only.
+- scrollUntilVisible:
+    element:
+      text: "Confirm & Pay.*"
+- tapOn:
+    text: "Confirm & Pay.*"
+
+- extendedWaitUntil:
+    visible: "Booking Confirmed!"
+    timeout: 15000
+- assertVisible: "View My Trips"
+
+# ── Navigate to My Trips → into the new reservation ──────────────────────
+# Confirmation isn't a tab route → use the on-screen button instead of
+# the (hidden) bottom-nav "Trips" tab.
+- tapOn: "View My Trips"
+- extendedWaitUntil:
+    visible:
+      text: ".*Casa Sol.*|.*Hotel.*"
+    timeout: 10000
+
+# Tap on the booking card to open Trip Details.
+- tapOn:
+    index: 0
+    text: ".*Casa Sol.*|.*Hotel.*"
+
+- assertVisible: "BOOKING REFERENCE"
+
+# Tap the View QR Check-In Code button.
+- tapOn:
+    text: "View QR Check-In Code.*"
+
+# ── QR screen assertions ─────────────────────────────────────────────────
+- assertVisible: "QR Check-In"
+- assertVisible: "Ready to scan"
+
+# Open the info icon dialog and verify the decoded payload is shown.
+# The icon exposes "QR contents" via Compose contentDescription, not a
+# testTag — Maestro's text matcher reads that, but the `id:` matcher
+# would only resolve testTag/resource-id and miss it.
+- tapOn: "QR contents"
+- assertVisible: "QR contents"
+- assertVisible: "Reservation ID"
+- assertVisible: "Hotel ID"
+- assertVisible: "Confirmation code"
+- tapOn: "Close"
+
+# ── Tap Complete Check-In ────────────────────────────────────────────────
+- tapOn: "Complete Check-In"
+
+# Backend: PATCH /reservations/{id}/status with body {"status":"confirmed"}.
+# Local: bookingDao.updateCheckedIn(id, true) → QR availability flips.
+# The QR screen's badge flipping to "Checked in" is sufficient proof that
+# both the backend call and the local state update went through.
+- extendedWaitUntil:
+    visible: "Checked in"
+    timeout: 10000

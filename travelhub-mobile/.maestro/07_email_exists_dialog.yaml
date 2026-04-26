@@ -1,0 +1,122 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Sign-up with an email that already exists
+#
+# Goal:
+#   When a user tries to register with an email that's already taken,
+#   the app surfaces an inline error explaining that the account exists.
+#   This covers the 409 branch in `AuthRepositoryImpl.register` and the
+#   `EmailAlreadyExistsException` UX.
+#
+# Strategy:
+#   1. Sign up successfully with email X.
+#   2. Log out.
+#   3. From Login, tap "Sign up" again with the SAME email X.
+#   4. Backend returns 409 → SignUpUiState.Error(emailAlreadyExists=true).
+#   5. UI must show the explanatory error message.
+#
+# Pre-conditions:
+#   - Backend `/auth/register` returns 409 for duplicate emails.
+#
+# Post-conditions:
+#   - Error text is visible.
+#   - User remains on the SignUp screen (NOT navigated away).
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Email already exists shows error
+tags:
+  - auth
+  - signup
+  - error
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# ── First registration (succeeds) ────────────────────────────────────────
+- tapOn: "Trips"
+- tapOn: "Sign in"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# ── Logout to be able to retry signup ────────────────────────────────────
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+- tapOn: "Log Out"
+
+# ── Second registration (must fail with 409) ─────────────────────────────
+# After logout NavGraph drops us straight on the Login screen — bottom
+# nav tabs are gone, so we go to Sign up from here directly.
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- tapOn: "First name"
+- inputText: "Different"
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: "Person"
+- tapOn:
+    point: "50%,8%"
+# SAME email as before → backend returns 409.
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: "AnotherPass1!"
+- tapOn:
+    point: "50%,8%"
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+# ── Verify error ─────────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: ".*already registered.*|.*already exists.*"
+    timeout: 10000
+
+# We must still be on the SignUp screen (not silently navigated away).
+- assertVisible: "Create your account"

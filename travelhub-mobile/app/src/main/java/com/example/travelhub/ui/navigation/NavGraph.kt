@@ -43,7 +43,9 @@ fun NavGraph(
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Auth
+        // Auth — share the AuthViewModel between Login and SignUp via the Login back
+        // stack entry so the email/password the user typed on one screen carries over
+        // to the other (handy when bouncing between "I have an account" and "Create one").
         composable(Screen.Login.route) {
             val authViewModel: AuthViewModel = hiltViewModel()
             LoginScreen(
@@ -57,7 +59,18 @@ fun NavGraph(
             )
         }
         composable(Screen.SignUp.route) {
-            SignUpScreen(onNavigateBack = { navController.popBackStack() })
+            val authViewModel: AuthViewModel = hiltViewModel()
+            SignUpScreen(
+                viewModel = authViewModel,
+                onSignUpSuccess = {
+                    navController.navigate(Screen.MyTrips.route) {
+                        // Clear the auth screens from the back stack so back doesn't
+                        // bounce the user back into a stale signup form.
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // Home
@@ -190,7 +203,8 @@ fun NavGraph(
             val viewModel: MyTripsViewModel = hiltViewModel()
             MyTripsScreen(
                 viewModel = viewModel,
-                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) }
+                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) },
+                onSignInClick = { navController.navigate(Screen.Login.route) }
             )
         }
 

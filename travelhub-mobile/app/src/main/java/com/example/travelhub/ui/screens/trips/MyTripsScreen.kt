@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.ui.components.InfiniteScrollEffect
+import com.example.travelhub.ui.components.OnResumeEffect
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
@@ -59,9 +60,16 @@ import com.example.travelhub.ui.theme.White
 @Composable
 fun MyTripsScreen(
     viewModel: MyTripsViewModel,
-    onTripClick: (String) -> Unit
+    onTripClick: (String) -> Unit,
+    onSignInClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+
+    // Auto-refresh whenever the user lands back on this screen — covers the
+    // "I just finished booking, take me to my trips, where's my new one?" case.
+    OnResumeEffect { viewModel.refresh() }
+
     MyTripsContent(
         upcoming = viewModel.upcoming,
         past = viewModel.past,
@@ -69,9 +77,11 @@ fun MyTripsScreen(
         isLoadingMore = state.isLoadingMore,
         isRefreshing = state.isRefreshing,
         hasMore = state.hasMore,
+        isAuthenticated = isAuthenticated,
         onRefresh = viewModel::refresh,
         onLoadMore = viewModel::loadMore,
-        onTripClick = onTripClick
+        onTripClick = onTripClick,
+        onSignInClick = onSignInClick
     )
 }
 
@@ -84,9 +94,11 @@ private fun MyTripsContent(
     isLoadingMore: Boolean,
     isRefreshing: Boolean,
     hasMore: Boolean,
+    isAuthenticated: Boolean,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
-    onTripClick: (String) -> Unit
+    onTripClick: (String) -> Unit,
+    onSignInClick: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val displayBookings = if (selectedTab == 0) upcoming else past
@@ -136,6 +148,9 @@ private fun MyTripsContent(
                         CircularProgressIndicator(color = Purple)
                     }
                 }
+                displayBookings.isEmpty() && !isAuthenticated -> {
+                    SignInPromptState(onSignInClick = onSignInClick)
+                }
                 displayBookings.isEmpty() -> {
                     EmptyState(isUpcoming = selectedTab == 0)
                 }
@@ -172,6 +187,30 @@ private fun MyTripsContent(
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter),
                 contentColor = Purple
+            )
+        }
+    }
+}
+
+@Composable
+private fun SignInPromptState(onSignInClick: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "Sign in to track your trips",
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = "Reservations made anonymously stay anonymous. Create an account or sign in to see your bookings here across devices.",
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            com.example.travelhub.ui.components.TravelHubButton(
+                text = "Sign in",
+                onClick = onSignInClick
             )
         }
     }
@@ -219,7 +258,7 @@ private fun TripCard(
                 )
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
-                StatusBadge(booking.status)
+                if (booking.isCheckedIn) CheckedInBadge() else StatusBadge(booking.status)
                 Text(booking.propertyName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
                 Text("${booking.checkIn} → ${booking.checkOut} · ${booking.guests} guests", style = MaterialTheme.typography.bodySmall)
                 if (booking.propertyLocation.isNotBlank()) {
@@ -239,6 +278,17 @@ private fun TripCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CheckedInBadge() {
+    Box(
+        modifier = Modifier.clip(RoundedCornerShape(4.dp))
+            .background(Purple.copy(alpha = 0.15f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text("Checked in", color = Purple, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -266,7 +316,8 @@ private fun MyTripsScreenPreview() {
         MyTripsContent(
             upcoming = emptyList(), past = emptyList(),
             isLoading = false, isLoadingMore = false, isRefreshing = false, hasMore = false,
-            onRefresh = {}, onLoadMore = {}, onTripClick = {}
+            isAuthenticated = false,
+            onRefresh = {}, onLoadMore = {}, onTripClick = {}, onSignInClick = {}
         )
     }
 }

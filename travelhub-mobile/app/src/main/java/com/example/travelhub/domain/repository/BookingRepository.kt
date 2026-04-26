@@ -3,12 +3,17 @@ package com.example.travelhub.domain.repository
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.PagedResult
 
+import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
 
 interface BookingRepository {
     suspend fun create(booking: Booking): Result<Booking>
     suspend fun createReservation(request: CreateReservationRequest): Result<CreateReservationResponse>
+
+    /** Step 2 of the booking flow: confirm primary guest details + payment. */
+    suspend fun confirmReservationPayment(request: ConfirmReservationRequestDto): Result<CreateReservationResponse>
+
     suspend fun getByUserId(userId: String): List<Booking>
     suspend fun getById(bookingId: String): Booking?
     suspend fun cancel(bookingId: String): Result<Unit>

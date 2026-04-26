@@ -2,6 +2,7 @@ package com.example.travelhub.ui.screens.profile
 
 import app.cash.turbine.test
 import com.example.travelhub.data.local.GuestSessionStore
+import com.example.travelhub.domain.repository.AuthRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -38,7 +39,10 @@ class ProfileViewModelTest {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns "preloaded"
         every { store.observe() } returns flowOf("preloaded")
-        val vm = ProfileViewModel(store)
+        val authRepo = mockk<AuthRepository>(relaxed = true).also {
+            every { it.getSession() } returns flowOf(null)
+        }
+        val vm = ProfileViewModel(store, authRepo)
 
         advanceUntilIdle()
         vm.guestSessionId.test {
@@ -52,7 +56,10 @@ class ProfileViewModelTest {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns null
         every { store.observe() } returns flowOf(null)
-        val vm = ProfileViewModel(store)
+        val authRepo = mockk<AuthRepository>(relaxed = true).also {
+            every { it.getSession() } returns flowOf(null)
+        }
+        val vm = ProfileViewModel(store, authRepo)
 
         advanceUntilIdle()
         vm.guestSessionId.test {
@@ -67,7 +74,10 @@ class ProfileViewModelTest {
             every { it.currentId() } returns null
             every { it.observe() } returns flowOf(null)
         }
-        val vm = ProfileViewModel(store)
+        val authRepo = mockk<AuthRepository>(relaxed = true).also {
+            every { it.getSession() } returns flowOf(null)
+        }
+        val vm = ProfileViewModel(store, authRepo)
 
         vm.resetGuestSession()
 

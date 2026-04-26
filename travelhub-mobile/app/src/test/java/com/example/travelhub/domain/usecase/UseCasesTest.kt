@@ -15,6 +15,7 @@ import com.example.travelhub.domain.repository.PaymentRepository
 import com.example.travelhub.domain.repository.PropertyRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -157,6 +158,32 @@ class UseCasesTest {
         GetUserReservationsUseCase(repo)()
 
         coVerify { repo.getReservations(20, 0) }
+    }
+
+    // ── GenerateReservationQrUseCase ────────────────────────────────────
+
+    @Test
+    fun `GenerateReservationQrUseCase delegates to QrTokenProvider`() {
+        val provider = mockk<com.example.travelhub.domain.repository.QrTokenProvider>()
+        val booking = Booking(
+            id = "res-1", userId = "guest-1", propertyId = "h1",
+            propertyName = "Casa Sol", propertyLocation = "Lima",
+            checkIn = LocalDate.now(), checkOut = LocalDate.now().plusDays(2),
+            totalPrice = 100.0
+        )
+        val expected = com.example.travelhub.domain.model.QrToken(
+            token = "t.s",
+            payload = com.example.travelhub.domain.model.QrPayload(
+                "res-1", "guest-1", "h1", "RES1", 0L, 100L
+            ),
+            signature = "s",
+            availability = com.example.travelhub.domain.model.QrAvailability.ACTIVE
+        )
+        every { provider.generate(booking) } returns expected
+
+        val result = GenerateReservationQrUseCase(provider)(booking)
+
+        assertSame(expected, result)
     }
 
     // ── PayBookingUseCase ───────────────────────────────────────────────

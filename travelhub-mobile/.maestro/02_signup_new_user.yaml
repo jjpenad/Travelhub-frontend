@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Sign up a brand-new user
+#
+# Goal:
+#   From a fresh install, the user navigates to My Trips, taps "Sign in",
+#   then "Sign up", fills the form and ends up authenticated on My Trips.
+#
+# Pre-conditions:
+#   - Email is unique per run (utils/unique_email.js).
+#
+# Post-conditions:
+#   - Backend `/auth/register` returned 201.
+#   - `/auth/login` returned 200 with a JWT.
+#   - App lands on My Trips. List is empty (it's a fresh user) and shows the
+#     standard empty-state copy — NOT the "Sign in" CTA, since the user is
+#     now authenticated.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Sign up new user
+tags:
+  - auth
+  - signup
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# Reach the sign-in CTA via My Trips empty state.
+- tapOn: "Trips"
+- assertVisible: "Sign in to track your trips"
+- tapOn: "Sign in"
+
+# On Login screen, jump to Sign up.
+- assertVisible: "Welcome back"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+# Sign up form.
+- assertVisible: "Create your account"
+
+# Between each field we tap the purple header (top of the screen, no
+# interactive children). The screen's root Column has a tap-outside
+# handler that calls focusManager.clearFocus(), which dismisses the
+# soft keyboard. With the keyboard down, the next field is reachable
+# without any scroll-through-IME tricks.
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Create Account"
+
+# After register + auto-login, NavGraph routes to My Trips.
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# Authenticated empty state copy — NOT the "Sign in" CTA.
+- assertNotVisible: "Sign in to track your trips"

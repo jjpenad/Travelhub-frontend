@@ -29,12 +29,19 @@ class MyTripsViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var getUserReservations: GetUserReservationsUseCase
     private lateinit var cancelBooking: CancelBookingUseCase
+    private lateinit var authRepository: com.example.travelhub.domain.repository.AuthRepository
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         getUserReservations = mockk()
         cancelBooking = mockk()
+        // Explicit generic on mockk(): without it the compiler can't infer
+        // the type through `.also { }` back to the field's declared type,
+        // which throws "Not enough information to infer type variable T"
+        // and makes `it` unresolved inside the lambda.
+        authRepository = mockk<com.example.travelhub.domain.repository.AuthRepository>(relaxed = true)
+        io.mockk.every { authRepository.getSession() } returns kotlinx.coroutines.flow.flowOf(null)
     }
 
     @After
@@ -58,7 +65,7 @@ class MyTripsViewModelTest {
         val items = listOf(booking("b1", LocalDate.now().plusDays(5)))
         coEvery { getUserReservations(20, 0) } returns PagedResult(items, total = 1, nextOffset = 1)
 
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         assertEquals(items, vm.state.value.items)
@@ -76,7 +83,7 @@ class MyTripsViewModelTest {
         )
         coEvery { getUserReservations(any(), any()) } returns PagedResult(items, items.size, items.size)
 
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         assertEquals(listOf("near", "far"), vm.upcoming.map { it.id })
@@ -92,7 +99,7 @@ class MyTripsViewModelTest {
         )
         coEvery { getUserReservations(any(), any()) } returns PagedResult(items, items.size, items.size)
 
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         // recent (today-2) > oldest (today-20); cancelled-future has checkOut today+7 → first.
@@ -109,7 +116,7 @@ class MyTripsViewModelTest {
         coEvery { getUserReservations(20, 0) } returns PagedResult(first, total = 2, nextOffset = 1)
         coEvery { getUserReservations(20, 1) } returns PagedResult(second, total = 2, nextOffset = 3)
 
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         vm.loadMore()
@@ -124,7 +131,7 @@ class MyTripsViewModelTest {
             items = listOf(booking("b1", LocalDate.now().plusDays(1))),
             total = 1, nextOffset = 1
         )
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         vm.loadMore()
@@ -141,7 +148,7 @@ class MyTripsViewModelTest {
             items = listOf(booking("b1", LocalDate.now().plusDays(1))),
             total = 1, nextOffset = 1
         )
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         vm.refresh()
@@ -156,7 +163,7 @@ class MyTripsViewModelTest {
     fun `cancelBooking invokes use case and refreshes`() = runTest {
         coEvery { getUserReservations(any(), any()) } returns PagedResult(emptyList(), 0, 0)
         coEvery { cancelBooking("bk-1") } returns Result.success(Unit)
-        val vm = MyTripsViewModel(getUserReservations, cancelBooking)
+        val vm = MyTripsViewModel(getUserReservations, cancelBooking, authRepository)
         advanceUntilIdle()
 
         vm.cancelBooking("bk-1")

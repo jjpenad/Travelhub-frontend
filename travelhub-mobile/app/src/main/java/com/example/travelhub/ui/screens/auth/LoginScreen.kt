@@ -2,12 +2,14 @@ package com.example.travelhub.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +28,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -77,9 +81,19 @@ private fun LoginContent(
     onLogin: () -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // Shrinks the scrollable area to exclude the soft keyboard so
+            // every field is reachable while the IME is open.
+            .imePadding()
+            // Tapping anywhere outside an interactive child clears focus
+            // and dismisses the keyboard. Lets the user (and Maestro) tap
+            // the header to close the IME without triggering system back.
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
             .verticalScroll(rememberScrollState())
     ) {
         // Purple header
@@ -106,7 +120,17 @@ private fun LoginContent(
             Text(text = "Welcome back", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             Text(text = "Sign in to continue your journey", style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Hint for users who booked anonymously and now want to see their trips.
+            Text(
+                text = "Booked anonymously? Tap \"Sign up\" below using the same email — we'll link your reservations to the new account.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Purple,
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             TravelHubTextField(
                 value = email, onValueChange = onEmailChange, label = "Email address",
