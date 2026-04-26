@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.travelhub.data.mock.MockBookings
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
+import com.example.travelhub.ui.components.OnResumeEffect
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.components.TravelHubOutlinedButton
 import com.example.travelhub.ui.theme.GreenAccent
@@ -53,6 +54,11 @@ fun TripDetailsScreen(
 ) {
     val bookings by viewModel.bookings.collectAsStateWithLifecycle()
     val booking = bookings.find { it.id == bookingId }
+
+    // Re-pull from backend on resume so status changes (e.g. after a check-in
+    // performed from the QR screen) are reflected immediately.
+    OnResumeEffect { viewModel.refresh() }
+
     booking?.let { TripDetailsContent(it, onQRCheckIn, onBack) }
 }
 

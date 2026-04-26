@@ -3,6 +3,7 @@ package com.example.travelhub
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -40,6 +41,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Tell the framework we will draw behind system bars and handle
+        // insets ourselves. Required for Compose's `WindowInsets.ime` to
+        // report the soft-keyboard height — without this, `Modifier.imePadding()`
+        // is silently a no-op and scrollable forms can't reach fields hidden
+        // behind the keyboard (E2E flows hit this on the SignUp screen).
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             TravelHubTheme {
                 val navController = rememberNavController()

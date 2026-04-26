@@ -169,13 +169,16 @@ class BookingRepositoryImplTest {
     // ── getReservations ────────────────────────────────────────────────────
 
     @Test
-    fun `getReservations returns empty when there is no guest session`() = runTest {
+    fun `getReservations falls back to empty when API throws and we have no local scope`() = runTest {
+        // No session id locally → nothing to read from cache. The endpoint is now
+        // JWT-only so the call still goes through, but here we simulate a 401 /
+        // network failure with no usable cache.
         every { guestSessionStore.currentId() } returns null
+        coEvery { api.listReservationsByUser(any(), any()) } throws java.io.IOException("offline")
 
         val paged = bookingRepository.getReservations(limit = 20, offset = 0)
 
         assertTrue(paged.items.isEmpty())
-        coVerify(exactly = 0) { api.listReservationsByUser(any(), any(), any()) }
         coVerify(exactly = 0) { bookingDao.deleteByUserIdNot(any()) }
     }
 
@@ -187,7 +190,7 @@ class BookingRepositoryImplTest {
                 id = "h1", name = "Casa Sol", address = "", city = "Lima", country = "Peru"
             )
         )
-        coEvery { api.listReservationsByUser("session-A", 20, 0) } returns
+        coEvery { api.listReservationsByUser(20, 0) } returns
             com.example.travelhub.data.remote.dto.ReservationListResponseDto(
                 items = listOf(
                     com.example.travelhub.data.remote.dto.ReservationItemDto(
@@ -214,7 +217,7 @@ class BookingRepositoryImplTest {
     @Test
     fun `getReservations falls back to local when network fails and does not wipe rows`() = runTest {
         every { guestSessionStore.currentId() } returns "session-A"
-        coEvery { api.listReservationsByUser(any(), any(), any()) } throws java.io.IOException("offline")
+        coEvery { api.listReservationsByUser(any(), any()) } throws java.io.IOException("offline")
         coEvery { bookingDao.getByUserId("session-A") } returns listOf(
             BookingEntity(
                 id = "local-1", userId = "session-A", propertyId = "h1",
@@ -238,7 +241,7 @@ class BookingRepositoryImplTest {
     @Test
     fun `getReservations offline fallback paginates the local cache by offset and limit`() = runTest {
         every { guestSessionStore.currentId() } returns "session-A"
-        coEvery { api.listReservationsByUser(any(), any(), any()) } throws java.io.IOException("offline")
+        coEvery { api.listReservationsByUser(any(), any()) } throws java.io.IOException("offline")
         val cached = (1..25).map { i ->
             BookingEntity(
                 id = "local-$i", userId = "session-A", propertyId = "h$i",

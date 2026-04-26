@@ -1,6 +1,7 @@
 package com.example.travelhub.ui.screens.booking
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +35,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -59,6 +63,7 @@ fun BookingPaymentScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val form by viewModel.form.collectAsStateWithLifecycle()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
 
     LaunchedEffect(uiState) {
         val confirmed = uiState as? BookingUiState.Confirmed ?: return@LaunchedEffect
@@ -80,6 +85,7 @@ fun BookingPaymentScreen(
             checkIn = state.checkIn, checkOut = state.checkOut,
             nights = state.nights, totalPrice = state.totalPrice,
             form = form,
+            isAuthenticated = isAuthenticated,
             onForm = viewModel,
             onConfirmPay = { viewModel.confirmAndPay() },
             onBack = onBack
@@ -131,11 +137,25 @@ private fun PaymentContent(
     nights: Int,
     totalPrice: Double,
     form: BookingFormState,
+    isAuthenticated: Boolean,
     onForm: BookingViewModel,
     onConfirmPay: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    val focusManager = LocalFocusManager.current
+    Column(
+        modifier = Modifier.fillMaxSize()
+            // Make the scrollable area exclude the soft keyboard so all
+            // form fields (and the Confirm & Pay button) stay reachable
+            // while typing. Combined with the tap-outside-to-clear-focus
+            // handler below, this gives Maestro a reliable way to advance
+            // through the form without fields getting trapped under the IME.
+            .imePadding()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
+            .verticalScroll(rememberScrollState())
+    ) {
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(16.dp)) {
             Column {
                 IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = White) }
@@ -163,8 +183,15 @@ private fun PaymentContent(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Guest information (always required)
-            Text("Guest Information", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            // Guest information. When the user is signed in, the personal fields
+            // (name + email) come from the account and are NOT editable — those
+            // are the canonical user details and live in the user profile.
+            Text(
+                text = if (isAuthenticated) "Guest Information (from your account)"
+                else "Guest Information",
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium
+            )
             Card(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 shape = RoundedCornerShape(12.dp),
@@ -177,7 +204,9 @@ private fun PaymentContent(
                         onValueChange = onForm::onFirstNameChange,
                         label = { Text("First name") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        readOnly = isAuthenticated,
+                        enabled = !isAuthenticated
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -185,7 +214,9 @@ private fun PaymentContent(
                         onValueChange = onForm::onLastNameChange,
                         label = { Text("Last name") },
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        readOnly = isAuthenticated,
+                        enabled = !isAuthenticated
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -194,8 +225,18 @@ private fun PaymentContent(
                         label = { Text("Email") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        readOnly = isAuthenticated,
+                        enabled = !isAuthenticated
                     )
+                    if (isAuthenticated) {
+                        Text(
+                            text = "Update your name or email from Profile.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = form.documentNumber,
@@ -216,50 +257,52 @@ private fun PaymentContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Optional account creation
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = White),
-                elevation = CardDefaults.cardElevation(1.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("Create an account", fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "Track your trips across devices. Optional.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+            // Optional account creation — only relevant for anonymous users.
+            // Logged-in users already have an account.
+            if (!isAuthenticated) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = White),
+                    elevation = CardDefaults.cardElevation(1.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Create an account", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Track your trips across devices. Optional.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = TextSecondary
+                                )
+                            }
+                            Switch(
+                                checked = form.createAccount,
+                                onCheckedChange = onForm::onCreateAccountToggle
                             )
                         }
-                        Switch(
-                            checked = form.createAccount,
-                            onCheckedChange = onForm::onCreateAccountToggle
-                        )
-                    }
-                    if (form.createAccount) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = form.password,
-                            onValueChange = onForm::onPasswordChange,
-                            label = { Text("Password") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-                        )
-                        Text(
-                            text = "Minimum 6 characters",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                        if (form.createAccount) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = form.password,
+                                onValueChange = onForm::onPasswordChange,
+                                label = { Text("Password") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                            )
+                            Text(
+                                text = "Minimum 6 characters",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }

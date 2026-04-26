@@ -53,14 +53,25 @@ class UserPreferences @Inject constructor(
     /** Synchronous read of the authenticated user id (or null if anonymous). */
     fun currentUserId(): String? = cachedUserId.get()?.takeIf { it.isNotBlank() }
 
-    /** Hydrate the in-memory mirrors from disk. Idempotent. Call once on app start. */
+    /** Hydrate the in-memory mirrors from disk. Idempotent. Call once on app start.
+     *  If the persisted token doesn't look like a real JWT (3 dot-separated parts),
+     *  we assume it was left over from older mock-based builds and wipe everything
+     *  so the user starts clean. */
     fun preload() {
         scope.launch {
             val prefs = dataStore.data.first()
-            cachedToken.compareAndSet(null, prefs[KEY_TOKEN])
+            val token = prefs[KEY_TOKEN]
+            if (token != null && !looksLikeJwt(token)) {
+                dataStore.edit { it.clear() }
+                return@launch
+            }
+            cachedToken.compareAndSet(null, token)
             cachedUserId.compareAndSet(null, prefs[KEY_USER_ID])
         }
     }
+
+    private fun looksLikeJwt(token: String): Boolean =
+        token.count { it == '.' } == 2 && token.length >= 16
 
     suspend fun saveSession(session: UserSession, password: String? = null) {
         cachedToken.set(session.token)

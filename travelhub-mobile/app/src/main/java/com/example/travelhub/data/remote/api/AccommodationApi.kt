@@ -30,9 +30,13 @@ interface AccommodationApi {
         @Query("page_size") pageSize: Int = 20
     ): HotelSearchResponseDto
 
-    @GET("service-core/reservations/user/{userId}")
+    /**
+     * Lists reservations of the authenticated user. Backend reads the user_id
+     * from the JWT (`current_user`); the path no longer takes a user id, and
+     * `Authorization: Bearer <jwt>` is required (the AuthInterceptor adds it).
+     */
+    @GET("service-core/reservations/user")
     suspend fun listReservationsByUser(
-        @Path("userId") userId: String,
         @Query("limit") limit: Int = 20,
         @Query("offset") offset: Int = 0
     ): ReservationListResponseDto

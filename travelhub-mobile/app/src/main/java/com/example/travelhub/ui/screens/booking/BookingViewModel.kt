@@ -18,8 +18,12 @@ import com.example.travelhub.domain.repository.BookingRepository
 import com.example.travelhub.domain.repository.PropertyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -84,7 +88,29 @@ class BookingViewModel @Inject constructor(
     private val _form = MutableStateFlow(BookingFormState())
     val form: StateFlow<BookingFormState> = _form.asStateFlow()
 
+    /** True when the user is signed in. Drives read-only form fields + hides the
+     *  "Create an account" toggle in BookingPaymentScreen. */
+    val isAuthenticated: StateFlow<Boolean> = authRepository.getSession()
+        .map { it?.token?.isNotBlank() == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     init {
+        // Pre-fill the form with the signed-in user's details (if any). The screen
+        // renders these fields disabled so the user can't change them — those are
+        // their canonical account details.
+        viewModelScope.launch {
+            val session = authRepository.getSession().first()
+            if (session != null && session.token.isNotBlank()) {
+                val (first, last) = splitFullName(session.fullName, session.email)
+                _form.update {
+                    it.copy(
+                        firstName = first,
+                        lastName = last,
+                        email = session.email
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             val property = propertyRepository.getAvailability(propertyId, checkIn, checkOut)
             if (property != null) {
@@ -272,5 +298,20 @@ class BookingViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    /**
+     * Best-effort split of "John Doe" → ("John", "Doe"). If [fullName] is empty,
+     * fall back to the local part of the email as the first name and leave last
+     * empty — better than two blank fields.
+     */
+    private fun splitFullName(fullName: String, fallbackEmail: String): Pair<String, String> {
+        val trimmed = fullName.trim()
+        if (trimmed.isNotBlank()) {
+            val parts = trimmed.split(" ", limit = 2)
+            return parts[0] to (parts.getOrNull(1).orEmpty())
+        }
+        val emailLocal = fallbackEmail.substringBefore("@")
+        return emailLocal to ""
     }
 }

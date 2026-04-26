@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.ui.components.InfiniteScrollEffect
+import com.example.travelhub.ui.components.OnResumeEffect
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
@@ -64,6 +65,11 @@ fun MyTripsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val isAuthenticated by viewModel.isAuthenticated.collectAsStateWithLifecycle()
+
+    // Auto-refresh whenever the user lands back on this screen — covers the
+    // "I just finished booking, take me to my trips, where's my new one?" case.
+    OnResumeEffect { viewModel.refresh() }
+
     MyTripsContent(
         upcoming = viewModel.upcoming,
         past = viewModel.past,

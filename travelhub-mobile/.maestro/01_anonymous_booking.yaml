@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Anonymous booking
+#
+# Goal:
+#   A guest user (no account) can search a hotel, pick a room, fill the
+#   personal info form and complete a booking. The flow must end on the
+#   confirmation screen.
+#
+# Pre-conditions:
+#   - Backend reachable.
+#   - Default check-in / check-out dates from SearchViewModel are valid
+#     (today+7 / today+11).
+#
+# Post-conditions:
+#   - A reservation exists server-side associated with the X-Guest-Id.
+#   - The user is NOT signed in (no JWT). Trying to view My Trips will show
+#     the "Sign in to track your trips" CTA — covered in flow 03.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Anonymous booking
+tags:
+  - booking
+  - anonymous
+---
+- runScript:
+    file: utils/unique_email.js
+
+# Fresh app state so we don't reuse a JWT/session from a previous run.
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# ── Search step ──────────────────────────────────────────────────────────
+# Land on Home, jump into Search, pick Lima, run the search with default dates.
+- assertVisible: "Explore"
+- tapOn: "Search"
+- assertVisible: "Find your stay"
+- tapOn: "Select a city"
+- tapOn: "Lima"
+- tapOn: "Search Hotels"
+
+# ── Results: wait for the list, tap Book Now on the first card ───────────
+# The PropertyCard shows a "Book Now" button on each result. Maestro waits
+# until at least one is rendered before trying to tap.
+- extendedWaitUntil:
+    visible: "Book Now"
+    timeout: 10000
+- tapOn:
+    text: "Book Now"
+    index: 0
+
+# ── Property detail: scroll to rooms and pick the first one ──────────────
+# Each room card shows " guests" inside its capacity row (e.g. " 2 guests").
+# Scroll until we find one and tap it — RoomTypeCard is fully clickable.
+- scrollUntilVisible:
+    element:
+      text: ".*guests.*"
+- tapOn:
+    text: ".*guests.*"
+    index: 0
+
+# ── Payment form (anonymous) ─────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Complete Booking"
+    timeout: 10000
+- assertVisible: "Guest Information"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+
+- tapOn: "Email"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+
+# Leave the "Create an account" switch OFF — that's the whole point of this flow.
+# We don't assert on the toggle's visibility because it lives further down and
+# would force a scroll just for a sanity check; the final assertion below
+# verifies the whole flow.
+- scrollUntilVisible:
+    element:
+      text: "Confirm & Pay.*"
+- tapOn:
+    text: "Confirm & Pay.*"
+
+# ── Verify confirmation ──────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible:
+      text: ".*confirm.*|.*Booking Confirmed.*|.*RES[A-Z0-9]+.*"
+    timeout: 15000

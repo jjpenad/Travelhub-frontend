@@ -7,14 +7,16 @@ import okhttp3.Response
 import javax.inject.Inject
 
 /**
- * Adds the X-Guest-Id header to every outgoing request.
+ * Adds the `X-Guest-Id` header to every outgoing request.
  *
- * - If the user is signed in, the header carries the authenticated user_id so the
- *   backend's "OR user_id = X OR user_guest_id = X" listing query works regardless
- *   of which path the reservation took.
- * - Otherwise, fall back to whatever the [GuestSessionStore] has (which the backend
- *   itself issues via the `user_session` field on search/create responses).
- * - Empty header is acceptable on cold start; backend issues a fresh id on first hit.
+ * - When the user is signed in (a JWT is present), the header is sent as an
+ *   EMPTY string. The Bearer token is the authoritative identity; the empty
+ *   header keeps backend code paths happy (some endpoints treat absence and
+ *   empty differently) without overriding the JWT.
+ * - When anonymous, we send whatever the [GuestSessionStore] has (which the
+ *   backend issues via the `user_session` field on search/create responses).
+ * - An empty header is also acceptable on cold start; backend issues a fresh
+ *   id on the first hit.
  */
 class GuestSessionInterceptor @Inject constructor(
     private val store: GuestSessionStore,
@@ -22,10 +24,14 @@ class GuestSessionInterceptor @Inject constructor(
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val effectiveId = userPreferences.currentUserId()
-            ?: store.currentId().orEmpty()
+        val headerValue = if (userPreferences.currentToken() != null) {
+            // Authenticated: send empty so backend defers to the Bearer token.
+            ""
+        } else {
+            store.currentId().orEmpty()
+        }
         val request = chain.request().newBuilder()
-            .header(HEADER, effectiveId)
+            .header(HEADER, headerValue)
             .build()
         return chain.proceed(request)
     }
