@@ -10,6 +10,9 @@ build
 # Pruebas y cobertura
 coverage
 .nyc_output
+test-results
+playwright-report
+playwright/.cache
 
 # Variables de entorno (secretos / solo máquina local)
 .env
