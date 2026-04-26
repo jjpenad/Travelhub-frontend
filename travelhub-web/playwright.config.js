@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = Number(process.env.E2E_PORT || 4173);
