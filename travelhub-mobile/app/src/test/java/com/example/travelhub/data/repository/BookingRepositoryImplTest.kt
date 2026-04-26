@@ -14,6 +14,7 @@ import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
@@ -28,6 +29,7 @@ class BookingRepositoryImplTest {
     private lateinit var bookingDao: BookingDao
     private lateinit var api: AccommodationApi
     private lateinit var guestSessionStore: GuestSessionStore
+    private lateinit var propertyRepository: com.example.travelhub.domain.repository.PropertyRepository
     private lateinit var bookingRepository: BookingRepositoryImpl
 
     @Before
@@ -35,7 +37,8 @@ class BookingRepositoryImplTest {
         bookingDao = mockk(relaxed = true)
         api = mockk(relaxed = true)
         guestSessionStore = mockk(relaxed = true)
-        bookingRepository = BookingRepositoryImpl(bookingDao, api, guestSessionStore)
+        propertyRepository = mockk(relaxed = true)
+        bookingRepository = BookingRepositoryImpl(bookingDao, api, guestSessionStore, propertyRepository)
     }
 
     @Test
@@ -161,5 +164,98 @@ class BookingRepositoryImplTest {
 
         assertTrue(result.isFailure)
         verify(exactly = 0) { guestSessionStore.update(any()) }
+    }
+
+    // ── getReservations ────────────────────────────────────────────────────
+
+    @Test
+    fun `getReservations returns empty when there is no guest session`() = runTest {
+        every { guestSessionStore.currentId() } returns null
+
+        val paged = bookingRepository.getReservations(limit = 20, offset = 0)
+
+        assertTrue(paged.items.isEmpty())
+        coVerify(exactly = 0) { api.listReservationsByUser(any(), any(), any()) }
+        coVerify(exactly = 0) { bookingDao.deleteByUserIdNot(any()) }
+    }
+
+    @Test
+    fun `getReservations success persists page and wipes other-session rows`() = runTest {
+        every { guestSessionStore.currentId() } returns "session-A"
+        coEvery { propertyRepository.getAll() } returns listOf(
+            com.example.travelhub.domain.model.Property(
+                id = "h1", name = "Casa Sol", address = "", city = "Lima", country = "Peru"
+            )
+        )
+        coEvery { api.listReservationsByUser("session-A", 20, 0) } returns
+            com.example.travelhub.data.remote.dto.ReservationListResponseDto(
+                items = listOf(
+                    com.example.travelhub.data.remote.dto.ReservationItemDto(
+                        id = "r1", userId = "session-A", hotelId = "h1", roomTypeId = "rt1",
+                        checkIn = "2026-05-01", checkOut = "2026-05-05",
+                        guests = 2, totalPrice = "500.00", status = "confirmed",
+                        confirmationCode = "RES1"
+                    )
+                ),
+                total = 1, limit = 20, offset = 0
+            )
+
+        val paged = bookingRepository.getReservations(limit = 20, offset = 0)
+
+        assertEquals(1, paged.items.size)
+        assertEquals(1, paged.total)
+        assertEquals("Casa Sol", paged.items[0].propertyName) // resolved via cache
+        assertEquals(BookingStatus.CONFIRMED, paged.items[0].status)
+        // Cleanup + persistence both happen on the success path.
+        coVerify(exactly = 1) { bookingDao.deleteByUserIdNot("session-A") }
+        coVerify(exactly = 1) { bookingDao.insertAll(match { it.size == 1 }) }
+    }
+
+    @Test
+    fun `getReservations falls back to local when network fails and does not wipe rows`() = runTest {
+        every { guestSessionStore.currentId() } returns "session-A"
+        coEvery { api.listReservationsByUser(any(), any(), any()) } throws java.io.IOException("offline")
+        coEvery { bookingDao.getByUserId("session-A") } returns listOf(
+            BookingEntity(
+                id = "local-1", userId = "session-A", propertyId = "h1",
+                propertyName = "Casa Sol", propertyLocation = "Lima, Peru",
+                checkIn = "2026-05-01", checkOut = "2026-05-05",
+                guests = 2, rooms = 1, roomType = "Suite",
+                totalPrice = 500.0, status = "PENDING", bookingRef = "RES1"
+            )
+        )
+
+        val paged = bookingRepository.getReservations(limit = 20, offset = 0)
+
+        assertEquals(1, paged.items.size)
+        assertEquals("local-1", paged.items[0].id)
+        // Critical: the offline fallback MUST NOT touch the DB. Otherwise we'd risk
+        // wiping a perfectly good local row when the network blips out.
+        coVerify(exactly = 0) { bookingDao.deleteByUserIdNot(any()) }
+        coVerify(exactly = 0) { bookingDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `getReservations offline fallback paginates the local cache by offset and limit`() = runTest {
+        every { guestSessionStore.currentId() } returns "session-A"
+        coEvery { api.listReservationsByUser(any(), any(), any()) } throws java.io.IOException("offline")
+        val cached = (1..25).map { i ->
+            BookingEntity(
+                id = "local-$i", userId = "session-A", propertyId = "h$i",
+                propertyName = "Hotel $i", propertyLocation = "City",
+                checkIn = "2026-05-0${(i % 9) + 1}", checkOut = "2026-05-0${(i % 9) + 2}",
+                guests = 1, rooms = 1, roomType = "Suite",
+                totalPrice = 100.0, status = "CONFIRMED", bookingRef = "REF-$i"
+            )
+        }
+        coEvery { bookingDao.getByUserId("session-A") } returns cached
+
+        val firstPage = bookingRepository.getReservations(limit = 20, offset = 0)
+        val secondPage = bookingRepository.getReservations(limit = 20, offset = 20)
+
+        assertEquals(20, firstPage.items.size)
+        assertEquals(5, secondPage.items.size)
+        assertEquals("local-21", secondPage.items[0].id)
+        assertEquals(25, firstPage.total)
     }
 }

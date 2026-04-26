@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -29,7 +30,10 @@ class SearchViewModel @Inject constructor(
             "Bogotá", "Lima", "Quito", "Santiago", "Buenos Aires", "Ciudad de México"
         )
         val DEFAULT_SORT = SortOption.PRICE_ASC
+        private const val PAGE_SIZE = 20
     }
+
+    // ── Form state ──────────────────────────────────────────────────────────
 
     private val _selectedCity = MutableStateFlow("")
     val selectedCity: StateFlow<String> = _selectedCity.asStateFlow()
@@ -46,25 +50,43 @@ class SearchViewModel @Inject constructor(
     private val _rooms = MutableStateFlow(1)
     val rooms: StateFlow<Int> = _rooms.asStateFlow()
 
-    private val _rawResults = MutableStateFlow<List<Property>>(emptyList())
+    // ── Paged results state ─────────────────────────────────────────────────
 
-    private val _sortOption = MutableStateFlow(DEFAULT_SORT)
-    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
-
-    val results: StateFlow<List<Property>> = combine(_rawResults, _sortOption) { raw, sort ->
-        raw.applySort(sort)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private val _items = MutableStateFlow<List<Property>>(emptyList())
+    private val _nextPage = MutableStateFlow(1)
+    private val _total = MutableStateFlow<Int?>(null)
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _hasSearched = MutableStateFlow(false)
     val hasSearched: StateFlow<Boolean> = _hasSearched.asStateFlow()
 
+    private val _sortOption = MutableStateFlow(DEFAULT_SORT)
+    val sortOption: StateFlow<SortOption> = _sortOption.asStateFlow()
+
+    /** Sorted view of [_items]. Re-emits whenever items or sort changes. */
+    val results: StateFlow<List<Property>> = combine(_items, _sortOption) { raw, sort ->
+        raw.applySort(sort)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val total: StateFlow<Int?> = _total.asStateFlow()
+    val hasMore: Boolean get() = _total.value?.let { _items.value.size < it } ?: true
+
+    // ── Date helpers ────────────────────────────────────────────────────────
+
     val checkInFormatted: String get() = _checkIn.value.format(DateTimeFormatter.ofPattern("MMM dd"))
     val checkOutFormatted: String get() = _checkOut.value.format(DateTimeFormatter.ofPattern("MMM dd"))
-    val checkInApi: String get() = _checkIn.value.toString() // yyyy-MM-dd
+    val checkInApi: String get() = _checkIn.value.toString()
     val checkOutApi: String get() = _checkOut.value.toString()
+
+    // ── Form mutators ───────────────────────────────────────────────────────
 
     fun onCityChange(city: String) { _selectedCity.value = city }
     fun onCheckInChange(date: LocalDate) { _checkIn.value = date }
@@ -73,19 +95,62 @@ class SearchViewModel @Inject constructor(
     fun onRoomsChange(value: Int) { _rooms.value = value.coerceAtLeast(1) }
     fun onSortChange(option: SortOption) { _sortOption.value = option }
 
+    // ── Search actions ──────────────────────────────────────────────────────
+
+    private fun currentFilters(): SearchFilters = SearchFilters(
+        destination = _selectedCity.value,
+        checkIn = _checkIn.value,
+        checkOut = _checkOut.value,
+        guests = _guests.value,
+        rooms = _rooms.value
+    )
+
+    /** First page. Used by the search button. */
     fun search() {
+        if (_isLoading.value) return
         viewModelScope.launch {
             _isLoading.value = true
-            val filters = SearchFilters(
-                destination = _selectedCity.value,
-                checkIn = _checkIn.value,
-                checkOut = _checkOut.value,
-                guests = _guests.value,
-                rooms = _rooms.value
-            )
-            _rawResults.value = searchPropertiesUseCase(filters)
-            _hasSearched.value = true
-            _isLoading.value = false
+            try {
+                val page = searchPropertiesUseCase(currentFilters(), page = 1, pageSize = PAGE_SIZE)
+                _items.value = page.items
+                _total.value = page.total
+                _nextPage.value = 2
+                _hasSearched.value = true
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /** Append next page. Idempotent. */
+    fun loadMore() {
+        if (_isLoadingMore.value || _isLoading.value || !hasMore) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            try {
+                val page = searchPropertiesUseCase(currentFilters(), page = _nextPage.value, pageSize = PAGE_SIZE)
+                _items.update { current -> (current + page.items).distinctBy { it.id } }
+                _total.value = page.total ?: _total.value
+                if (page.items.isNotEmpty()) _nextPage.update { it + 1 }
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
+    /** Pull-to-refresh: re-runs the same query from page 1. */
+    fun refresh() {
+        if (_isRefreshing.value) return
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val page = searchPropertiesUseCase(currentFilters(), page = 1, pageSize = PAGE_SIZE)
+                _items.value = page.items
+                _total.value = page.total
+                _nextPage.value = 2
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 }
