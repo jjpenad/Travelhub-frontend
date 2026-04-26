@@ -1,7 +1,6 @@
 package com.example.travelhub.data.remote.interceptor
 
 import com.example.travelhub.data.local.UserPreferences
-import io.mockk.capture
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

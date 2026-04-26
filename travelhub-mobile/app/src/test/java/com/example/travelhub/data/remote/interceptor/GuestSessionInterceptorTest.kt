@@ -39,7 +39,9 @@ class GuestSessionInterceptorTest {
     fun `adds X-Guest-Id header with stored value`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns "session-123"
-        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        // Anonymous path: no JWT in store. The interceptor reads `currentToken()`
+// (not currentUserId) to decide whether to defer to Bearer; stub that.
+val userPreferences = mockk<UserPreferences>().also { every { it.currentToken() } returns null }
         val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder().url("http://test/").build()
@@ -63,7 +65,9 @@ class GuestSessionInterceptorTest {
     fun `adds empty X-Guest-Id header when store has no id yet`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns null
-        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        // Anonymous path: no JWT in store. The interceptor reads `currentToken()`
+// (not currentUserId) to decide whether to defer to Bearer; stub that.
+val userPreferences = mockk<UserPreferences>().also { every { it.currentToken() } returns null }
         val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder().url("http://test/").build()
@@ -89,7 +93,9 @@ class GuestSessionInterceptorTest {
     fun `preserves other headers and url on the request`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns "abc"
-        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        // Anonymous path: no JWT in store. The interceptor reads `currentToken()`
+// (not currentUserId) to decide whether to defer to Bearer; stub that.
+val userPreferences = mockk<UserPreferences>().also { every { it.currentToken() } returns null }
         val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder()
@@ -117,7 +123,9 @@ class GuestSessionInterceptorTest {
     fun `reads the id from the store on every intercept`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returnsMany listOf("first", "second")
-        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        // Anonymous path: no JWT in store. The interceptor reads `currentToken()`
+// (not currentUserId) to decide whether to defer to Bearer; stub that.
+val userPreferences = mockk<UserPreferences>().also { every { it.currentToken() } returns null }
         val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val req = Request.Builder().url("http://test/").build()

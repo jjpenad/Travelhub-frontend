@@ -93,7 +93,7 @@ class BookingRepositoryImpl @Inject constructor(
         // key — using it would make `getByUserId(guestId)` return empty (losing
         // the local-only `isCheckedIn` flag) AND `deleteByUserIdNot(guestId)`
         // would wipe the just-confirmed booking on the next refresh.
-        val localScopeId = userPreferences.currentUserId()
+        val localScopeId = userPreferences.currentUserId()?.takeIf { it.isNotBlank() }
             ?: guestSessionStore.currentId()?.takeIf { it.isNotBlank() }
 
         return try {

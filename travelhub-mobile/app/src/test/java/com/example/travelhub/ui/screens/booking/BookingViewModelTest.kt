@@ -14,9 +14,11 @@ import com.example.travelhub.domain.repository.BookingRepository
 import com.example.travelhub.domain.repository.PropertyRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -42,7 +44,11 @@ class BookingViewModelTest {
         Dispatchers.setMain(testDispatcher)
         propertyRepository = mockk()
         bookingRepository = mockk()
+        // BookingViewModel.init calls authRepository.getSession().first(), which
+        // throws NoSuchElementException on the relaxed-default empty Flow. Stub
+        // it to a single-element flow so the VM can read "no session = anonymous".
         authRepository = mockk(relaxed = true)
+        every { authRepository.getSession() } returns flowOf(null)
         guestSessionStore = mockk(relaxed = true)
     }
 
