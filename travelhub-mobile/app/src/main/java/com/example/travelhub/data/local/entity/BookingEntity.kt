@@ -18,5 +18,6 @@ data class BookingEntity(
     val roomType: String,
     val totalPrice: Double,
     val status: String,
-    val bookingRef: String
+    val bookingRef: String,
+    val isCheckedIn: Boolean = false
 )
