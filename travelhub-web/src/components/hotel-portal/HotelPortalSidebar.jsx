@@ -6,7 +6,7 @@ import "./HotelPortalSidebar.css";
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", to: PATH_HOTEL_PORTAL_HOME, end: true, icon: "dashboard" },
   { id: "reports", label: "Reportes", to: "#reportes", icon: "reports" },
-  { id: "notifications", label: "Notificaciones", to: "#notificaciones", icon: "notifications", badge: 3 },
+  { id: "notifications", label: "Notificaciones", to: "#notificaciones", icon: "notifications" },
   { id: "rates", label: "Tarifas", to: "#tarifas", icon: "rates" },
   { id: "bookings", label: "Gestionar reservas", to: PATH_HOTEL_MANAGE_RESERVATIONS, icon: "bookings" },
   { id: "rooms", label: "Habitaciones", to: "#habitaciones", icon: "rooms" },

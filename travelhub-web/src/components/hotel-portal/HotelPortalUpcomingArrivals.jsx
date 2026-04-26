@@ -9,6 +9,7 @@ function HotelPortalUpcomingArrivals({
   rows = [],
   viewAllTo,
   viewAllHref = "#",
+  viewAllState,
 }) {
   return (
     <section className="hp-arrivals" aria-labelledby="hp-arrivals-title">
@@ -17,7 +18,7 @@ function HotelPortalUpcomingArrivals({
           {title}
         </h2>
         {viewAllTo ? (
-          <Link className="hp-arrivals__link-all" to={viewAllTo}>
+          <Link className="hp-arrivals__link-all" to={viewAllTo} state={viewAllState}>
             Ver todas →
           </Link>
         ) : (

@@ -1,35 +1,28 @@
 import "./HotelPortalMonthSelect.css";
-
-const MONTHS_ES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre",
-];
+import { MONTHS_ES } from "../../utils/hotelPortalMonthRange";
 
 const DEFAULT_YEARS = ["2024", "2025", "2026", "2027"];
 
 /**
- * Selectores de mes y año (demo) para el dashboard hotelero.
+ * Selectores de mes y año para el dashboard hotelero.
  */
 function HotelPortalMonthSelect({
-  defaultMonth = "Enero",
-  defaultYear = "2026",
+  month = "Enero",
+  year = "2026",
   yearOptions = DEFAULT_YEARS,
+  onChange,
 }) {
+  const yearStr = String(year);
   return (
     <div className="hp-month-select" role="group" aria-label="Período">
       <label className="hp-month-select__field">
         <span className="visually-hidden">Mes</span>
-        <select className="hp-month-select__control hp-month-select__control--month" defaultValue={defaultMonth} aria-label="Mes">
+        <select
+          className="hp-month-select__control hp-month-select__control--month"
+          value={month}
+          onChange={(e) => onChange?.({ month: e.target.value, year: yearStr })}
+          aria-label="Mes"
+        >
           {MONTHS_ES.map((m) => (
             <option key={m} value={m}>
               {m}
@@ -41,7 +34,8 @@ function HotelPortalMonthSelect({
         <span className="visually-hidden">Año</span>
         <select
           className="hp-month-select__control hp-month-select__control--year"
-          defaultValue={String(defaultYear)}
+          value={yearStr}
+          onChange={(e) => onChange?.({ month, year: e.target.value })}
           aria-label="Año"
         >
           {yearOptions.map((y) => (

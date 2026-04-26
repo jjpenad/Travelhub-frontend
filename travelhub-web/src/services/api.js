@@ -1,9 +1,38 @@
 /**
  * TravelHub API service layer.
- * Centralizes all backend calls. Replace VITE_API_URL in .env to point to a different backend.
+ * VITE_API_URL debe ser la raíz del API (incluye `/service-core` si el backend lo usa así).
+ * VITE_ANALYTICS_API_URL: raíz del microservicio de analytics (ej. …/service-soport).
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/";
+import { getAuthToken } from "../auth/sessionAuth";
+
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-core";
+
+const ANALYTICS_BASE_URL =
+  import.meta.env.VITE_ANALYTICS_API_URL ||
+  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
+
+/** Registro de usuario. Sobrescribir con VITE_REGISTER_PATH en .env si el backend usa otra ruta. */
+const REGISTER_PATH = import.meta.env.VITE_REGISTER_PATH || "/auth/register";
+
+/** Inicio de sesión. Sobrescribir con VITE_LOGIN_PATH en .env si el backend usa otra ruta. */
+const LOGIN_PATH = import.meta.env.VITE_LOGIN_PATH || "/auth/login";
+
+/**
+ * Panel analítico portal hotelero (ruta real del servicio; typos preservados).
+ * Query: start_date, end_date (YYYY-MM-DD).
+ */
+const ANALYTICS_DASHBOARD_PATH =
+  import.meta.env.VITE_ANALYTICS_DASHBOARD_PATH || "/analitycs/dahsboard";
+
+/** GET detalle de reserva (service-core). Sobrescribir con VITE_RESERVATION_DETAIL_PATH si la ruta difiere. */
+const RESERVATION_DETAIL_PATH =
+  import.meta.env.VITE_RESERVATION_DETAIL_PATH || "/reservations";
+
+/** `user_type` por defecto en POST /auth/register si el cliente no lo envía. */
+const REGISTER_DEFAULT_USER_TYPE = "traveler";
 
 const CITY_COUNTRY_MAP = {
   "Bogotá": "Colombia",
@@ -35,11 +64,23 @@ function getGuestId() {
   return guestId;
 }
 
+function joinApiUrl(path) {
+  const base = BASE_URL.replace(/\/+$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
+function joinAnalyticsUrl(path) {
+  const base = ANALYTICS_BASE_URL.replace(/\/+$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
 /**
  * Generic fetch wrapper with JSON parsing and error handling.
  */
 async function apiFetch(path, options = {}) {
-  const url = `${BASE_URL}${path}`;
+  const url = joinApiUrl(path);
   const res = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -55,37 +96,78 @@ async function apiFetch(path, options = {}) {
   return res.json();
 }
 
+function parseJsonSafe(text) {
+  if (!text || !String(text).trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: String(text).trim() };
+  }
+}
+
+function messageFromApiErrorBody(data) {
+  if (!data || typeof data !== "object") return "";
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail
+      .map((item) => (typeof item === "object" && item !== null ? item.msg || item.message : item))
+      .filter(Boolean)
+      .join(" ");
+  }
+  if (data.message) return typeof data.message === "string" ? data.message : "";
+  if (typeof data.error === "string") return data.error;
+  return "";
+}
+
+function registerErrorMessage(data, status) {
+  const fromBody = messageFromApiErrorBody(data);
+  if (fromBody) return fromBody;
+  if (status === 409) return "Este correo ya está registrado. Puedes iniciar sesión.";
+  if (status === 422) return "Algunos datos no son válidos. Revisa el formulario e inténtalo de nuevo.";
+  return "No se pudo completar el registro.";
+}
+
+function loginErrorMessage(data, status) {
+  const fromBody = messageFromApiErrorBody(data);
+  if (fromBody) return fromBody;
+  if (status === 401 || status === 403) {
+    return "Correo o contraseña incorrectos.";
+  }
+  if (status === 422) return "Revisa los datos e inténtalo de nuevo.";
+  return "No se pudo iniciar sesión.";
+}
+
 // ─── Hotels ──────────────────────────────────────────────
 
 /**
- * GET /service-core/accommodations/hotels
+ * GET …/accommodations/hotels (base = …/service-core)
  * Returns all hotels. Used on Home page.
  */
 export async function listHotels() {
-  const data = await apiFetch("/service-core/accommodations/hotels");
+  const data = await apiFetch("/accommodations/hotels");
   return data.map(mapHotelDto);
 }
 
 /**
- * GET /service-core/accommodations/search?city=&check_in=&check_out=
+ * GET …/accommodations/search?city=&check_in=&check_out=
  * Search hotels with availability for given city and dates.
  */
 export async function searchAccommodations(city, checkIn, checkOut) {
   const params = new URLSearchParams({ city, check_in: checkIn, check_out: checkOut });
-  const data = await apiFetch(`/service-core/accommodations/search?${params}`);
+  const data = await apiFetch(`/accommodations/search?${params}`);
   // The API now returns an object with a 'result' array
   const resultsArray = data.result || [];
   return resultsArray.map(mapSearchResultDto);
 }
 
 /**
- * GET /service-core/accommodations/hotels/{id}/availability?check_in=&check_out=
+ * GET …/accommodations/hotels/{id}/availability?check_in=&check_out=
  * Get hotel detail with available room types for given dates.
  */
 export async function getHotelAvailability(hotelId, checkIn, checkOut) {
   const params = new URLSearchParams({ check_in: checkIn, check_out: checkOut });
   const data = await apiFetch(
-    `/service-core/accommodations/hotels/${hotelId}/availability?${params}`
+    `/accommodations/hotels/${hotelId}/availability?${params}`
   );
   return mapAvailabilityDto(data);
 }
@@ -93,28 +175,260 @@ export async function getHotelAvailability(hotelId, checkIn, checkOut) {
 // ─── Reservations ────────────────────────────────────────
 
 export async function createBooking(bookingInfo) {
-  return apiFetch("/service-core/reservation-flow/create", {
+  return apiFetch("/reservation-flow/create", {
     method: "POST",
     body: JSON.stringify(bookingInfo),
   });
 }
 
 export async function processPayment(paymentInfo) {
-  return apiFetch("/service-core/reservation-flow/payment", {
+  return apiFetch("/reservation-flow/payment", {
     method: "POST",
     body: JSON.stringify(paymentInfo),
   });
 }
 
-export async function registerUser(userData) {
-  return apiFetch("/auth/register", {
+/**
+ * POST /auth/register (configurable con VITE_REGISTER_PATH)
+ * Crea usuario. Respuesta 201: id, email, first_name, last_name, user_type (+ token opcional).
+ *
+ * @param {{
+ *   email: string,
+ *   password: string,
+ *   first_name: string,
+ *   last_name: string,
+ *   user_type?: string,
+ *   phone?: string | null,
+ *   country_id?: string | null,
+ * }} payload — `user_type`, `country_id` y `phone` son opcionales; si faltan: viajero, `country_id` null, `phone` null.
+ * @returns {Promise<{
+ *   id: string,
+ *   email: string,
+ *   first_name: string,
+ *   last_name: string,
+ *   user_type: string,
+ *   token: string | null,
+ * }>}
+ */
+export async function registerUser(payload) {
+  const body = {
+    email: payload.email,
+    password: payload.password,
+    first_name: payload.first_name,
+    last_name: payload.last_name,
+    user_type: payload.user_type ?? REGISTER_DEFAULT_USER_TYPE,
+    phone: payload.phone ?? null,
+    country_id: payload.country_id ?? null,
+  };
+
+  const url = joinApiUrl(REGISTER_PATH);
+  const res = await fetch(url, {
     method: "POST",
-    body: JSON.stringify(userData),
+    headers: {
+      "Content-Type": "application/json",
+      "X-Guest-Id": getGuestId(),
+    },
+    body: JSON.stringify(body),
   });
+
+  const text = await res.text();
+  const data = parseJsonSafe(text);
+
+  if (!res.ok) {
+    const err = new Error(registerErrorMessage(data, res.status));
+    err.status = res.status;
+    err.body = data;
+    throw err;
+  }
+
+  const token =
+    data.token ||
+    data.access_token ||
+    data.accessToken ||
+    null;
+
+  return {
+    id: data.id,
+    email: data.email,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    user_type: data.user_type,
+    token,
+  };
 }
 
 /**
- * POST /service-core/reservation-flow/create
+ * POST /auth/login (configurable con VITE_LOGIN_PATH).
+ * @returns {Promise<{ access_token: string, token_type: string, user_type: string }>}
+ */
+export async function loginUser({ email, password }) {
+  try {
+    const emailNorm = String(email ?? "").trim().toLowerCase();
+    const url = joinApiUrl(LOGIN_PATH);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Guest-Id": getGuestId(),
+      },
+      body: JSON.stringify({ email: emailNorm, password }),
+    });
+
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+
+    if (!res.ok) {
+      const err = new Error(loginErrorMessage(data, res.status));
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    return {
+      access_token: data.access_token,
+      token_type: data.token_type,
+      user_type: data.user_type,
+    };
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo iniciar sesión.");
+  }
+}
+
+/**
+ * GET …/analitycs/dahsboard?start_date=&end_date= (Bearer token).
+ * @param {{ startDate: string, endDate: string }} range - Fechas inclusivas YYYY-MM-DD (primer y último día del mes).
+ * @returns {Promise<object>} Cuerpo JSON del panel (reservas, ingresos, reservas detalle, etc.).
+ */
+export async function getDashboardAnalytics({ startDate, endDate }) {
+  const token = getAuthToken();
+  if (!token) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  if (!startDate || !endDate || typeof startDate !== "string" || typeof endDate !== "string") {
+    const err = new Error("Rango de fechas inválido para el panel.");
+    err.status = 400;
+    throw err;
+  }
+  try {
+    const base = joinAnalyticsUrl(ANALYTICS_DASHBOARD_PATH);
+    const qs = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    const url = `${base}?${qs.toString()}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Guest-Id": getGuestId(),
+      },
+    });
+
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error(
+        "Tu sesión expiró o no tienes permiso para ver el panel. Inicia sesión de nuevo.",
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    if (!res.ok) {
+      const err = new Error(
+        messageFromApiErrorBody(data) || `No se pudo cargar el panel (${res.status})`,
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    return data;
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo cargar el panel de analíticas.");
+  }
+}
+
+/**
+ * GET …/reservations/:id (Bearer). Cuerpo esperado: objeto reserva o `{ reservation }`.
+ * @param {string} id
+ * @returns {Promise<object>}
+ */
+export async function getHotelReservationDetailFromApi(id) {
+  const token = getAuthToken();
+  if (!token) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const rid = String(id || "").trim();
+  if (!rid) {
+    const err = new Error("Identificador de reserva no válido.");
+    err.status = 400;
+    throw err;
+  }
+  try {
+    const base = RESERVATION_DETAIL_PATH.replace(/\/+$/, "");
+    const url = joinApiUrl(`${base}/${encodeURIComponent(rid)}`);
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Guest-Id": getGuestId(),
+      },
+    });
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error(
+        "Tu sesión expiró o no tienes permiso para ver esta reserva. Inicia sesión de nuevo.",
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    if (!res.ok) {
+      const err = new Error(
+        messageFromApiErrorBody(data) || `No se pudo cargar la reserva (${res.status})`,
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    const raw = data?.reservation && typeof data.reservation === "object" ? data.reservation : data;
+    return raw;
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo cargar el detalle de la reserva.");
+  }
+}
+
+/**
+ * POST …/reservation-flow/create
  * Create a new reservation.
  */
 export async function createReservation({
@@ -157,7 +471,7 @@ export async function createReservation({
     special_requests: "",
   };
 
-  const data = await apiFetch("/service-core/reservation-flow/create", {
+  const data = await apiFetch("/reservation-flow/create", {
     method: "POST",
     body: JSON.stringify(body),
   });

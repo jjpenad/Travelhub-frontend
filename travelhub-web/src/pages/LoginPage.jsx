@@ -1,21 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
-import {
-  ROLE_HOTEL,
-  ROLE_TRAVELER,
-  setSessionUser,
-} from "../auth/sessionAuth";
-import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
+import { pathAfterAuthForUserType, persistSessionFromLogin } from "../auth/sessionAuth";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { loginUser } from "../services/api";
 import "./AuthPage.css";
-
-/** Demo portal hoteles (sustituir por respuesta del API) */
-const HOTEL_PORTAL_EMAIL = "admin@gmail.com";
-const HOTEL_PORTAL_PASSWORD = "12345678";
-
-/** Demo portal viajeros (sustituir por respuesta del API) */
-const TRAVELER_PORTAL_EMAIL = "travel@travel.com";
-const TRAVELER_PORTAL_PASSWORD = "12345678";
 
 function isValidEmail(email) {
   const t = email.trim();
@@ -47,8 +36,9 @@ function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     if (!isValidEmail(email)) {
@@ -61,37 +51,21 @@ function LoginPage() {
     }
 
     const emailNorm = email.trim().toLowerCase();
-
-    if (emailNorm === HOTEL_PORTAL_EMAIL) {
-      if (password === HOTEL_PORTAL_PASSWORD) {
-        setSessionUser({
-          role: ROLE_HOTEL,
-          email: emailNorm,
-          remember,
-        });
-        navigate(PATH_HOTEL_PORTAL_HOME, { replace: true });
-      } else {
-        setError("Contraseña incorrecta.");
-      }
-      return;
+    setLoading(true);
+    try {
+      const result = await loginUser({ email: emailNorm, password });
+      persistSessionFromLogin({
+        email: emailNorm,
+        accessToken: result.access_token,
+        userType: result.user_type,
+        remember,
+      });
+      navigate(pathAfterAuthForUserType(result.user_type), { replace: true });
+    } catch (err) {
+      setError(err?.message || "No se pudo iniciar sesión.");
+    } finally {
+      setLoading(false);
     }
-
-    if (emailNorm === TRAVELER_PORTAL_EMAIL) {
-      if (password === TRAVELER_PORTAL_PASSWORD) {
-        setSessionUser({
-          role: ROLE_TRAVELER,
-          email: emailNorm,
-          remember,
-        });
-        navigate(PATH_TRAVELERS_HOME, { replace: true });
-      } else {
-        setError("Contraseña incorrecta.");
-      }
-      return;
-    }
-
-    setError("Correo o contraseña incorrectos.");
-    // TODO(backend): autenticación real y rol desde el servidor
   }
 
   return (
@@ -118,6 +92,7 @@ function LoginPage() {
               placeholder="juan@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
             />
           </div>
           <div className="auth-card__field">
@@ -133,12 +108,14 @@ function LoginPage() {
                 className="auth-card__input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
               <button
                 type="button"
                 className="auth-card__toggle-pw"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                disabled={loading}
               >
                 <IconEye open={showPassword} />
               </button>
@@ -151,6 +128,7 @@ function LoginPage() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
+                disabled={loading}
               />
               Recordarme
             </label>
@@ -160,7 +138,7 @@ function LoginPage() {
           </div>
 
           {error ? <p className="auth-card__error">{error}</p> : null}
-          <button type="submit" className="auth-card__submit">
+          <button type="submit" className="auth-card__submit" disabled={loading}>
             Iniciar sesión →
           </button>
         </form>

@@ -1,0 +1,172 @@
+const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed"];
+
+const PCT_LABELS = {
+  pending: "Pendientes",
+  confirmed: "Confirmadas",
+  cancelled: "Canceladas",
+};
+
+const PCT_COLORS = {
+  pending: "#ea580c",
+  confirmed: "#5b21b6",
+  cancelled: "#dc2626",
+};
+
+const STATUS_LABEL = {
+  pending: "Pendiente",
+  confirmed: "Confirmada",
+  cancelled: "Cancelada",
+};
+
+function simpleHash(str) {
+  let h = 0;
+  const s = String(str);
+  for (let i = 0; i < s.length; i += 1) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function initialsFromName(name) {
+  const t = String(name ?? "").trim();
+  if (!t) return "?";
+  const parts = t.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return t.slice(0, 2).toUpperCase();
+}
+
+function formatDateEs(isoDate) {
+  if (!isoDate) return "—";
+  const d = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return String(isoDate);
+  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function mapRevenuePerDayToBars(revenuePerDay, fallbackDaysInMonth) {
+  const emptyLen =
+    typeof fallbackDaysInMonth === "number" &&
+    fallbackDaysInMonth >= 28 &&
+    fallbackDaysInMonth <= 31
+      ? fallbackDaysInMonth
+      : 31;
+  if (!Array.isArray(revenuePerDay) || revenuePerDay.length === 0) {
+    return Array.from({ length: emptyLen }, (_, i) => ({ day: i + 1, value: 0 }));
+  }
+  let year = new Date().getFullYear();
+  let month = new Date().getMonth();
+  const byDay = new Map();
+  for (const row of revenuePerDay) {
+    if (!row?.date) continue;
+    const d = new Date(`${row.date}T12:00:00`);
+    if (Number.isNaN(d.getTime())) continue;
+    year = d.getFullYear();
+    month = d.getMonth();
+    byDay.set(d.getDate(), Number(row.revenue) || 0);
+  }
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => ({
+    day: i + 1,
+    value: byDay.get(i + 1) ?? 0,
+  }));
+}
+
+function mapPercentStatusToSegments(percentStatus, reservations) {
+  const counts = {};
+  for (const r of reservations) {
+    const k = String(r.status || "").toLowerCase();
+    if (k) counts[k] = (counts[k] || 0) + 1;
+  }
+  const entries = Object.entries(percentStatus || {});
+  if (!entries.length) {
+    return [
+      { key: "none", label: "Sin datos", percent: 100, count: 0, color: "#e2e8f0" },
+    ];
+  }
+  return entries.map(([key, pctStr]) => {
+    const pct = parseFloat(String(pctStr).replace("%", "").replace(",", ".")) || 0;
+    return {
+      key,
+      label: PCT_LABELS[key] || key,
+      percent: Math.round(pct),
+      count: counts[key] ?? 0,
+      color: PCT_COLORS[key] || "#64748b",
+    };
+  });
+}
+
+function mapReservationsToArrivalRows(reservations) {
+  return reservations.slice(0, 12).map((r) => {
+    const name = r.user_name?.trim() || "Huésped";
+    const status = String(r.status || "pending").toLowerCase();
+    return {
+      id: r.id,
+      guestName: name,
+      guestEmail: "—",
+      initials: initialsFromName(name),
+      avatarTone: AVATAR_TONES[simpleHash(String(r.id)) % AVATAR_TONES.length],
+      room: r.room_type?.name || "—",
+      arrival: formatDateEs(r.check_in),
+      status: status === "confirmed" ? "confirmed" : "pending",
+      statusLabel: STATUS_LABEL[status] || status,
+    };
+  });
+}
+
+/**
+ * Adapta la respuesta del panel de analíticas a las props del dashboard hotelero.
+ * @param {object} dto - JSON del backend.
+ * @param {{ daysInMonth?: number }} [options] - Días del mes seleccionado (para barras vacías).
+ */
+export function buildDashboardViewModel(dto, options = {}) {
+  const totalRes = Number(dto?.total_reservas ?? 0);
+  const totalGuests = Number(dto?.total_personas ?? 0);
+  const totalRev = Number(dto?.total_ganancias ?? 0);
+
+  const fmtMoney = (n) =>
+    `$${Number(n).toLocaleString("es-CO", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`;
+
+  const metrics = [
+    {
+      id: "bookings",
+      label: "Reservas del mes",
+      value: String(totalRes),
+      hint: "",
+      trend: null,
+      trendUp: true,
+      tone: "purple",
+    },
+    {
+      id: "revenue-month",
+      label: "Total de ingresos del mes",
+      value: fmtMoney(totalRev),
+      hint: "",
+      trend: null,
+      trendUp: true,
+      tone: "green",
+    },
+    {
+      id: "guests",
+      label: "Total huéspedes",
+      value: String(totalGuests),
+      hint: "",
+      trend: null,
+      trendUp: true,
+      tone: "blue",
+    },
+  ];
+
+  const reservations = Array.isArray(dto?.reservations) ? dto.reservations : [];
+
+  return {
+    metrics,
+    bars: mapRevenuePerDayToBars(dto?.revenue_per_day, options.daysInMonth),
+    segments: mapPercentStatusToSegments(dto?.percent_status, reservations),
+    arrivalRows: mapReservationsToArrivalRows(reservations),
+    statusCenterLine1: String(totalRes),
+    statusCenterLine2: totalRes === 1 ? "reserva" : "reservas",
+  };
+}

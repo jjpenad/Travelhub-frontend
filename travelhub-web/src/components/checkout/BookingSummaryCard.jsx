@@ -155,9 +155,6 @@ function BookingSummaryCard({
           password: Math.random().toString(36).slice(-10), // Generar contraseña aleatoria
           first_name: guestFirstName || "Huésped",
           last_name: guestLastName || "",
-          user_type: "traveler",
-          phone: "+573001234567",
-          country_id: null,
         }).catch((err) => console.error("Registro automático falló:", err));
       }
 
