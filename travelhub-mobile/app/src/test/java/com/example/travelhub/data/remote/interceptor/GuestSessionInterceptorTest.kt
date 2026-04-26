@@ -1,6 +1,7 @@
 package com.example.travelhub.data.remote.interceptor
 
 import com.example.travelhub.data.local.GuestSessionStore
+import com.example.travelhub.data.local.UserPreferences
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -38,7 +39,8 @@ class GuestSessionInterceptorTest {
     fun `adds X-Guest-Id header with stored value`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns "session-123"
-        val interceptor = GuestSessionInterceptor(store)
+        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder().url("http://test/").build()
         val captured = slot<Request>()
@@ -61,7 +63,8 @@ class GuestSessionInterceptorTest {
     fun `adds empty X-Guest-Id header when store has no id yet`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns null
-        val interceptor = GuestSessionInterceptor(store)
+        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder().url("http://test/").build()
         val captured = slot<Request>()
@@ -86,7 +89,8 @@ class GuestSessionInterceptorTest {
     fun `preserves other headers and url on the request`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returns "abc"
-        val interceptor = GuestSessionInterceptor(store)
+        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val request = Request.Builder()
             .url("http://test/path")
@@ -113,7 +117,8 @@ class GuestSessionInterceptorTest {
     fun `reads the id from the store on every intercept`() {
         val store = mockk<GuestSessionStore>()
         every { store.currentId() } returnsMany listOf("first", "second")
-        val interceptor = GuestSessionInterceptor(store)
+        val userPreferences = mockk<UserPreferences>().also { every { it.currentUserId() } returns null }
+        val interceptor = GuestSessionInterceptor(store, userPreferences)
 
         val req = Request.Builder().url("http://test/").build()
 

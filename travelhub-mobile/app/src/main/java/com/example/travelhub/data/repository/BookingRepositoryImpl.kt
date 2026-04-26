@@ -6,6 +6,7 @@ import com.example.travelhub.data.mapper.toBooking
 import com.example.travelhub.data.mapper.toDomain
 import com.example.travelhub.data.mapper.toEntity
 import com.example.travelhub.data.remote.api.AccommodationApi
+import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
 import com.example.travelhub.domain.model.Booking
@@ -48,6 +49,18 @@ class BookingRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun confirmReservationPayment(
+        request: ConfirmReservationRequestDto
+    ): Result<CreateReservationResponse> {
+        return try {
+            val response = api.confirmReservationPayment(request)
+            response.userSession?.takeIf { it.isNotBlank() }?.let { guestSessionStore.update(it) }
+            Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getByUserId(userId: String): List<Booking> {
         return bookingDao.getByUserId(userId)
             .map { it.toDomain() }
@@ -76,7 +89,16 @@ class BookingRepositoryImpl @Inject constructor(
             val hotelsById = runCatching { propertyRepository.getAll() }
                 .getOrDefault(emptyList())
                 .associateBy { it.id }
-            val bookings = response.items.map { it.toBooking { id -> hotelsById[id] } }
+            // Preserve the local-only check-in flag across syncs — the backend
+            // doesn't track it, so we'd lose it on every refresh otherwise.
+            val checkedInIds = bookingDao.getByUserId(sessionId)
+                .filter { it.isCheckedIn }
+                .map { it.id }
+                .toSet()
+            val bookings = response.items.map { dto ->
+                dto.toBooking { id -> hotelsById[id] }
+                    .copy(isCheckedIn = dto.id in checkedInIds)
+            }
 
             // Network call succeeded → safe to evict rows from previous guest sessions
             // (they're now obsolete) and persist this page. We DO NOT do this on the

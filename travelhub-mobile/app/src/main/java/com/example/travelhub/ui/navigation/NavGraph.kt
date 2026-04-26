@@ -190,7 +190,8 @@ fun NavGraph(
             val viewModel: MyTripsViewModel = hiltViewModel()
             MyTripsScreen(
                 viewModel = viewModel,
-                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) }
+                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) },
+                onSignInClick = { navController.navigate(Screen.Login.route) }
             )
         }
 

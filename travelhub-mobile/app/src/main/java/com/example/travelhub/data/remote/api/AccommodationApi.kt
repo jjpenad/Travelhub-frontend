@@ -2,10 +2,14 @@ package com.example.travelhub.data.remote.api
 
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
+import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.HotelAvailabilityDto
 import com.example.travelhub.data.remote.dto.HotelDto
 import com.example.travelhub.data.remote.dto.HotelSearchResponseDto
 import com.example.travelhub.data.remote.dto.ReservationListResponseDto
+import com.example.travelhub.data.remote.dto.UpdateStatusRequestDto
+import com.example.travelhub.data.remote.dto.UpdateStatusResponseDto
+import retrofit2.http.PATCH
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -33,6 +37,12 @@ interface AccommodationApi {
         @Query("offset") offset: Int = 0
     ): ReservationListResponseDto
 
+    @PATCH("service-core/reservations/{reservationId}/status")
+    suspend fun updateReservationStatus(
+        @Path("reservationId") reservationId: String,
+        @Body request: UpdateStatusRequestDto
+    ): UpdateStatusResponseDto
+
     @GET("service-core/accommodations/hotels/{hotelId}/availability")
     suspend fun getHotelAvailability(
         @Path("hotelId") hotelId: String,
@@ -43,5 +53,11 @@ interface AccommodationApi {
     @POST("service-core/reservation-flow/create")
     suspend fun createReservation(
         @Body request: CreateReservationRequest
+    ): CreateReservationResponse
+
+    /** Step 2 of the booking flow: confirm payment with primary guest details. */
+    @POST("service-core/reservation-flow/payment")
+    suspend fun confirmReservationPayment(
+        @Body request: ConfirmReservationRequestDto
     ): CreateReservationResponse
 }

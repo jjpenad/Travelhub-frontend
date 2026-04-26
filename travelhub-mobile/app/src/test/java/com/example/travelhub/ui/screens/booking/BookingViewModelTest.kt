@@ -2,8 +2,10 @@ package com.example.travelhub.ui.screens.booking
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.travelhub.data.local.GuestSessionStore
+import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
+import com.example.travelhub.domain.repository.AuthRepository
 import com.example.travelhub.data.remote.dto.ReservationDto
 import com.example.travelhub.data.remote.dto.ReservationResultDto
 import com.example.travelhub.domain.model.Property
@@ -32,6 +34,7 @@ class BookingViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var propertyRepository: PropertyRepository
     private lateinit var bookingRepository: BookingRepository
+    private lateinit var authRepository: AuthRepository
     private lateinit var guestSessionStore: GuestSessionStore
 
     @Before
@@ -39,6 +42,7 @@ class BookingViewModelTest {
         Dispatchers.setMain(testDispatcher)
         propertyRepository = mockk()
         bookingRepository = mockk()
+        authRepository = mockk(relaxed = true)
         guestSessionStore = mockk(relaxed = true)
     }
 
@@ -70,7 +74,7 @@ class BookingViewModelTest {
             propertyRepository.getAvailability("p1", "2026-05-01", "2026-05-05")
         } returns propertyWithRoom()
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
 
         val state = vm.uiState.value
@@ -88,7 +92,7 @@ class BookingViewModelTest {
             propertyRepository.getAvailability(any(), any(), any())
         } returns null
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
 
         val state = vm.uiState.value
@@ -103,19 +107,25 @@ class BookingViewModelTest {
             propertyRepository.getAvailability(any(), any(), any())
         } returns emptyProp
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value is BookingUiState.Error)
     }
 
+    private fun BookingViewModel.fillForm() {
+        onFirstNameChange("John")
+        onLastNameChange("Doe")
+        onEmailChange("john@x.com")
+    }
+
     @Test
-    fun `confirmAndPay transitions to Confirmed on success and saves the booking locally`() = runTest {
+    fun `confirmAndPay walks create then payment and ends up Confirmed`() = runTest {
         coEvery {
             propertyRepository.getAvailability(any(), any(), any())
         } returns propertyWithRoom()
-        val response = CreateReservationResponse(
-            completed = true, step = "done",
+        val createResponse = CreateReservationResponse(
+            completed = true, step = "create",
             result = ReservationResultDto(
                 success = true, proceed = true, exists = false, overlap = false, fromKafka = true,
                 confirmationCode = "CONF-1", reservationId = "res-1", status = "confirmed",
@@ -123,60 +133,49 @@ class BookingViewModelTest {
             )
         )
         coEvery { bookingRepository.createReservation(any<CreateReservationRequest>()) } returns
-            Result.success(response)
-        coEvery { bookingRepository.create(any()) } answers { Result.success(firstArg()) }
+            Result.success(createResponse)
+        coEvery { bookingRepository.confirmReservationPayment(any<ConfirmReservationRequestDto>()) } returns
+            Result.success(createResponse)
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
-
-        vm.confirmAndPay()
-        advanceUntilIdle()
-
-        val state = vm.uiState.value
-        assertTrue(state is BookingUiState.Confirmed)
-        state as BookingUiState.Confirmed
-        assertEquals("res-1", state.bookingId)
-        assertEquals("CONF-1", state.bookingRef)
-        coVerify { bookingRepository.create(any()) }
-    }
-
-    @Test
-    fun `confirmAndPay falls back to nested reservation id when reservationId is missing`() = runTest {
-        coEvery {
-            propertyRepository.getAvailability(any(), any(), any())
-        } returns propertyWithRoom()
-        val response = CreateReservationResponse(
-            completed = false, step = "validate",
-            result = ReservationResultDto(
-                success = true, proceed = false, exists = true, overlap = true, fromKafka = true,
-                confirmationCode = "CONF-2", reservationId = null, status = null,
-                message = "overlap",
-                reservation = ReservationDto("nested-id", "pending", "2026-05-01", "2026-05-05", "400.00")
-            )
-        )
-        coEvery { bookingRepository.createReservation(any<CreateReservationRequest>()) } returns
-            Result.success(response)
-        coEvery { bookingRepository.create(any()) } answers { Result.success(firstArg()) }
-
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
-        advanceUntilIdle()
+        vm.fillForm()
         vm.confirmAndPay()
         advanceUntilIdle()
 
         val state = vm.uiState.value as BookingUiState.Confirmed
-        assertEquals("nested-id", state.bookingId)
+        assertEquals("res-1", state.bookingId)
+        assertEquals("CONF-1", state.bookingRef)
+        coVerify { bookingRepository.confirmReservationPayment(any<ConfirmReservationRequestDto>()) }
     }
 
     @Test
-    fun `confirmAndPay transitions to Error on repository failure`() = runTest {
+    fun `confirmAndPay errors when required form fields are empty`() = runTest {
+        coEvery {
+            propertyRepository.getAvailability(any(), any(), any())
+        } returns propertyWithRoom()
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
+        advanceUntilIdle()
+
+        vm.confirmAndPay() // no form fields set
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertTrue(state is BookingUiState.Error)
+        coVerify(exactly = 0) { bookingRepository.createReservation(any<CreateReservationRequest>()) }
+    }
+
+    @Test
+    fun `confirmAndPay transitions to Error on create failure`() = runTest {
         coEvery {
             propertyRepository.getAvailability(any(), any(), any())
         } returns propertyWithRoom()
         coEvery { bookingRepository.createReservation(any<CreateReservationRequest>()) } returns
             Result.failure(RuntimeException("boom"))
 
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
+        vm.fillForm()
         vm.confirmAndPay()
         advanceUntilIdle()
 
@@ -190,7 +189,7 @@ class BookingViewModelTest {
         coEvery {
             propertyRepository.getAvailability(any(), any(), any())
         } returns null
-        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, guestSessionStore)
+        val vm = BookingViewModel(savedState(), propertyRepository, bookingRepository, authRepository, guestSessionStore)
         advanceUntilIdle()
         // VM is in Error state by now.
 

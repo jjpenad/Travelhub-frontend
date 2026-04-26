@@ -111,4 +111,11 @@ class ReservationMapperTest {
         assertEquals(BookingStatus.PENDING, mapReservationStatus("anything-else"))
         assertEquals(BookingStatus.PENDING, mapReservationStatus(""))
     }
+
+    @Test
+    fun `mapReservationStatus does not recognise checked_in (backend never returns it)`() {
+        // The backend's allowed set is pending/confirmed/cancelled/completed.
+        // Anything else falls back to PENDING.
+        assertEquals(BookingStatus.PENDING, mapReservationStatus("checked_in"))
+    }
 }

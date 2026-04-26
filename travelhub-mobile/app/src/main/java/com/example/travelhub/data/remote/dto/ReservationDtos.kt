@@ -87,3 +87,13 @@ data class ReservationItemDto(
     @SerializedName("confirmation_code") val confirmationCode: String? = null,
     @SerializedName("created_at") val createdAt: String? = null
 )
+
+// PATCH /service-core/reservations/{id}/status
+data class UpdateStatusRequestDto(val status: String)
+
+data class UpdateStatusResponseDto(
+    val id: String? = null,
+    @SerializedName("previous_status") val previousStatus: String? = null,
+    @SerializedName("new_status") val newStatus: String? = null,
+    val message: String? = null
+)

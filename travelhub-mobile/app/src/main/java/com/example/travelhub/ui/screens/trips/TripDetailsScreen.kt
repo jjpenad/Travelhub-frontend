@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import java.time.LocalDate
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -98,8 +99,18 @@ private fun TripDetailsContent(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            if (bk.status == BookingStatus.CONFIRMED) {
-                TravelHubButton(text = "View QR Check-In Code", onClick = { onQRCheckIn(bk.id) })
+            // Show the QR button for any reservation that's still actionable —
+            // i.e. not cancelled and not past its checkout date. The QR screen
+            // itself handles the "already checked in" / "expired" states.
+            val canShowQr = bk.status != BookingStatus.CANCELLED &&
+                !bk.checkOut.isBefore(LocalDate.now())
+            if (canShowQr) {
+                val buttonLabel = if (bk.isCheckedIn) {
+                    "View QR Check-In Code (Checked in)"
+                } else {
+                    "View QR Check-In Code"
+                }
+                TravelHubButton(text = buttonLabel, onClick = { onQRCheckIn(bk.id) })
                 Spacer(modifier = Modifier.height(12.dp))
             }
             TravelHubOutlinedButton(text = "Notifications & Updates", onClick = { })
