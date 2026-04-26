@@ -234,11 +234,12 @@ export async function registerUser(payload) {
 }
 
 /**
- * POST /auth/login (configurable con VITE_LOGIN_PATH)
+ * POST /auth/login (configurable con VITE_LOGIN_PATH).
  * @returns {Promise<{ access_token: string, token_type: string, user_type: string }>}
  */
 export async function loginUser({ email, password }) {
   try {
+    const emailNorm = String(email ?? "").trim().toLowerCase();
     const url = joinApiUrl(LOGIN_PATH);
     const res = await fetch(url, {
       method: "POST",
@@ -246,7 +247,7 @@ export async function loginUser({ email, password }) {
         "Content-Type": "application/json",
         "X-Guest-Id": getGuestId(),
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: emailNorm, password }),
     });
 
     const text = await res.text();

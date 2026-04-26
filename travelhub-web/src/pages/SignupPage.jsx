@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
-import { persistSessionFromLogin } from "../auth/sessionAuth";
+import { pathAfterAuthForUserType, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser, registerUser } from "../services/api";
 import "./AuthPage.css";
@@ -70,7 +70,7 @@ function SignupPage() {
 
       setSuccessMsg("Cuenta creada correctamente. Redirigiendo…");
       await new Promise((r) => setTimeout(r, 500));
-      navigate(PATH_TRAVELERS_HOME, { replace: true });
+      navigate(pathAfterAuthForUserType(loginResult.user_type), { replace: true });
     } catch (err) {
       setError(err?.message || "No se pudo completar el registro.");
     } finally {

@@ -1,4 +1,8 @@
-/** Claves de sesión mock hasta integrar API de autenticación */
+/**
+ * Claves de sesión mock hasta integrar API de autenticación
+ */
+
+import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
 
 export const AUTH_ROLE_KEY = "travelhub-role";
 export const AUTH_EMAIL_KEY = "travelhub-email";
@@ -20,8 +24,15 @@ function clearSessionRoleEmail() {
 /** Mapea `user_type` del API al rol de la app. */
 export function roleFromApiUserType(userType) {
   const t = String(userType || "").toLowerCase();
-  if (t === "hotel" || t === "admin_hotel") return ROLE_HOTEL;
+  if (t === "hotel" || t === "admin_hotel" || t === "hotel_admin") return ROLE_HOTEL;
   return ROLE_TRAVELER;
+}
+
+/** Ruta inicial tras login o registro+login según `user_type` del API. */
+export function pathAfterAuthForUserType(userType) {
+  return roleFromApiUserType(userType) === ROLE_HOTEL
+    ? PATH_HOTEL_PORTAL_HOME
+    : PATH_TRAVELERS_HOME;
 }
 
 export function setAuthToken(token) {

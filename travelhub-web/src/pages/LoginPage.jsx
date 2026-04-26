@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
-import { persistSessionFromLogin } from "../auth/sessionAuth";
+import { pathAfterAuthForUserType, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser } from "../services/api";
 import "./AuthPage.css";
@@ -60,7 +60,7 @@ function LoginPage() {
         userType: result.user_type,
         remember,
       });
-      navigate(PATH_TRAVELERS_HOME, { replace: true });
+      navigate(pathAfterAuthForUserType(result.user_type), { replace: true });
     } catch (err) {
       setError(err?.message || "No se pudo iniciar sesión.");
     } finally {
