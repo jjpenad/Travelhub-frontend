@@ -132,6 +132,33 @@ class UseCasesTest {
         assertEquals(bookings, result)
     }
 
+    // ── GetUserReservationsUseCase ──────────────────────────────────────
+
+    @Test
+    fun `GetUserReservationsUseCase delegates with pagination params`() = runTest {
+        val repo = mockk<BookingRepository>()
+        val expected = com.example.travelhub.domain.model.PagedResult<Booking>(
+            items = emptyList(), total = 0, nextOffset = 0
+        )
+        coEvery { repo.getReservations(20, 40) } returns expected
+
+        val result = GetUserReservationsUseCase(repo)(limit = 20, offset = 40)
+
+        assertSame(expected, result)
+        coVerify(exactly = 1) { repo.getReservations(20, 40) }
+    }
+
+    @Test
+    fun `GetUserReservationsUseCase uses sensible defaults`() = runTest {
+        val repo = mockk<BookingRepository>()
+        coEvery { repo.getReservations(any(), any()) } returns
+            com.example.travelhub.domain.model.PagedResult(emptyList(), 0, 0)
+
+        GetUserReservationsUseCase(repo)()
+
+        coVerify { repo.getReservations(20, 0) }
+    }
+
     // ── PayBookingUseCase ───────────────────────────────────────────────
 
     @Test

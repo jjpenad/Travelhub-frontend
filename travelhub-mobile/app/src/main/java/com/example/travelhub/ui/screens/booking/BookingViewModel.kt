@@ -3,6 +3,7 @@ package com.example.travelhub.ui.screens.booking
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.PaymentRequestDto
 import com.example.travelhub.data.remote.dto.PrimaryGuestDto
@@ -44,7 +45,8 @@ sealed interface BookingUiState {
 class BookingViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val propertyRepository: PropertyRepository,
-    private val bookingRepository: BookingRepository
+    private val bookingRepository: BookingRepository,
+    private val guestSessionStore: GuestSessionStore
 ) : ViewModel() {
 
     private val propertyId: String = savedStateHandle["propertyId"] ?: ""
@@ -113,10 +115,11 @@ class BookingViewModel @Inject constructor(
                         ?: response.result.reservation?.id
                         ?: confirmationCode
 
-                    // Save booking locally
+                    // Save booking locally — tag it with the active guest session id
+                    // so MyTrips can filter by current session and wipe stale rows.
                     val booking = Booking(
                         id = reservationId,
-                        userId = "user_001",
+                        userId = guestSessionStore.currentId().orEmpty(),
                         propertyId = propertyId,
                         propertyName = currentState.property.name,
                         propertyLocation = "${currentState.property.city}, ${currentState.property.country}",

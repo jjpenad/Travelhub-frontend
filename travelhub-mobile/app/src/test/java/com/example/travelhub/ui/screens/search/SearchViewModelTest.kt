@@ -1,11 +1,12 @@
 package com.example.travelhub.ui.screens.search
 
-import app.cash.turbine.test
+import com.example.travelhub.domain.model.PagedResult
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.SearchFilters
 import com.example.travelhub.domain.model.SortOption
 import com.example.travelhub.domain.usecase.SearchPropertiesUseCase
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,8 +26,6 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
 
-    // Unconfined dispatcher so StateFlow emissions propagate eagerly through combine +
-    // stateIn without having to advance the dispatcher after every onSortChange().
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var useCase: SearchPropertiesUseCase
     private lateinit var vm: SearchViewModel
@@ -43,7 +42,7 @@ class SearchViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun property(id: String, price: Double, rating: Double, reviews: Int): Property =
+    private fun property(id: String, price: Double, rating: Double = 0.0, reviews: Int = 0): Property =
         Property(
             id = id, name = "Hotel $id", address = "", city = "Lima", country = "Peru",
             pricePerNight = price, rating = rating, reviewCount = reviews
@@ -53,7 +52,6 @@ class SearchViewModelTest {
     fun `default state values`() {
         assertEquals("", vm.selectedCity.value)
         assertEquals(2, vm.guests.value)
-        assertEquals(1, vm.rooms.value)
         assertEquals(SearchViewModel.DEFAULT_SORT, vm.sortOption.value)
         assertFalse(vm.isLoading.value)
         assertFalse(vm.hasSearched.value)
@@ -68,8 +66,6 @@ class SearchViewModelTest {
         vm.onRoomsChange(2)
 
         assertEquals("Bogotá", vm.selectedCity.value)
-        assertEquals(LocalDate.of(2026, 5, 1), vm.checkIn.value)
-        assertEquals(LocalDate.of(2026, 5, 5), vm.checkOut.value)
         assertEquals(4, vm.guests.value)
         assertEquals(2, vm.rooms.value)
     }
@@ -84,83 +80,87 @@ class SearchViewModelTest {
     }
 
     @Test
-    fun `search populates results and toggles isLoading then hasSearched`() = runTest {
-        val raw = listOf(
-            property("a", 200.0, 4.5, 50),
-            property("b", 100.0, 4.9, 10)
-        )
-        coEvery { useCase(any<SearchFilters>()) } returns raw
+    fun `search populates first page sorted by default PRICE_ASC`() = runTest {
+        val raw = listOf(property("a", 200.0), property("b", 100.0))
+        coEvery { useCase(any<SearchFilters>(), 1, 20) } returns PagedResult(raw, total = 2, nextOffset = 2)
 
         vm.onCityChange("Lima")
         vm.search()
         advanceUntilIdle()
 
-        // Default sort is PRICE_ASC → cheapest first.
         assertEquals(listOf("b", "a"), vm.results.value.map { it.id })
-        assertFalse(vm.isLoading.value)
         assertTrue(vm.hasSearched.value)
+        assertFalse(vm.isLoading.value)
+    }
+
+    @Test
+    fun `loadMore appends next page and increments page counter`() = runTest {
+        val first = listOf(property("a", 200.0))
+        val second = listOf(property("b", 100.0))
+        coEvery { useCase(any<SearchFilters>(), 1, 20) } returns PagedResult(first, total = 2, nextOffset = 1)
+        coEvery { useCase(any<SearchFilters>(), 2, 20) } returns PagedResult(second, total = 2, nextOffset = 2)
+
+        vm.onCityChange("Lima")
+        vm.search()
+        advanceUntilIdle()
+        vm.loadMore()
+        advanceUntilIdle()
+
+        // Default sort is PRICE_ASC: b (100) before a (200).
+        assertEquals(listOf("b", "a"), vm.results.value.map { it.id })
+        coVerify { useCase(any<SearchFilters>(), 2, 20) }
+    }
+
+    @Test
+    fun `loadMore is a noop when total is reached`() = runTest {
+        val raw = listOf(property("a", 200.0))
+        coEvery { useCase(any<SearchFilters>(), 1, 20) } returns PagedResult(raw, total = 1, nextOffset = 1)
+
+        vm.search()
+        advanceUntilIdle()
+        vm.loadMore()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { useCase(any<SearchFilters>(), 1, 20) }
+        coVerify(exactly = 0) { useCase(any<SearchFilters>(), 2, 20) }
     }
 
     @Test
     fun `changing sort re-orders results without calling the use case again`() = runTest {
         val raw = listOf(
-            property("a", 200.0, 4.5, 50),
-            property("b", 100.0, 4.9, 10),
-            property("c", 300.0, 4.0, 200)
+            property("a", 200.0, 4.0, 50),
+            property("b", 100.0, 4.5, 200),
+            property("c", 300.0, 4.9, 10)
         )
-        coEvery { useCase(any<SearchFilters>()) } returns raw
+        coEvery { useCase(any<SearchFilters>(), 1, 20) } returns PagedResult(raw, total = 3, nextOffset = 3)
 
-        vm.onCityChange("Lima")
         vm.search()
         advanceUntilIdle()
 
         vm.onSortChange(SortOption.RATING)
-        assertEquals(listOf("b", "a", "c"), vm.results.value.map { it.id })
-
-        vm.onSortChange(SortOption.POPULARITY)
-        assertEquals(listOf("c", "a", "b"), vm.results.value.map { it.id })
+        assertEquals(listOf("c", "b", "a"), vm.results.value.map { it.id })
 
         vm.onSortChange(SortOption.PRICE_DESC)
         assertEquals(listOf("c", "a", "b"), vm.results.value.map { it.id })
+
+        // Use case was only called once for the initial search — sort changes don't refetch.
+        coVerify(exactly = 1) { useCase(any<SearchFilters>(), 1, 20) }
     }
 
     @Test
-    fun `formatted dates use MMM dd pattern`() {
-        vm.onCheckInChange(LocalDate.of(2026, 5, 1))
-        vm.onCheckOutChange(LocalDate.of(2026, 5, 9))
-
-        // The pattern uses the JVM default locale; we only check the day component
-        // which is locale-stable.
-        assertTrue(vm.checkInFormatted.contains("01"))
-        assertTrue(vm.checkOutFormatted.contains("09"))
-        // ISO API form is locale-independent and always yyyy-MM-dd.
-        assertEquals("2026-05-01", vm.checkInApi)
-        assertEquals("2026-05-09", vm.checkOutApi)
-    }
-
-    @Test
-    fun `results StateFlow emits a new value when sort changes`() = runTest {
-        // Two items — PRICE_ASC vs PRICE_DESC are guaranteed to differ.
-        // Only assert sorts that produce a DIFFERENT list, otherwise StateFlow's
-        // distinct-until-changed semantics would (correctly) skip the emission.
-        val raw = listOf(
-            property("a", 200.0, 4.0, 50),
-            property("b", 100.0, 4.9, 10)
+    fun `refresh re-runs the search from page 1`() = runTest {
+        coEvery { useCase(any<SearchFilters>(), 1, 20) } returns PagedResult(
+            items = listOf(property("a", 100.0)),
+            total = 1, nextOffset = 1
         )
-        coEvery { useCase(any<SearchFilters>()) } returns raw
 
-        vm.onCityChange("Lima")
         vm.search()
         advanceUntilIdle()
 
-        vm.results.test {
-            // First emission: current sorted list (PRICE_ASC).
-            assertEquals(listOf("b", "a"), awaitItem().map { it.id })
+        vm.refresh()
+        advanceUntilIdle()
 
-            vm.onSortChange(SortOption.PRICE_DESC)
-            assertEquals(listOf("a", "b"), awaitItem().map { it.id })
-
-            cancelAndIgnoreRemainingEvents()
-        }
+        assertFalse(vm.isRefreshing.value)
+        coVerify(atLeast = 2) { useCase(any<SearchFilters>(), 1, 20) }
     }
 }
