@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import { getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
@@ -53,10 +53,20 @@ function HotelPortalPage() {
                   backend.
                 </p>
               </article>
-              <article className="hotel-portal-card">
+              <Link
+                to="/portal-hoteles/reservas"
+                className="hotel-portal-card hotel-portal-card--link"
+                aria-label="Abrir listado de reservas"
+              >
                 <h2>Reservas</h2>
-                <p>Consulta calendario y ocupación en una próxima iteración.</p>
-              </article>
+                <p>
+                  Visualiza y filtra el listado de reservas para gestionar ocupación, pagos y
+                  check-in.
+                </p>
+                <p style={{ marginTop: "0.75rem" }}>
+                  <span>Abrir listado →</span>
+                </p>
+              </Link>
               <article className="hotel-portal-card">
                 <h2>Rendimiento</h2>
                 <p>Indicadores e informes estarán disponibles más adelante.</p>

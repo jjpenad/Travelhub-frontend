@@ -2,10 +2,13 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
 import {
+  FALLBACK_HOTEL_USER_ID,
   ROLE_HOTEL,
   ROLE_TRAVELER,
   setSessionUser,
+  userIdFromAuthResponse,
 } from "../auth/sessionAuth";
+import { authLoginAdmin } from "../services/api";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import "./AuthPage.css";
 
@@ -48,7 +51,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     if (!isValidEmail(email)) {
@@ -64,10 +67,19 @@ function LoginPage() {
 
     if (emailNorm === HOTEL_PORTAL_EMAIL) {
       if (password === HOTEL_PORTAL_PASSWORD) {
+        let userId = FALLBACK_HOTEL_USER_ID;
+        try {
+          const authJson = await authLoginAdmin({ email: emailNorm, password });
+          const fromApi = userIdFromAuthResponse(authJson);
+          if (fromApi) userId = fromApi;
+        } catch {
+          // Sin API o credenciales solo demo: se usa el userId de entorno/seed
+        }
         setSessionUser({
           role: ROLE_HOTEL,
           email: emailNorm,
           remember,
+          userId,
         });
         navigate("/portal-hoteles", { replace: true });
       } else {

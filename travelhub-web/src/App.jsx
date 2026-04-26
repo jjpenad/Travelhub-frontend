@@ -9,6 +9,8 @@ import ConfirmationPage from "./pages/ConfirmationPage";
 import Home from "./pages/Home";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import HotelPortalPage from "./pages/HotelPortalPage";
+import HotelReservationDetailPage from "./pages/HotelReservationDetailPage";
+import HotelReservationsPage from "./pages/HotelReservationsPage";
 import LoginPage from "./pages/LoginPage";
 import MyTripsPage from "./pages/MyTripsPage";
 import TripDetailPage from "./pages/TripDetailPage";
@@ -28,6 +30,11 @@ function App() {
         <Route path={PATH_MY_TRIPS} element={<MyTripsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/portal-hoteles" element={<HotelPortalPage />} />
+        <Route path="/portal-hoteles/reservas" element={<HotelReservationsPage />} />
+        <Route
+          path="/portal-hoteles/reservas/:reservationId"
+          element={<HotelReservationDetailPage />}
+        />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/hotel/:hotelId" element={<HotelDetailPage />} />

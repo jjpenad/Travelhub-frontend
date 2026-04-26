@@ -3,7 +3,18 @@
  * Centralizes all backend calls. Replace VITE_API_URL in .env to point to a different backend.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/";
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/";
+
+/**
+ * Admin/portal endpoints (reservations listing, etc.) are served by a different API in local dev.
+ * Set VITE_ADMIN_API_URL to something like "http://localhost:8000".
+ */
+const ADMIN_BASE_URL =
+  import.meta.env.VITE_ADMIN_API_URL ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8000";
 
 const CITY_COUNTRY_MAP = {
   "Bogotá": "Colombia",
@@ -51,6 +62,26 @@ async function apiFetch(path, options = {}) {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`API error ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+/**
+ * Generic fetch wrapper for admin endpoints.
+ */
+async function adminFetch(path, options = {}) {
+  const base = ADMIN_BASE_URL.endsWith("/") ? ADMIN_BASE_URL.slice(0, -1) : ADMIN_BASE_URL;
+  const url = `${base}${path}`;
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+    ...options,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Admin API error ${res.status}: ${text}`);
   }
   return res.json();
 }
@@ -106,6 +137,50 @@ export async function processPayment(paymentInfo) {
   });
 }
 
+/**
+ * GET /reservations?limit=&offset=
+ * Admin portal: list reservations (paged).
+ */
+export async function listReservations({ limit = 10, offset = 0 } = {}) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return adminFetch(`/reservations?${params}`);
+}
+
+/**
+ * Reservas asociadas a un usuario (no el listado global de admin).
+ * GET /reservations/user/{userId}?limit=&offset=
+ */
+export async function listReservationsByUserId(userId, { limit = 10, offset = 0 } = {}) {
+  const id = encodeURIComponent(String(userId).trim());
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return adminFetch(`/reservations/user/${id}?${params}`);
+}
+
+const AUTH_LOGIN_PATH = import.meta.env.VITE_AUTH_LOGIN_PATH || "/auth/login";
+
+/**
+ * Login sobre el mismo origen que el admin (reservas). Si el backend aún no existe,
+ * deja `VITE_USE_AUTH_API` sin activar: no se llama.
+ * Ajusta `VITE_AUTH_LOGIN_PATH` si tu ruta no es `POST /auth/login`.
+ * @returns {Promise<object | null>} JSON del servidor, o `null` si el login por API está desactivado
+ */
+export async function authLoginAdmin({ email, password } = {}) {
+  if (import.meta.env.VITE_USE_AUTH_API !== "true") {
+    return null;
+  }
+  const path = AUTH_LOGIN_PATH.startsWith("/") ? AUTH_LOGIN_PATH : `/${AUTH_LOGIN_PATH}`;
+  return adminFetch(path, {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
 export async function registerUser(userData) {
   return apiFetch("/auth/register", {
     method: "POST",
@@ -152,7 +227,7 @@ export async function createReservation({
     payment: {
       amount: Number(totalPrice).toFixed(2),
       currency_code: "USD",
-      payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
+      payment_token: `tok_visa_${(cardNumber || "4242424242424242").replaceAll(/\D/g, "")}`,
     },
     special_requests: "",
   };
@@ -174,7 +249,7 @@ function mapHotelDto(dto) {
     name: dto.name,
     location: `${dto.city}, ${countryForCity(dto.city)}`,
     city: dto.city,
-    rating: parseFloat(dto.rating) || 0,
+    rating: Number.parseFloat(dto.rating) || 0,
     reviewsCount: dto.total_reviews || 0,
     price: 0, // No price without dates
     image: null,
@@ -202,7 +277,7 @@ function mapSearchResultDto(dto) {
     name: dto.hotel_name,
     location: `${dto.city}, ${countryForCity(dto.city)}`,
     city: dto.city,
-    rating: parseFloat(dto.rating) || 0,
+    rating: Number.parseFloat(dto.rating) || 0,
     reviewsCount: 0,
     price: minPrice,
     image: null,
@@ -233,7 +308,7 @@ function mapAvailabilityDto(dto) {
     name: dto.hotel_name,
     location: `${dto.city}, ${countryForCity(dto.city)}`,
     city: dto.city,
-    rating: parseFloat(dto.rating) || 0,
+    rating: Number.parseFloat(dto.rating) || 0,
     reviewsCount: 0,
     price: minPrice,
     image: null,
@@ -257,9 +332,9 @@ function mapRoomType(dto) {
     description: dto.description,
     maxCapacity: dto.max_capacity,
     bedType: dto.bed_type,
-    sizeSqm: parseFloat(dto.size_sqm) || 0,
-    pricePerNight: parseFloat(dto.price_per_night) || 0,
-    totalPrice: parseFloat(dto.total_price) || 0,
+    sizeSqm: Number.parseFloat(dto.size_sqm) || 0,
+    pricePerNight: Number.parseFloat(dto.price_per_night) || 0,
+    totalPrice: Number.parseFloat(dto.total_price) || 0,
     currencyCode: dto.currency_code || "USD",
     minimumStay: dto.minimum_stay || 1,
     amenities: (dto.amenities || []).map((a) => a.name),
