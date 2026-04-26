@@ -30,4 +30,8 @@ interface BookingDao {
 
     @Query("SELECT COUNT(*) FROM bookings WHERE bookingRef = :bookingRef")
     suspend fun countByRef(bookingRef: String): Int
+
+    /** Drop every row whose userId is not the active guest session id. */
+    @Query("DELETE FROM bookings WHERE userId != :userId")
+    suspend fun deleteByUserIdNot(userId: String)
 }
