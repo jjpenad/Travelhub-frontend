@@ -243,7 +243,8 @@ class BookingRepositoryImplTest {
             BookingEntity(
                 id = "local-$i", userId = "session-A", propertyId = "h$i",
                 propertyName = "Hotel $i", propertyLocation = "City",
-                checkIn = "2026-05-0${(i % 9) + 1}", checkOut = "2026-05-0${(i % 9) + 2}",
+                // Same date for every fixture row — pagination doesn't depend on dates.
+                checkIn = "2026-05-01", checkOut = "2026-05-05",
                 guests = 1, rooms = 1, roomType = "Suite",
                 totalPrice = 100.0, status = "CONFIRMED", bookingRef = "REF-$i"
             )
