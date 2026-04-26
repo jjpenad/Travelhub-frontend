@@ -1,5 +1,8 @@
 # CI del frontend (Vite + React en travelhub-web).
 # Monorepo: añade workflows separados cuando exista travelhub-mobile.
+# Gate de cobertura 80% (líneas/statements/functions) aplicado por Vitest
+# sobre los módulos de lógica `src/services`, `src/auth`, `src/bookings`,
+# `src/constants` — equivalente a `koverVerify minBound(80)` en mobile.
 
 name: Frontend CI
 
@@ -53,8 +56,25 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run unit tests (Vitest)
-        run: npm run test:ci
+      # `test:coverage` corre Vitest con el reporter v8 + el threshold del
+      # 80% configurado en vitest.config.js. Si la cobertura cae por debajo
+      # del umbral en cualquiera de las métricas (lines/statements/functions),
+      # vitest sale con código distinto de 0 y este step falla — mismo
+      # contrato que `./gradlew koverVerify` en travelhub-mobile.
+      - name: Run unit tests + coverage gate (Vitest)
+        run: npm run test:coverage
+
+      # Subimos el reporte HTML/JSON SOLO cuando algo falla, para que los
+      # devs puedan inspeccionar qué módulo bajó el threshold sin saturar
+      # el storage en runs verdes (mismo patrón del workflow mobile).
+      - name: Upload coverage report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: travelhub-web-coverage
+          path: travelhub-web/coverage
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Production build
         run: npm run build

@@ -31,6 +31,14 @@ const ANALYTICS_DASHBOARD_PATH =
 const RESERVATION_DETAIL_PATH =
   import.meta.env.VITE_RESERVATION_DETAIL_PATH || "/reservations";
 
+/**
+ * GET listado JWT-only de reservas del usuario autenticado. El backend lee el
+ * `user_id` del Bearer token (el path no recibe id de usuario). Si tu deploy
+ * usa otra ruta, sobrescribir con VITE_USER_RESERVATIONS_PATH.
+ */
+const USER_RESERVATIONS_PATH =
+  import.meta.env.VITE_USER_RESERVATIONS_PATH || "/reservations/user";
+
 /** `user_type` por defecto en POST /auth/register si el cliente no lo envía. */
 const REGISTER_DEFAULT_USER_TYPE = "traveler";
 
@@ -84,12 +92,19 @@ function buildPublicHeaders() {
   };
 }
 
-/** Igual que público + Bearer solo si existe token (huésped sin token no envía cabecera). */
+/**
+ * Igual que público + Bearer solo si existe token. Cuando estamos
+ * autenticados forzamos `X-Guest-Id` a string vacío: el JWT es la identidad
+ * autoritativa y un id de invitado heredado de búsquedas anónimas previas
+ * puede contaminar el scope del usuario en el backend (mismo contrato del
+ * cliente Android `GuestSessionInterceptor`).
+ */
 function buildAuthHeaders() {
   const headers = buildPublicHeaders();
   const token = getAuthToken()?.trim();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+    headers["X-Guest-Id"] = "";
   }
   return headers;
 }
@@ -321,6 +336,93 @@ export async function processPayment(paymentInfo) {
     method: "POST",
     body: JSON.stringify(paymentInfo),
   });
+}
+
+/**
+ * GET …/reservations/user?limit=&offset= (Bearer).
+ *
+ * Mismo endpoint que el cliente Android. El backend deriva el `user_id`
+ * del JWT, así que la ruta NO recibe ningún id en el path. Lanza si no hay
+ * sesión activa para evitar disparar 401 silenciosos desde la UI.
+ *
+ * @param {{ limit?: number, offset?: number }} [opts]
+ * @returns {Promise<{ items: object[], total: number, limit: number, offset: number }>}
+ */
+export async function listUserReservations(opts = {}) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const limit = Number.isFinite(opts.limit) ? opts.limit : 20;
+  const offset = Number.isFinite(opts.offset) ? opts.offset : 0;
+  const qs = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  const path = `${USER_RESERVATIONS_PATH}?${qs.toString()}`;
+  const data = await authFetch(path, { method: "GET" });
+  const items = Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data)
+      ? data
+      : [];
+  const total = Number.isFinite(data?.total) ? data.total : items.length;
+  return {
+    items,
+    total,
+    limit,
+    offset,
+  };
+}
+
+/**
+ * Normaliza un item del listado backend (`/reservations/user`) al shape
+ * que renderiza `MyTripsPage` (`r.hotel.{name,location,image,rating}`,
+ * `r.checkIn`, `r.checkOut`, `r.total`, `r.reference`, …). Acepta una
+ * `hotelsById` opcional (mapa de id → hotel del catálogo público) para
+ * resolver nombre/ciudad cuando el backend no los devuelve en el listado.
+ *
+ * @param {Record<string, unknown>} dto
+ * @param {Map<string, ReturnType<typeof mapHotelDto>>} [hotelsById]
+ */
+export function mapUserReservationDto(dto, hotelsById) {
+  const hotelId = dto?.hotel_id ?? dto?.hotelId ?? null;
+  const hotel = hotelId && hotelsById?.get?.(hotelId);
+  const totalRaw = dto?.total_price ?? dto?.totalPrice ?? 0;
+  const totalNum = Number(totalRaw);
+  const guestsRaw = dto?.guests;
+  const guests = Number.isFinite(Number(guestsRaw)) ? Number(guestsRaw) : 1;
+  const checkIn = String(dto?.check_in ?? dto?.checkIn ?? "");
+  const checkOut = String(dto?.check_out ?? dto?.checkOut ?? "");
+  const nights = (() => {
+    const a = checkIn && new Date(`${checkIn}T12:00:00`);
+    const b = checkOut && new Date(`${checkOut}T12:00:00`);
+    if (!(a instanceof Date) || !(b instanceof Date)) return null;
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+    const ms = b.getTime() - a.getTime();
+    return ms > 0 ? Math.round(ms / 86400000) : null;
+  })();
+  return {
+    id: dto?.id ?? dto?.reservation_id ?? null,
+    reference: dto?.confirmation_code ?? dto?.confirmationCode ?? "",
+    hotel: {
+      id: hotelId,
+      name: hotel?.name ?? "Alojamiento",
+      location: hotel?.location ?? "—",
+      image: null,
+      rating: hotel?.rating ?? null,
+    },
+    checkIn,
+    checkOut,
+    nights,
+    guests,
+    total: Number.isFinite(totalNum) ? totalNum : 0,
+    roomType: typeof dto?.room_type_name === "string" ? dto.room_type_name : null,
+    paymentLabel: "Tarjeta",
+    status: typeof dto?.status === "string" ? dto.status : null,
+    source: "backend",
+  };
 }
 
 /**

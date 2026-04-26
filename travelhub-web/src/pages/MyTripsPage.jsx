@@ -21,6 +21,11 @@ import {
   canAccessTravelerAccountRoutes,
 } from "../auth/sessionAuth";
 import {
+  listHotels,
+  listUserReservations,
+  mapUserReservationDto,
+} from "../services/api";
+import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
@@ -245,15 +250,29 @@ function MyTripsPage() {
   const [storedReservations, setStoredReservations] = useState(() =>
     getLocalReservations(),
   );
+  const [remoteReservations, setRemoteReservations] = useState([]);
   const [tab, setTab] = useState("upcoming");
   const [sort, setSort] = useState("checkin-asc");
 
+  /**
+   * Las reservas backend son la fuente autoritativa para usuarios
+   * autenticados; las locales pueden tener entradas que aún no han
+   * sincronizado con el servidor (offline / fallo intermitente).
+   * Mergemos por id evitando duplicados — el backend gana cuando coincide.
+   */
   const reservations = useMemo(() => {
+    const remoteIds = new Set(
+      remoteReservations.map((r) => r.id).filter(Boolean),
+    );
+    const localOnly = storedReservations.filter(
+      (r) => !r.id || !remoteIds.has(r.id),
+    );
+    const base = [...remoteReservations, ...localOnly];
     if (USE_MOCK_MY_TRIPS) {
-      return [...mockMyTripsReservations, ...storedReservations];
+      return [...mockMyTripsReservations, ...base];
     }
-    return storedReservations;
-  }, [storedReservations]);
+    return base;
+  }, [storedReservations, remoteReservations]);
 
   useEffect(() => {
     function refresh() {
@@ -261,7 +280,12 @@ function MyTripsPage() {
     }
     refresh();
     function onStorage(e) {
-      if (e.key === LOCAL_RESERVATIONS_KEY || e.key === null) {
+      // Cualquier cambio en LOCAL_RESERVATIONS_KEY o sus variantes
+      // segmentadas por usuario invalida el snapshot local.
+      if (
+        e.key == null ||
+        (typeof e.key === "string" && e.key.startsWith(LOCAL_RESERVATIONS_KEY))
+      ) {
         refresh();
       }
       if (
@@ -278,6 +302,43 @@ function MyTripsPage() {
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [navigate]);
+
+  // Trae las reservas desde el backend al montar (y cuando vuelve la
+  // pestaña al foco). Mismo contrato que el `OnResumeEffect` de Android:
+  // la sesión autenticada es la fuente de verdad. Si la red falla, los
+  // datos locales siguen visibles vía `storedReservations`.
+  useEffect(() => {
+    if (!canAccessTravelerAccountRoutes()) return;
+    let cancelled = false;
+
+    async function loadFromBackend() {
+      try {
+        const [hotels, page] = await Promise.all([
+          listHotels().catch(() => []),
+          listUserReservations({ limit: 50, offset: 0 }),
+        ]);
+        if (cancelled) return;
+        const hotelsById = new Map(hotels.map((h) => [h.id, h]));
+        const mapped = page.items.map((dto) =>
+          mapUserReservationDto(dto, hotelsById),
+        );
+        setRemoteReservations(mapped);
+      } catch {
+        // Silenciamos: si fallamos online, dejamos visible lo local.
+        if (!cancelled) setRemoteReservations([]);
+      }
+    }
+
+    loadFromBackend();
+    function onFocus() {
+      loadFromBackend();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
 
   const { upcoming: upcomingCount, past: pastCount } =
     useUpcomingPastCounts(reservations);
