@@ -36,9 +36,12 @@ class MyTripsViewModelTest {
         Dispatchers.setMain(testDispatcher)
         getUserReservations = mockk()
         cancelBooking = mockk()
-        authRepository = mockk(relaxed = true).also {
-            io.mockk.every { it.getSession() } returns kotlinx.coroutines.flow.flowOf(null)
-        }
+        // Explicit generic on mockk(): without it the compiler can't infer
+        // the type through `.also { }` back to the field's declared type,
+        // which throws "Not enough information to infer type variable T"
+        // and makes `it` unresolved inside the lambda.
+        authRepository = mockk<com.example.travelhub.domain.repository.AuthRepository>(relaxed = true)
+        io.mockk.every { authRepository.getSession() } returns kotlinx.coroutines.flow.flowOf(null)
     }
 
     @After

@@ -29,6 +29,7 @@ class BookingRepositoryImplTest {
     private lateinit var bookingDao: BookingDao
     private lateinit var api: AccommodationApi
     private lateinit var guestSessionStore: GuestSessionStore
+    private lateinit var userPreferences: com.example.travelhub.data.local.UserPreferences
     private lateinit var propertyRepository: com.example.travelhub.domain.repository.PropertyRepository
     private lateinit var bookingRepository: BookingRepositoryImpl
 
@@ -37,8 +38,15 @@ class BookingRepositoryImplTest {
         bookingDao = mockk(relaxed = true)
         api = mockk(relaxed = true)
         guestSessionStore = mockk(relaxed = true)
+        userPreferences = mockk(relaxed = true)
         propertyRepository = mockk(relaxed = true)
-        bookingRepository = BookingRepositoryImpl(bookingDao, api, guestSessionStore, propertyRepository)
+        bookingRepository = BookingRepositoryImpl(
+            bookingDao,
+            api,
+            guestSessionStore,
+            userPreferences,
+            propertyRepository
+        )
     }
 
     @Test
