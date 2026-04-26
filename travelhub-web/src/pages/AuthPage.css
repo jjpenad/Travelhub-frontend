@@ -501,6 +501,17 @@
   color: var(--error);
 }
 
+.auth-card__success {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #15803d;
+}
+
+select.auth-card__input {
+  cursor: pointer;
+}
+
 .auth-card__submit {
   margin-top: 0.25rem;
   width: 100%;

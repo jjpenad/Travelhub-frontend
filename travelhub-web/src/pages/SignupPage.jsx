@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
+import { persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { loginUser, registerUser } from "../services/api";
 import "./AuthPage.css";
 
 function isValidEmail(email) {
@@ -20,16 +22,21 @@ function isSignupFormValid({ nombre, apellidos, email, password, confirm }) {
 }
 
 function SignupPage() {
+  const navigate = useNavigate();
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
+
     if (!isSignupFormValid({ nombre, apellidos, email, password, confirm })) {
       if (!nombre.trim() || !apellidos.trim()) {
         setError("Nombre y apellidos son obligatorios.");
@@ -43,8 +50,32 @@ function SignupPage() {
       return;
     }
 
-    // Solo con formulario válido (comprobado arriba): aquí irá el API de registro.
-    // TODO(backend): llamar al API de registro
+    setLoading(true);
+    try {
+      await registerUser({
+        email: email.trim(),
+        password,
+        first_name: nombre.trim(),
+        last_name: apellidos.trim(),
+      });
+
+      const emailNorm = email.trim().toLowerCase();
+      const loginResult = await loginUser({ email: emailNorm, password });
+      persistSessionFromLogin({
+        email: emailNorm,
+        accessToken: loginResult.access_token,
+        userType: loginResult.user_type,
+        remember: true,
+      });
+
+      setSuccessMsg("Cuenta creada correctamente. Redirigiendo…");
+      await new Promise((r) => setTimeout(r, 500));
+      navigate(PATH_TRAVELERS_HOME, { replace: true });
+    } catch (err) {
+      setError(err?.message || "No se pudo completar el registro.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -71,6 +102,7 @@ function SignupPage() {
                 className="auth-card__input"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div className="auth-card__field">
@@ -85,6 +117,7 @@ function SignupPage() {
                 className="auth-card__input"
                 value={apellidos}
                 onChange={(e) => setApellidos(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -101,6 +134,7 @@ function SignupPage() {
               placeholder="tu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
             />
           </div>
           <div className="auth-card__field">
@@ -115,6 +149,7 @@ function SignupPage() {
               className="auth-card__input"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
             />
           </div>
           <div className="auth-card__field">
@@ -129,11 +164,13 @@ function SignupPage() {
               className="auth-card__input"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              disabled={loading}
             />
           </div>
           {error ? <p className="auth-card__error">{error}</p> : null}
-          <button type="submit" className="auth-card__submit">
-            Comenzar — es gratis 🚀
+          {successMsg ? <p className="auth-card__success">{successMsg}</p> : null}
+          <button type="submit" className="auth-card__submit" disabled={loading}>
+            {loading ? "Creando cuenta…" : "Comenzar — es gratis 🚀"}
           </button>
           <p className="auth-card__note">No se requiere tarjeta de crédito.</p>
         </form>
