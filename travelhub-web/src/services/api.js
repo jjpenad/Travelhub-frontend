@@ -4,7 +4,7 @@
  * VITE_ANALYTICS_API_URL: raíz del microservicio de analytics (ej. …/service-soport).
  */
 
-import { getAuthToken } from "../auth/sessionAuth";
+import { getAuthToken, isAuthenticated } from "../auth/sessionAuth";
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -76,24 +76,89 @@ function joinAnalyticsUrl(path) {
   return `${base}${p}`;
 }
 
+/** Headers para endpoints públicos (sin Authorization). */
+function buildPublicHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "X-Guest-Id": getGuestId(),
+  };
+}
+
+/** Igual que público + Bearer solo si existe token (huésped sin token no envía cabecera). */
+function buildAuthHeaders() {
+  const headers = buildPublicHeaders();
+  const token = getAuthToken()?.trim();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 /**
- * Generic fetch wrapper with JSON parsing and error handling.
+ * GET/POST… a `BASE_URL` sin enviar Authorization (búsqueda, catálogo, etc.).
  */
-async function apiFetch(path, options = {}) {
+export async function publicFetch(path, options = {}) {
   const url = joinApiUrl(path);
+  const { headers: extraHeaders, ...rest } = options;
   const res = await fetch(url, {
+    ...rest,
     headers: {
-      "Content-Type": "application/json",
-      "X-Guest-Id": getGuestId(),
-      ...options.headers
+      ...buildPublicHeaders(),
+      ...extraHeaders,
     },
-    ...options,
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`API error ${res.status}: ${text}`);
+    const err = new Error(`API error ${res.status}: ${text}`);
+    err.status = res.status;
+    throw err;
   }
   return res.json();
+}
+
+/**
+ * GET/POST… a `BASE_URL` con Authorization Bearer si hay token; si no, mismo comportamiento que público.
+ * Usar en flujos de reserva/pago y cualquier ruta que deba asociarse al usuario logueado.
+ */
+export async function authFetch(path, options = {}) {
+  const url = joinApiUrl(path);
+  const { headers: extraHeaders, ...rest } = options;
+  const res = await fetch(url, {
+    ...rest,
+    headers: {
+      ...buildAuthHeaders(),
+      ...extraHeaders,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const err = new Error(`API error ${res.status}: ${text}`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+/**
+ * Fetch autenticado opcional contra una URL absoluta (p. ej. microservicio de analíticas).
+ */
+export async function authFetchAbsolute(url, options = {}) {
+  const { headers: extraHeaders, ...rest } = options;
+  const res = await fetch(url, {
+    ...rest,
+    headers: {
+      ...buildAuthHeaders(),
+      ...extraHeaders,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    const err = new Error(`API error ${res.status}: ${text}`);
+    err.status = res.status;
+    throw err;
+  }
+  const text = await res.text();
+  return parseJsonSafe(text);
 }
 
 function parseJsonSafe(text) {
@@ -144,18 +209,88 @@ function loginErrorMessage(data, status) {
  * Returns all hotels. Used on Home page.
  */
 export async function listHotels() {
-  const data = await apiFetch("/accommodations/hotels");
+  const data = await publicFetch("/accommodations/hotels");
   return data.map(mapHotelDto);
 }
 
+/** Mapea claves del sidebar → valor `amenities` en query (aire acond. → room_service). */
+function mapAmenityKeyForApi(uiKey) {
+  const k = String(uiKey || "").trim();
+  if (!k) return "";
+  if (k === "air_conditioning") return "room_service";
+  return k;
+}
+
 /**
- * GET …/accommodations/search?city=&check_in=&check_out=
- * Search hotels with availability for given city and dates.
+ * Parámetros `amenities` en la URL que el backend usa pero el sidebar identifica con otra clave.
  */
-export async function searchAccommodations(city, checkIn, checkOut) {
-  const params = new URLSearchParams({ city, check_in: checkIn, check_out: checkOut });
-  const data = await apiFetch(`/accommodations/search?${params}`);
-  // The API now returns an object with a 'result' array
+export const SEARCH_AMENITY_QUERY_TO_UI = Object.freeze({
+  room_service: "air_conditioning",
+  private_pool: "pool",
+});
+
+function appendSearchParam(sp, key, value) {
+  if (value === undefined || value === null) return;
+  const s = typeof value === "string" ? value.trim() : String(value).trim();
+  if (s === "") return;
+  sp.append(key, s);
+}
+
+/**
+ * Construye el query string para GET /accommodations/search.
+ * Omite valores vacíos/undefined. Repite `amenities` por cada ítem del array.
+ *
+ * @param {{
+ *   city: string,
+ *   check_in: string,
+ *   check_out: string,
+ *   guests?: string | number,
+ *   price_min?: string | number,
+ *   price_max?: string | number,
+ *   min_stars?: string | number,
+ *   amenities?: string[],
+ *   page?: string | number,
+ *   page_size?: string | number,
+ * }} params
+ * @returns {string}
+ */
+export function buildAccommodationSearchQueryString(params) {
+  if (!params || typeof params !== "object") return "";
+  const sp = new URLSearchParams();
+  appendSearchParam(sp, "city", params.city);
+  appendSearchParam(sp, "check_in", params.check_in);
+  appendSearchParam(sp, "check_out", params.check_out);
+  appendSearchParam(sp, "guests", params.guests);
+  appendSearchParam(sp, "price_min", params.price_min);
+  appendSearchParam(sp, "price_max", params.price_max);
+  if (params.min_stars != null && Number(params.min_stars) >= 1) {
+    appendSearchParam(sp, "min_stars", params.min_stars);
+  }
+  appendSearchParam(sp, "page", params.page);
+  appendSearchParam(sp, "page_size", params.page_size);
+
+  const amenities = params.amenities;
+  if (Array.isArray(amenities)) {
+    for (const raw of amenities) {
+      const apiKey = mapAmenityKeyForApi(String(raw || "").trim());
+      if (apiKey) sp.append("amenities", apiKey);
+    }
+  }
+
+  return sp.toString();
+}
+
+/**
+ * GET …/accommodations/search con query dinámico (ciudad, fechas, huéspedes, precio, estrellas, amenities, paginación).
+ * @param {Parameters<typeof buildAccommodationSearchQueryString>[0]} params
+ * @returns {Promise<Array<ReturnType<typeof mapSearchResultDto>>>}
+ */
+export async function searchAccommodations(params) {
+  const qs = buildAccommodationSearchQueryString(params);
+  if (!qs) {
+    throw new Error("Parámetros de búsqueda incompletos.");
+  }
+  const data = await publicFetch(`/accommodations/search?${qs}`);
   const resultsArray = data.result || [];
   return resultsArray.map(mapSearchResultDto);
 }
@@ -166,7 +301,7 @@ export async function searchAccommodations(city, checkIn, checkOut) {
  */
 export async function getHotelAvailability(hotelId, checkIn, checkOut) {
   const params = new URLSearchParams({ check_in: checkIn, check_out: checkOut });
-  const data = await apiFetch(
+  const data = await publicFetch(
     `/accommodations/hotels/${hotelId}/availability?${params}`
   );
   return mapAvailabilityDto(data);
@@ -175,14 +310,14 @@ export async function getHotelAvailability(hotelId, checkIn, checkOut) {
 // ─── Reservations ────────────────────────────────────────
 
 export async function createBooking(bookingInfo) {
-  return apiFetch("/reservation-flow/create", {
+  return authFetch("/reservation-flow/create", {
     method: "POST",
     body: JSON.stringify(bookingInfo),
   });
 }
 
 export async function processPayment(paymentInfo) {
-  return apiFetch("/reservation-flow/payment", {
+  return authFetch("/reservation-flow/payment", {
     method: "POST",
     body: JSON.stringify(paymentInfo),
   });
@@ -306,8 +441,7 @@ export async function loginUser({ email, password }) {
  * @returns {Promise<object>} Cuerpo JSON del panel (reservas, ingresos, reservas detalle, etc.).
  */
 export async function getDashboardAnalytics({ startDate, endDate }) {
-  const token = getAuthToken();
-  if (!token) {
+  if (!isAuthenticated()) {
     const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
     err.status = 401;
     throw err;
@@ -324,38 +458,18 @@ export async function getDashboardAnalytics({ startDate, endDate }) {
       end_date: endDate,
     });
     const url = `${base}?${qs.toString()}`;
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Guest-Id": getGuestId(),
-      },
-    });
-
-    const text = await res.text();
-    const data = parseJsonSafe(text);
-
-    if (res.status === 401 || res.status === 403) {
-      const err = new Error(
-        "Tu sesión expiró o no tienes permiso para ver el panel. Inicia sesión de nuevo.",
-      );
-      err.status = res.status;
-      err.body = data;
-      throw err;
-    }
-
-    if (!res.ok) {
-      const err = new Error(
-        messageFromApiErrorBody(data) || `No se pudo cargar el panel (${res.status})`,
-      );
-      err.status = res.status;
-      err.body = data;
-      throw err;
-    }
+    const data = await authFetchAbsolute(url, { method: "GET" });
 
     return data;
   } catch (err) {
     if (err && typeof err.status === "number") {
+      if (err.status === 401 || err.status === 403) {
+        const friendly = new Error(
+          "Tu sesión expiró o no tienes permiso para ver el panel. Inicia sesión de nuevo.",
+        );
+        friendly.status = err.status;
+        throw friendly;
+      }
       throw err;
     }
     if (err instanceof TypeError) {
@@ -371,8 +485,7 @@ export async function getDashboardAnalytics({ startDate, endDate }) {
  * @returns {Promise<object>}
  */
 export async function getHotelReservationDetailFromApi(id) {
-  const token = getAuthToken();
-  if (!token) {
+  if (!isAuthenticated()) {
     const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
     err.status = 401;
     throw err;
@@ -385,39 +498,19 @@ export async function getHotelReservationDetailFromApi(id) {
   }
   try {
     const base = RESERVATION_DETAIL_PATH.replace(/\/+$/, "");
-    const url = joinApiUrl(`${base}/${encodeURIComponent(rid)}`);
-    const res = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "X-Guest-Id": getGuestId(),
-      },
-    });
-    const text = await res.text();
-    const data = parseJsonSafe(text);
-
-    if (res.status === 401 || res.status === 403) {
-      const err = new Error(
-        "Tu sesión expiró o no tienes permiso para ver esta reserva. Inicia sesión de nuevo.",
-      );
-      err.status = res.status;
-      err.body = data;
-      throw err;
-    }
-
-    if (!res.ok) {
-      const err = new Error(
-        messageFromApiErrorBody(data) || `No se pudo cargar la reserva (${res.status})`,
-      );
-      err.status = res.status;
-      err.body = data;
-      throw err;
-    }
-
+    const path = `${base}/${encodeURIComponent(rid)}`;
+    const data = await authFetch(path, { method: "GET" });
     const raw = data?.reservation && typeof data.reservation === "object" ? data.reservation : data;
     return raw;
   } catch (err) {
     if (err && typeof err.status === "number") {
+      if (err.status === 401 || err.status === 403) {
+        const friendly = new Error(
+          "Tu sesión expiró o no tienes permiso para ver esta reserva. Inicia sesión de nuevo.",
+        );
+        friendly.status = err.status;
+        throw friendly;
+      }
       throw err;
     }
     if (err instanceof TypeError) {
@@ -471,7 +564,7 @@ export async function createReservation({
     special_requests: "",
   };
 
-  const data = await apiFetch("/reservation-flow/create", {
+  const data = await authFetch("/reservation-flow/create", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -511,9 +604,12 @@ function mapSearchResultDto(dto) {
     ...new Set(rooms.flatMap((r) => r.amenities)),
   ];
 
+  const starsNum = Number(dto.stars);
+  const stars = Number.isFinite(starsNum) ? starsNum : 0;
+
   return {
-    id: dto.hotel_id,
-    name: dto.hotel_name,
+    id: dto.hotel_id ?? dto.id,
+    name: dto.hotel_name ?? dto.name,
     location: `${dto.city}, ${countryForCity(dto.city)}`,
     city: dto.city,
     rating: parseFloat(dto.rating) || 0,
@@ -523,7 +619,7 @@ function mapSearchResultDto(dto) {
     amenities,
     availableRooms: rooms.map((r) => r.name),
     availableRoomObjects: rooms,
-    stars: dto.stars,
+    stars,
     description: dto.description,
     address: dto.address,
     checkInTime: dto.check_in_time,
@@ -542,9 +638,12 @@ function mapAvailabilityDto(dto) {
     ...new Set(rooms.flatMap((r) => r.amenities)),
   ];
 
+  const starsNum = Number(dto.stars);
+  const stars = Number.isFinite(starsNum) ? starsNum : 0;
+
   return {
-    id: dto.hotel_id,
-    name: dto.hotel_name,
+    id: dto.hotel_id ?? dto.id,
+    name: dto.hotel_name ?? dto.name,
     location: `${dto.city}, ${countryForCity(dto.city)}`,
     city: dto.city,
     rating: parseFloat(dto.rating) || 0,
@@ -554,13 +653,20 @@ function mapAvailabilityDto(dto) {
     amenities,
     availableRooms: rooms.map((r) => r.name),
     availableRoomObjects: rooms,
-    stars: dto.stars,
+    stars,
     description: dto.description,
     nights: dto.nights,
     checkInTime: dto.check_in_time,
     checkOutTime: dto.check_out_time,
     isRefundable: true,
   };
+}
+
+function mapRoomAmenityName(a) {
+  if (a == null) return "";
+  if (typeof a === "string") return a.trim();
+  if (typeof a === "object" && typeof a.name === "string") return a.name.trim();
+  return "";
 }
 
 /** Map a room type DTO → app room shape */
@@ -576,6 +682,6 @@ function mapRoomType(dto) {
     totalPrice: parseFloat(dto.total_price) || 0,
     currencyCode: dto.currency_code || "USD",
     minimumStay: dto.minimum_stay || 1,
-    amenities: (dto.amenities || []).map((a) => a.name),
+    amenities: (dto.amenities || []).map(mapRoomAmenityName).filter(Boolean),
   };
 }

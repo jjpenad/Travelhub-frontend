@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
-import { pathAfterAuthForUserType, persistSessionFromLogin } from "../auth/sessionAuth";
+import { getPostAuthDestination, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser, registerUser } from "../services/api";
 import "./AuthPage.css";
@@ -23,6 +23,8 @@ function isSignupFormValid({ nombre, apellidos, email, password, confirm }) {
 
 function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [email, setEmail] = useState("");
@@ -70,7 +72,7 @@ function SignupPage() {
 
       setSuccessMsg("Cuenta creada correctamente. Redirigiendo…");
       await new Promise((r) => setTimeout(r, 500));
-      navigate(pathAfterAuthForUserType(loginResult.user_type), { replace: true });
+      navigate(getPostAuthDestination(loginResult.user_type, from), { replace: true });
     } catch (err) {
       setError(err?.message || "No se pudo completar el registro.");
     } finally {
