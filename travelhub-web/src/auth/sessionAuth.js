@@ -3,6 +3,7 @@
  */
 
 import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
+import { claimsFromJwtPayload, decodeJwtPayload } from "./jwt";
 
 export const AUTH_ROLE_KEY = "travelhub-role";
 export const AUTH_EMAIL_KEY = "travelhub-email";
@@ -94,6 +95,37 @@ export function getUser() {
 /** Hay token JWT guardado (llamadas autenticadas al API). */
 export function isAuthenticated() {
   return Boolean(getAuthToken()?.trim());
+}
+
+/**
+ * Identidad del usuario actual leída directamente del JWT (claims
+ * `sub` / `email` / `given_name` / `family_name` y variantes).
+ *
+ * Devuelve `null` si no hay token o el token no se puede decodificar.
+ * Útil para pre-rellenar formularios (checkout, perfil) sin tener que
+ * hacer un round-trip extra al backend, igual que el cliente Android
+ * lee `authRepository.getSession().fullName / .email`.
+ *
+ * @returns {{ userId: string | null, email: string | null, firstName: string, lastName: string } | null}
+ */
+export function getCurrentUserClaims() {
+  const token = getAuthToken()?.trim();
+  if (!token) return null;
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+  const claims = claimsFromJwtPayload(payload);
+  if (!claims) return null;
+
+  // Si el JWT no trajo email pero el storage sí (caso del backend que solo
+  // emite `sub` y trae el email aparte en la respuesta de login), usamos
+  // el email persistido como respaldo.
+  if (!claims.email) {
+    const storedEmail = getSessionEmail();
+    if (storedEmail) {
+      return { ...claims, email: storedEmail };
+    }
+  }
+  return claims;
 }
 
 export function clearAuthToken() {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getCurrentUserClaims } from "../../auth/sessionAuth";
 import "./GuestForm.css";
 
 const MAX_PETICIONES = 2000;
@@ -23,14 +24,65 @@ function isFormValid(form) {
   return true;
 }
 
-function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) {
+/**
+ * Si el usuario está autenticado, leemos sus datos directamente del JWT
+ * (mismo contrato que `BookingViewModel.init` en Android: pre-rellena el
+ * form con `firstName / lastName / email` del session). Devolvemos `null`
+ * si el navegador no tiene token activo, para que el form arranque vacío
+ * en flujos anónimos.
+ *
+ * `prefillOverride` permite a tests/Storybook inyectar datos sin tocar
+ * `localStorage` y mantenerlo determinista.
+ */
+function readPrefillFromAuth(prefillOverride) {
+  if (prefillOverride && typeof prefillOverride === "object") {
+    return {
+      nombre: prefillOverride.firstName || "",
+      apellidos: prefillOverride.lastName || "",
+      email: prefillOverride.email || "",
+    };
+  }
+  const claims = getCurrentUserClaims();
+  if (!claims) return null;
+  if (!claims.firstName && !claims.lastName && !claims.email) return null;
+  return {
+    nombre: claims.firstName || "",
+    apellidos: claims.lastName || "",
+    email: claims.email || "",
+  };
+}
+
+function GuestForm({
+  onGuestEmailChange,
+  onValidityChange,
+  onGuestNameChange,
+  /** Override solo para tests; en producción los datos se leen del JWT. */
+  prefillOverride,
+}) {
+  // El pre-fill se calcula UNA vez al montar. Si después cambia el token
+  // (login/logout), la página padre se re-monta o navega, así que no
+  // intentamos hidratar el form a mitad de sesión.
+  const initial = useMemo(
+    () => readPrefillFromAuth(prefillOverride),
+    [prefillOverride],
+  );
+
   const [form, setForm] = useState({
-    nombre: "",
-    apellidos: "",
-    email: "",
+    nombre: initial?.nombre ?? "",
+    apellidos: initial?.apellidos ?? "",
+    email: initial?.email ?? "",
     telefono: "",
     peticionesEspeciales: "",
   });
+
+  // Los campos pre-rellenados desde el JWT son los datos canónicos de la
+  // cuenta — quedan en read-only (mismo trato que la pantalla de booking
+  // en Android, que renderiza esos inputs deshabilitados). Teléfono y
+  // peticiones especiales siguen siendo editables porque son contextuales
+  // a la reserva, no al usuario.
+  const lockNombre = Boolean(initial?.nombre);
+  const lockApellidos = Boolean(initial?.apellidos);
+  const lockEmail = Boolean(initial?.email);
 
   const [touched, setTouched] = useState({
     nombre: false,
@@ -79,7 +131,7 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
           </label>
           <input
             id="guest-form-first-name"
-            className={`guest-form__input${showNombreError ? " guest-form__input--error" : ""}`}
+            className={`guest-form__input${showNombreError ? " guest-form__input--error" : ""}${lockNombre ? " guest-form__input--locked" : ""}`}
             type="text"
             name="firstName"
             required
@@ -91,6 +143,8 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
             aria-describedby={
               showNombreError ? "guest-form-error-nombre" : undefined
             }
+            readOnly={lockNombre}
+            aria-readonly={lockNombre || undefined}
           />
           {showNombreError ? (
             <p id="guest-form-error-nombre" className="guest-form__error" role="alert">
@@ -104,7 +158,7 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
           </label>
           <input
             id="guest-form-last-name"
-            className={`guest-form__input${showApellidosError ? " guest-form__input--error" : ""}`}
+            className={`guest-form__input${showApellidosError ? " guest-form__input--error" : ""}${lockApellidos ? " guest-form__input--locked" : ""}`}
             type="text"
             name="lastName"
             required
@@ -116,6 +170,8 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
             aria-describedby={
               showApellidosError ? "guest-form-error-apellidos" : undefined
             }
+            readOnly={lockApellidos}
+            aria-readonly={lockApellidos || undefined}
           />
           {showApellidosError ? (
             <p
@@ -133,7 +189,7 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
           </label>
           <input
             id="guest-form-email"
-            className={`guest-form__input${showEmailError ? " guest-form__input--error" : ""}`}
+            className={`guest-form__input${showEmailError ? " guest-form__input--error" : ""}${lockEmail ? " guest-form__input--locked" : ""}`}
             type="email"
             name="email"
             required
@@ -145,6 +201,8 @@ function GuestForm({ onGuestEmailChange, onValidityChange, onGuestNameChange }) 
             aria-describedby={
               showEmailError ? "guest-form-error-email" : undefined
             }
+            readOnly={lockEmail}
+            aria-readonly={lockEmail || undefined}
           />
           {showEmailError ? (
             <p id="guest-form-error-email" className="guest-form__error" role="alert">
