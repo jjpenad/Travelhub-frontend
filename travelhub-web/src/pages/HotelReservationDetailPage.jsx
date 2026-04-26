@@ -1,15 +1,16 @@
-import { useEffect, useMemo } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import HotelPortalSidebar from "../components/hotel-portal/HotelPortalSidebar";
 import "../components/hotel-portal/HotelManageReservations.css";
 import "../components/hotel-portal/HotelReservationDetail.css";
-import { getHotelReservationDetailById } from "../data/hotelPortalManageReservationsData";
-import { getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
+import { clearSessionUser, getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
 import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
   PATH_TRAVELERS_HOME,
 } from "../constants/routes";
+import { getHotelReservationDetailFromApi } from "../services/api";
+import { mapApiReservationToDetailView } from "../utils/mapApiReservationToDetailView";
 import { displayNameFromEmail } from "../utils/hotelPortalFormat";
 import "./HotelPortalPage.css";
 
@@ -42,12 +43,22 @@ function PaymentFields({ detail }) {
 function HotelReservationDetailPage() {
   const { reservationId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const email = getSessionEmail() ?? "";
 
-  const detail = useMemo(
-    () => getHotelReservationDetailById(reservationId ?? ""),
-    [reservationId],
-  );
+  const idDecoded = decodeURIComponent(reservationId ?? "");
+  const stateReservation = location.state?.reservation;
+  const stateMatches =
+    Boolean(stateReservation) &&
+    typeof stateReservation === "object" &&
+    String(stateReservation.id) === idDecoded;
+
+  const detailFromState = useMemo(() => {
+    if (!stateMatches) return null;
+    return mapApiReservationToDetailView(stateReservation);
+  }, [stateMatches, stateReservation]);
+
+  const [remotePayload, setRemotePayload] = useState(null);
 
   useEffect(() => {
     if (getSessionRole() !== ROLE_HOTEL) {
@@ -55,32 +66,113 @@ function HotelReservationDetailPage() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (getSessionRole() !== ROLE_HOTEL) return undefined;
+    if (!idDecoded) return undefined;
+    if (stateMatches) return undefined;
+
+    const targetId = idDecoded;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const raw = await getHotelReservationDetailFromApi(targetId);
+        if (cancelled) return;
+        setRemotePayload({ id: targetId, raw, error: null });
+      } catch (e) {
+        if (cancelled) return;
+        setRemotePayload({
+          id: targetId,
+          raw: null,
+          error: e?.message || "No se pudo cargar la reserva.",
+        });
+        if (e?.status === 401 || e?.status === 403) {
+          clearSessionUser();
+          navigate("/login", { replace: true });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [idDecoded, stateMatches, navigate]);
+
+  const detailFromRemote = useMemo(() => {
+    if (stateMatches) return null;
+    if (!remotePayload || remotePayload.id !== idDecoded) return null;
+    if (remotePayload.error || !remotePayload.raw) return null;
+    return mapApiReservationToDetailView(remotePayload.raw);
+  }, [remotePayload, idDecoded, stateMatches]);
+
+  const detail = detailFromState ?? detailFromRemote;
+  const loading = Boolean(!stateMatches && idDecoded && (!remotePayload || remotePayload.id !== idDecoded));
+  const errorMessage =
+    !stateMatches && remotePayload?.id === idDecoded && remotePayload?.error
+      ? remotePayload.error
+      : null;
+
   const sidebarDisplayName = useMemo(() => displayNameFromEmail(email), [email]);
 
   if (getSessionRole() !== ROLE_HOTEL) {
     return null;
   }
 
-  if (!detail) {
-    return (
-      <div className="hotel-portal-dashboard">
-        <Navbar />
-        <div className="hotel-portal-dashboard__shell">
-          <HotelPortalSidebar
-            activeId="bookings"
-            displayName={sidebarDisplayName}
-            propertyLabel="Establecimiento asociado"
-          />
-          <main className="hotel-portal-dashboard__main hp-manage-reservations">
-            <div className="hp-resd">
-              <p className="hp-resd-notfound">No se encontró esta reserva o el enlace no es válido.</p>
-              <Link className="hp-resd-back" to={PATH_HOTEL_MANAGE_RESERVATIONS}>
-                ← Volver a gestionar reservas
-              </Link>
-            </div>
-          </main>
-        </div>
+  const shell = (mainChildren) => (
+    <div className="hotel-portal-dashboard">
+      <Navbar />
+      <div className="hotel-portal-dashboard__shell">
+        <HotelPortalSidebar
+          activeId="bookings"
+          displayName={sidebarDisplayName}
+          propertyLabel="Establecimiento asociado"
+        />
+        <main className="hotel-portal-dashboard__main hp-manage-reservations">{mainChildren}</main>
       </div>
+    </div>
+  );
+
+  if (!idDecoded) {
+    return shell(
+      <div className="hp-resd">
+        <p className="hp-resd-notfound">No se encontró esta reserva o el enlace no es válido.</p>
+        <Link className="hp-resd-back" to={PATH_HOTEL_MANAGE_RESERVATIONS}>
+          ← Volver a gestionar reservas
+        </Link>
+      </div>,
+    );
+  }
+
+  if (loading) {
+    return shell(
+      <div className="hp-resd">
+        <p className="hp-resd-notfound">Cargando…</p>
+        <Link className="hp-resd-back" to={PATH_HOTEL_MANAGE_RESERVATIONS}>
+          ← Volver a gestionar reservas
+        </Link>
+      </div>,
+    );
+  }
+
+  if (errorMessage) {
+    return shell(
+      <div className="hp-resd">
+        <p className="hp-resd-notfound">{errorMessage}</p>
+        <Link className="hp-resd-back" to={PATH_HOTEL_MANAGE_RESERVATIONS}>
+          ← Volver a gestionar reservas
+        </Link>
+      </div>,
+    );
+  }
+
+  if (!detail) {
+    return shell(
+      <div className="hp-resd">
+        <p className="hp-resd-notfound">No se encontró esta reserva o el enlace no es válido.</p>
+        <Link className="hp-resd-back" to={PATH_HOTEL_MANAGE_RESERVATIONS}>
+          ← Volver a gestionar reservas
+        </Link>
+      </div>,
     );
   }
 
@@ -103,9 +195,6 @@ function HotelReservationDetailPage() {
                 <h1 className="hp-resd-head__title">Reserva {detail.reference}</h1>
                 <span className={badgeClass(detail.status)}>{detail.statusLabel}</span>
               </div>
-              <p className="hp-resd-head__subtitle">
-                Consulta los datos de la estancia y de la persona que realizó la reserva.
-              </p>
             </header>
 
             <div className="hp-resd-body">

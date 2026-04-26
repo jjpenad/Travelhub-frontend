@@ -1,17 +1,35 @@
 /**
  * TravelHub API service layer.
  * VITE_API_URL debe ser la raíz del API (incluye `/service-core` si el backend lo usa así).
+ * VITE_ANALYTICS_API_URL: raíz del microservicio de analytics (ej. …/service-soport).
  */
+
+import { getAuthToken } from "../auth/sessionAuth";
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
   "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-core";
+
+const ANALYTICS_BASE_URL =
+  import.meta.env.VITE_ANALYTICS_API_URL ||
+  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
 
 /** Registro de usuario. Sobrescribir con VITE_REGISTER_PATH en .env si el backend usa otra ruta. */
 const REGISTER_PATH = import.meta.env.VITE_REGISTER_PATH || "/auth/register";
 
 /** Inicio de sesión. Sobrescribir con VITE_LOGIN_PATH en .env si el backend usa otra ruta. */
 const LOGIN_PATH = import.meta.env.VITE_LOGIN_PATH || "/auth/login";
+
+/**
+ * Panel analítico portal hotelero (ruta real del servicio; typos preservados).
+ * Query: start_date, end_date (YYYY-MM-DD).
+ */
+const ANALYTICS_DASHBOARD_PATH =
+  import.meta.env.VITE_ANALYTICS_DASHBOARD_PATH || "/analitycs/dahsboard";
+
+/** GET detalle de reserva (service-core). Sobrescribir con VITE_RESERVATION_DETAIL_PATH si la ruta difiere. */
+const RESERVATION_DETAIL_PATH =
+  import.meta.env.VITE_RESERVATION_DETAIL_PATH || "/reservations";
 
 /** `user_type` por defecto en POST /auth/register si el cliente no lo envía. */
 const REGISTER_DEFAULT_USER_TYPE = "traveler";
@@ -48,6 +66,12 @@ function getGuestId() {
 
 function joinApiUrl(path) {
   const base = BASE_URL.replace(/\/+$/, "");
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
+}
+
+function joinAnalyticsUrl(path) {
+  const base = ANALYTICS_BASE_URL.replace(/\/+$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${base}${p}`;
 }
@@ -273,6 +297,133 @@ export async function loginUser({ email, password }) {
       throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
     }
     throw err instanceof Error ? err : new Error("No se pudo iniciar sesión.");
+  }
+}
+
+/**
+ * GET …/analitycs/dahsboard?start_date=&end_date= (Bearer token).
+ * @param {{ startDate: string, endDate: string }} range - Fechas inclusivas YYYY-MM-DD (primer y último día del mes).
+ * @returns {Promise<object>} Cuerpo JSON del panel (reservas, ingresos, reservas detalle, etc.).
+ */
+export async function getDashboardAnalytics({ startDate, endDate }) {
+  const token = getAuthToken();
+  if (!token) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  if (!startDate || !endDate || typeof startDate !== "string" || typeof endDate !== "string") {
+    const err = new Error("Rango de fechas inválido para el panel.");
+    err.status = 400;
+    throw err;
+  }
+  try {
+    const base = joinAnalyticsUrl(ANALYTICS_DASHBOARD_PATH);
+    const qs = new URLSearchParams({
+      start_date: startDate,
+      end_date: endDate,
+    });
+    const url = `${base}?${qs.toString()}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Guest-Id": getGuestId(),
+      },
+    });
+
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error(
+        "Tu sesión expiró o no tienes permiso para ver el panel. Inicia sesión de nuevo.",
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    if (!res.ok) {
+      const err = new Error(
+        messageFromApiErrorBody(data) || `No se pudo cargar el panel (${res.status})`,
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    return data;
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo cargar el panel de analíticas.");
+  }
+}
+
+/**
+ * GET …/reservations/:id (Bearer). Cuerpo esperado: objeto reserva o `{ reservation }`.
+ * @param {string} id
+ * @returns {Promise<object>}
+ */
+export async function getHotelReservationDetailFromApi(id) {
+  const token = getAuthToken();
+  if (!token) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const rid = String(id || "").trim();
+  if (!rid) {
+    const err = new Error("Identificador de reserva no válido.");
+    err.status = 400;
+    throw err;
+  }
+  try {
+    const base = RESERVATION_DETAIL_PATH.replace(/\/+$/, "");
+    const url = joinApiUrl(`${base}/${encodeURIComponent(rid)}`);
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Guest-Id": getGuestId(),
+      },
+    });
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+
+    if (res.status === 401 || res.status === 403) {
+      const err = new Error(
+        "Tu sesión expiró o no tienes permiso para ver esta reserva. Inicia sesión de nuevo.",
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    if (!res.ok) {
+      const err = new Error(
+        messageFromApiErrorBody(data) || `No se pudo cargar la reserva (${res.status})`,
+      );
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+
+    const raw = data?.reservation && typeof data.reservation === "object" ? data.reservation : data;
+    return raw;
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo cargar el detalle de la reserva.");
   }
 }
 

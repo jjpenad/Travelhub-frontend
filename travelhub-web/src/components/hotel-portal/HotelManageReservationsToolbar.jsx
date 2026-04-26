@@ -1,5 +1,3 @@
-import { hotelManageReservationsFilterCounts } from "../../data/hotelPortalManageReservationsData";
-
 const FILTERS = [
   { id: "all", label: "Todas", countKey: "all" },
   { id: "confirmed", label: "Confirmadas", countKey: "confirmed" },
@@ -21,6 +19,7 @@ function HotelManageReservationsToolbar({
   onFilterChange,
   sort,
   onSortChange,
+  filterCounts,
 }) {
   return (
     <div className="hp-mres-toolbar">
@@ -37,7 +36,7 @@ function HotelManageReservationsToolbar({
       </label>
       <div className="hp-mres-toolbar__filters" role="group" aria-label="Filtrar por estado">
         {FILTERS.map((f) => {
-          const count = hotelManageReservationsFilterCounts[f.countKey];
+          const count = filterCounts[f.countKey] ?? 0;
           const active = filter === f.id;
           return (
             <button

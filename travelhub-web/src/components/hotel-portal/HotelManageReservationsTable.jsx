@@ -107,6 +107,11 @@ function HotelManageReservationsTable({ rows, selectedId, onSelectRow }) {
                       <Link
                         className="hp-mres-actions__detail"
                         to={pathHotelReservationDetail(r.id)}
+                        state={
+                          r._apiReservation && typeof r._apiReservation === "object"
+                            ? { reservation: r._apiReservation }
+                            : undefined
+                        }
                         onClick={(e) => e.stopPropagation()}
                       >
                         Ver detalle
