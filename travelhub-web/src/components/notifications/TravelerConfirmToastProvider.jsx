@@ -26,6 +26,20 @@ const TOAST_TITLE = "¡Reserva confirmada!";
 
 /** Evita dos POST en paralelo (p. ej. React StrictMode) antes de `markSent`. */
 const confirmEmailInFlight = new Set();
+/** Evita re-mostrar el mismo toast en la misma pestaña. */
+const confirmToastShownKeys = new Set();
+
+function toastKeyForReservation({ reservationId, reservationRef }) {
+  const id = reservationId != null && String(reservationId).trim() !== ""
+    ? String(reservationId).trim()
+    : "";
+  if (id) return `id:${id}`;
+  const ref = reservationRef != null && String(reservationRef).trim() !== ""
+    ? String(reservationRef).trim()
+    : "";
+  if (ref) return `ref:${ref}`;
+  return "";
+}
 
 /**
  * @param {object | null} reservaLocal
@@ -87,6 +101,7 @@ export default function TravelerConfirmToastProvider({ children }) {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [toast, setToast] = useState(null);
+  const toastRef = useRef(null);
 
   const statusByIdRef = useRef(new Map());
   const isFirstListSampleRef = useRef(true);
@@ -106,6 +121,10 @@ export default function TravelerConfirmToastProvider({ children }) {
     clearToastTimeout();
     setToast(null);
   }, [clearToastTimeout]);
+
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   /**
    * In-app: transición a confirmada. Opcional: POST a service-soport/send-email
@@ -157,6 +176,14 @@ export default function TravelerConfirmToastProvider({ children }) {
         .map((x) => (x != null && String(x).trim() !== "" ? String(x).trim() : ""))
         .find((s) => s);
       const confirmationCode = (fromApi || "").trim();
+      const toastKey = toastKeyForReservation({
+        reservationId: it.id,
+        reservationRef: confirmationCode || undefined,
+      });
+      if (toastKey && confirmToastShownKeys.has(toastKey)) {
+        isFirstListSampleRef.current = false;
+        return;
+      }
       const body = buildTravelerConfirmToastBody({
         hotelName: it.hotelName,
         checkIn: it.checkIn,
@@ -170,6 +197,7 @@ export default function TravelerConfirmToastProvider({ children }) {
         body,
         nav: { kind: "api", id: it.id },
       });
+      if (toastKey) confirmToastShownKeys.add(toastKey);
       toastTimeoutRef.current = setTimeout(() => {
         setToast(null);
         toastTimeoutRef.current = null;
@@ -249,16 +277,24 @@ export default function TravelerConfirmToastProvider({ children }) {
       src.apiReservationId != null && String(src.apiReservationId).trim() !== ""
         ? String(src.apiReservationId).trim()
         : null;
-    setToast({
-      id: `checkout-${ref}`,
-      body,
-      nav: {
-        kind: "checkout",
-        reference: ref,
-        apiReservationId: apiId,
-        guestEmail: typeof src.guestEmail === "string" ? src.guestEmail.trim() : null,
-      },
+    const toastKey = toastKeyForReservation({
+      reservationId: apiId,
+      reservationRef: ref,
     });
+    if (toastKey && confirmToastShownKeys.has(toastKey)) return undefined;
+    queueMicrotask(() => {
+      setToast({
+        id: `checkout-${ref}`,
+        body,
+        nav: {
+          kind: "checkout",
+          reference: ref,
+          apiReservationId: apiId,
+          guestEmail: typeof src.guestEmail === "string" ? src.guestEmail.trim() : null,
+        },
+      });
+    });
+    if (toastKey) confirmToastShownKeys.add(toastKey);
     toastTimeoutRef.current = setTimeout(() => {
       setToast(null);
       toastTimeoutRef.current = null;
@@ -296,7 +332,10 @@ export default function TravelerConfirmToastProvider({ children }) {
     async function tick() {
       if (cancelled) return;
       // Si ya hay toast para este id (o ya enviamos email), no insistir.
-      if (toast?.nav?.kind === "api" && toast?.nav?.id === apiReservationId) return;
+      const curr = toastRef.current;
+      if (curr?.nav?.kind === "api" && curr?.nav?.id === apiReservationId) return;
+      const key = toastKeyForReservation({ reservationId: apiReservationId, reservationRef: null });
+      if (key && confirmToastShownKeys.has(key)) return;
       if (hasSentReservationConfirmEmail(apiReservationId)) return;
 
       const item = await getTravelerReservationByIdForPoll(apiReservationId);
@@ -327,6 +366,11 @@ export default function TravelerConfirmToastProvider({ children }) {
         body,
         nav: { kind: "api", id: item.id },
       });
+      const shownKey = toastKeyForReservation({
+        reservationId: item.id,
+        reservationRef: ref || undefined,
+      });
+      if (shownKey) confirmToastShownKeys.add(shownKey);
       toastTimeoutRef.current = setTimeout(() => {
         setToast(null);
         toastTimeoutRef.current = null;
@@ -359,7 +403,7 @@ export default function TravelerConfirmToastProvider({ children }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [location.pathname, location.state, searchParams, toast, clearToastTimeout]);
+  }, [location.pathname, location.state, searchParams, clearToastTimeout]);
 
   /**
    * Tras checkout (solo `location.state`); mismo envío a service-soport que en el poller.
