@@ -3,7 +3,6 @@
  */
 
 import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
-import { claimsFromJwtPayload, decodeJwtPayload } from "./jwt";
 
 export const AUTH_ROLE_KEY = "travelhub-role";
 export const AUTH_EMAIL_KEY = "travelhub-email";
@@ -11,6 +10,10 @@ export const AUTH_EMAIL_KEY = "travelhub-email";
 export const AUTH_USER_TYPE_KEY = "travelhub-user-type";
 /** Token JWT u otro bearer devuelto por el backend (solo localStorage) */
 export const AUTH_TOKEN_KEY = "travelhub-auth-token";
+/** Nombre del usuario (`first_name` del response de /auth/login). */
+export const AUTH_FIRST_NAME_KEY = "travelhub-first-name";
+/** Apellidos del usuario (`last_name` del response de /auth/login). */
+export const AUTH_LAST_NAME_KEY = "travelhub-last-name";
 
 export const ROLE_HOTEL = "hotel";
 export const ROLE_TRAVELER = "traveler";
@@ -25,7 +28,13 @@ function dispatchSessionChanged() {
 }
 
 function clearSessionRoleEmail() {
-  for (const key of [AUTH_ROLE_KEY, AUTH_EMAIL_KEY, AUTH_USER_TYPE_KEY]) {
+  for (const key of [
+    AUTH_ROLE_KEY,
+    AUTH_EMAIL_KEY,
+    AUTH_USER_TYPE_KEY,
+    AUTH_FIRST_NAME_KEY,
+    AUTH_LAST_NAME_KEY,
+  ]) {
     sessionStorage.removeItem(key);
     localStorage.removeItem(key);
   }
@@ -98,34 +107,25 @@ export function isAuthenticated() {
 }
 
 /**
- * Identidad del usuario actual leída directamente del JWT (claims
- * `sub` / `email` / `given_name` / `family_name` y variantes).
+ * Identidad del usuario actual leída desde el storage local. Estos valores
+ * se persistieron al login (vienen del response de `/auth/login` o
+ * `/auth/register`, no del JWT — el cliente nunca decodifica el token).
  *
- * Devuelve `null` si no hay token o el token no se puede decodificar.
- * Útil para pre-rellenar formularios (checkout, perfil) sin tener que
- * hacer un round-trip extra al backend, igual que el cliente Android
- * lee `authRepository.getSession().fullName / .email`.
+ * Devuelve `null` si no hay token activo. Si hay token pero faltan datos
+ * de usuario (sesión vieja, registro fallido a mitad de camino), devuelve
+ * el shape con strings vacíos para que la UI pueda hacer pre-fill parcial
+ * sin romperse.
  *
- * @returns {{ userId: string | null, email: string | null, firstName: string, lastName: string } | null}
+ * @returns {{ email: string | null, firstName: string, lastName: string } | null}
  */
 export function getCurrentUserClaims() {
   const token = getAuthToken()?.trim();
   if (!token) return null;
-  const payload = decodeJwtPayload(token);
-  if (!payload) return null;
-  const claims = claimsFromJwtPayload(payload);
-  if (!claims) return null;
-
-  // Si el JWT no trajo email pero el storage sí (caso del backend que solo
-  // emite `sub` y trae el email aparte en la respuesta de login), usamos
-  // el email persistido como respaldo.
-  if (!claims.email) {
-    const storedEmail = getSessionEmail();
-    if (storedEmail) {
-      return { ...claims, email: storedEmail };
-    }
-  }
-  return claims;
+  return {
+    email: getSessionEmail(),
+    firstName: getSessionFirstName() ?? "",
+    lastName: getSessionLastName() ?? "",
+  };
 }
 
 export function clearAuthToken() {
@@ -134,11 +134,19 @@ export function clearAuthToken() {
 
 /**
  * Guarda token y sesión tras login (o registro + login). No borra el token que acabas de guardar.
+ *
+ * `firstName` / `lastName` vienen del response de `/auth/login` (o
+ * `/auth/register`); los persistimos para que la UI pueda pre-rellenar
+ * formularios sin tener que decodificar el JWT ni hacer un round-trip
+ * extra al backend. Si el caller no los pasa, simplemente no se guarda
+ * el campo (los formularios arrancarán vacíos en esos campos).
  */
 export function persistSessionFromLogin({
   email,
   accessToken,
   userType,
+  firstName,
+  lastName,
   remember = true,
 }) {
   if (accessToken) {
@@ -151,6 +159,12 @@ export function persistSessionFromLogin({
   storage.setItem(AUTH_EMAIL_KEY, email.trim().toLowerCase());
   if (userType != null && String(userType).trim() !== "") {
     storage.setItem(AUTH_USER_TYPE_KEY, String(userType));
+  }
+  if (typeof firstName === "string" && firstName.trim() !== "") {
+    storage.setItem(AUTH_FIRST_NAME_KEY, firstName);
+  }
+  if (typeof lastName === "string" && lastName.trim() !== "") {
+    storage.setItem(AUTH_LAST_NAME_KEY, lastName);
   }
   dispatchSessionChanged();
 }
@@ -182,6 +196,20 @@ export function getSessionRole() {
 
 export function getSessionEmail() {
   return localStorage.getItem(AUTH_EMAIL_KEY) || sessionStorage.getItem(AUTH_EMAIL_KEY);
+}
+
+export function getSessionFirstName() {
+  return (
+    localStorage.getItem(AUTH_FIRST_NAME_KEY) ||
+    sessionStorage.getItem(AUTH_FIRST_NAME_KEY)
+  );
+}
+
+export function getSessionLastName() {
+  return (
+    localStorage.getItem(AUTH_LAST_NAME_KEY) ||
+    sessionStorage.getItem(AUTH_LAST_NAME_KEY)
+  );
 }
 
 export function isLoggedIn() {
