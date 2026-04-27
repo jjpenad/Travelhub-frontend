@@ -57,9 +57,11 @@ function LoginPage() {
     try {
       const result = await loginUser({ email: emailNorm, password });
       persistSessionFromLogin({
-        email: emailNorm,
+        email: result.email || emailNorm,
         accessToken: result.access_token,
         userType: result.user_type,
+        firstName: result.first_name,
+        lastName: result.last_name,
         remember,
       });
       navigate(getPostAuthDestination(result.user_type, from), { replace: true });

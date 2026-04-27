@@ -252,56 +252,72 @@ describe("traveler-only access guards", () => {
 });
 
 describe("getCurrentUserClaims", () => {
-  function makeJwt(payload) {
-    const header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9";
-    const utf8 = new TextEncoder().encode(JSON.stringify(payload));
-    let binary = "";
-    utf8.forEach((b) => {
-      binary += String.fromCharCode(b);
-    });
-    const b64 = btoa(binary)
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/g, "");
-    return `${header}.${b64}.fakesignature`;
-  }
-
   it("returns null when there is no token", () => {
     expect(getCurrentUserClaims()).toBeNull();
   });
 
-  it("returns the decoded identity when a JWT is in storage", () => {
-    setAuthToken(
-      makeJwt({
-        sub: "u-1",
-        email: "ana@example.com",
-        first_name: "Ana",
-        last_name: "Lopez",
-      }),
-    );
-    expect(getCurrentUserClaims()).toEqual({
-      userId: "u-1",
-      email: "ana@example.com",
-      firstName: "Ana",
-      lastName: "Lopez",
-    });
-  });
-
-  it("falls back to the persisted email when the JWT lacks an email claim", () => {
+  it("returns email + firstName + lastName persisted at login from /auth/login response", () => {
     persistSessionFromLogin({
       email: "ana@example.com",
-      accessToken: makeJwt({ sub: "u-1", first_name: "Ana", last_name: "Lopez" }),
+      accessToken: "any.opaque.token",
       userType: "traveler",
+      firstName: "Ana",
+      lastName: "Lopez",
     });
-    expect(getCurrentUserClaims()).toMatchObject({
+    expect(getCurrentUserClaims()).toEqual({
       email: "ana@example.com",
       firstName: "Ana",
       lastName: "Lopez",
     });
   });
 
-  it("returns null when the stored token is malformed (no payload, junk)", () => {
-    setAuthToken("not.a.jwt-payload");
+  it("returns empty firstName/lastName when login didn't expose them (legacy session)", () => {
+    persistSessionFromLogin({
+      email: "x@y.z",
+      accessToken: "tok",
+      userType: "traveler",
+    });
+    expect(getCurrentUserClaims()).toEqual({
+      email: "x@y.z",
+      firstName: "",
+      lastName: "",
+    });
+  });
+
+  it("ignores blank firstName/lastName so storage doesn't get polluted with empty strings", () => {
+    persistSessionFromLogin({
+      email: "x@y.z",
+      accessToken: "tok",
+      userType: "traveler",
+      firstName: "   ",
+      lastName: "",
+    });
+    expect(getCurrentUserClaims()).toEqual({
+      email: "x@y.z",
+      firstName: "",
+      lastName: "",
+    });
+  });
+
+  it("clearSessionUser wipes firstName/lastName too", () => {
+    persistSessionFromLogin({
+      email: "x@y.z",
+      accessToken: "tok",
+      userType: "traveler",
+      firstName: "Ana",
+      lastName: "Lopez",
+    });
+    expect(getCurrentUserClaims().firstName).toBe("Ana");
+
+    clearSessionUser();
+
     expect(getCurrentUserClaims()).toBeNull();
+    // Defensive: even if a stale token were re-injected, the names are gone.
+    setAuthToken("tok");
+    expect(getCurrentUserClaims()).toEqual({
+      email: null,
+      firstName: "",
+      lastName: "",
+    });
   });
 });

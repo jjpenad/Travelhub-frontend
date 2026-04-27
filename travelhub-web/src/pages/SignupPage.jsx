@@ -64,9 +64,14 @@ function SignupPage() {
       const emailNorm = email.trim().toLowerCase();
       const loginResult = await loginUser({ email: emailNorm, password });
       persistSessionFromLogin({
-        email: emailNorm,
+        email: loginResult.email || emailNorm,
         accessToken: loginResult.access_token,
         userType: loginResult.user_type,
+        // Si el login no devolvió first/last (posible en algunos backends),
+        // usamos los que el usuario tipeó al registrarse — que son los
+        // mismos que el backend acaba de persistir.
+        firstName: loginResult.first_name || nombre.trim(),
+        lastName: loginResult.last_name || apellidos.trim(),
         remember: true,
       });
 

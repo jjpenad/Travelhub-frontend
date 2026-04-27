@@ -249,7 +249,7 @@ describe("registerUser", () => {
 });
 
 describe("loginUser", () => {
-  it("POSTs lowercased trimmed email and returns the access_token", async () => {
+  it("POSTs lowercased trimmed email and returns access_token + user fields from response", async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, "stale.token");
 
     globalThis.fetch.mockResolvedValueOnce({
@@ -261,6 +261,9 @@ describe("loginUser", () => {
             access_token: "fresh.jwt",
             token_type: "Bearer",
             user_type: "traveler",
+            first_name: "Ana",
+            last_name: "Lopez",
+            email: "ana@example.com",
           }),
         ),
     });
@@ -273,7 +276,35 @@ describe("loginUser", () => {
 
     const body = JSON.parse(init.body);
     expect(body.email).toBe("foo@bar.com");
-    expect(out.access_token).toBe("fresh.jwt");
+    // El backend devuelve los datos del usuario en la respuesta — la UI
+    // los persiste vía `persistSessionFromLogin` y los lee desde storage,
+    // sin decodificar el JWT.
+    expect(out).toMatchObject({
+      access_token: "fresh.jwt",
+      first_name: "Ana",
+      last_name: "Lopez",
+      email: "ana@example.com",
+    });
+  });
+
+  it("falls back to the request email when /auth/login omits it in the response", async () => {
+    globalThis.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            access_token: "tok",
+            token_type: "Bearer",
+            user_type: "traveler",
+          }),
+        ),
+    });
+
+    const out = await loginUser({ email: "X@Y.Z", password: "p" });
+    expect(out.first_name).toBeNull();
+    expect(out.last_name).toBeNull();
+    expect(out.email).toBe("x@y.z");
   });
 
   it("maps 401 to the friendly invalid-credentials message", async () => {

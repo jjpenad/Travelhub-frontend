@@ -496,7 +496,21 @@ export async function registerUser(payload) {
 
 /**
  * POST /auth/login (configurable con VITE_LOGIN_PATH).
- * @returns {Promise<{ access_token: string, token_type: string, user_type: string }>}
+ *
+ * Además del token, el backend devuelve los datos del usuario que la UI
+ * necesita para pre-rellenar formularios (`first_name`, `last_name`,
+ * `email`). Los exponemos junto al token; `persistSessionFromLogin` los
+ * guarda en storage para que cualquier pantalla pueda leerlos sin tener
+ * que decodificar el JWT.
+ *
+ * @returns {Promise<{
+ *   access_token: string,
+ *   token_type: string,
+ *   user_type: string,
+ *   first_name: string | null,
+ *   last_name: string | null,
+ *   email: string | null,
+ * }>}
  */
 export async function loginUser({ email, password }) {
   try {
@@ -525,6 +539,9 @@ export async function loginUser({ email, password }) {
       access_token: data.access_token,
       token_type: data.token_type,
       user_type: data.user_type,
+      first_name: typeof data.first_name === "string" ? data.first_name : null,
+      last_name: typeof data.last_name === "string" ? data.last_name : null,
+      email: typeof data.email === "string" ? data.email : emailNorm,
     };
   } catch (err) {
     if (err && typeof err.status === "number") {

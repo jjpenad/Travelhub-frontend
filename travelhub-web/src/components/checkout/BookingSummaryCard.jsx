@@ -178,6 +178,8 @@ function BookingSummaryCard({
                 email: reg.email || email,
                 accessToken: reg.token,
                 userType: reg.user_type,
+                firstName: reg.first_name || guestFirstName,
+                lastName: reg.last_name || guestLastName,
                 remember: true,
               });
             }
