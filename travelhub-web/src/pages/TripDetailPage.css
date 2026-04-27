@@ -1,0 +1,431 @@
+/* Detalle de reserva — imagen arriba, datos debajo (sin QR ni notificaciones) */
+
+.trip-detail-page {
+  min-height: 100vh;
+  background: var(--page-bg);
+  font-family: var(--sans);
+}
+
+.trip-detail-page .page-container {
+  background: var(--page-bg);
+  border-top-color: transparent;
+}
+
+.trip-detail-page .page-container__inner {
+  width: 100%;
+  max-width: min(100%, 1320px);
+  margin-inline: auto;
+  padding-inline: clamp(0.5rem, 1.25vw, 1rem);
+  background: transparent;
+  gap: var(--section-gap-sm);
+}
+
+.trip-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: var(--page-block-y);
+}
+
+.trip-detail--narrow {
+  max-width: 28rem;
+  margin-inline: auto;
+  text-align: center;
+  padding-top: var(--page-block-y-start);
+}
+
+.trip-detail__not-found {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  line-height: var(--leading-body);
+}
+
+.trip-detail__back-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  text-decoration: none;
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.trip-detail__back-cta:hover {
+  background: var(--accent-hover);
+  color: #ffffff;
+}
+
+.trip-detail__back {
+  align-self: flex-start;
+  margin-top: var(--page-block-y-start);
+  margin-bottom: clamp(1rem, 2.75vw, 1.85rem);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.trip-detail__back:hover {
+  text-decoration: underline;
+}
+
+.trip-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trip-detail__header-titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.trip-detail__title {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: var(--type-section);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+  line-height: var(--leading-display);
+}
+
+.trip-detail__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.trip-detail__badge--ok {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .trip-detail__badge--ok {
+    background: color-mix(in srgb, #22c55e 22%, transparent);
+    color: #86efac;
+    border-color: color-mix(in srgb, #22c55e 45%, transparent);
+  }
+}
+
+.trip-detail__urgency {
+  margin: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+}
+
+.trip-detail__columns {
+  display: grid;
+  /* Hotel usa todo el ancho sobrante; pago ancho fijo (mismo tamaño visual habitual) */
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  gap: clamp(0.85rem, 2vw, 1.25rem);
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .trip-detail__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trip-detail__card {
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.trip-detail-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: min(52vh, 22rem);
+  background: var(--surface);
+}
+
+.trip-detail-hero__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trip-detail-hero__placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 12rem;
+}
+
+.trip-detail-hero__placeholder--tone-1 {
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--accent) 82%, #1e1b4b),
+    var(--accent)
+  );
+}
+
+.trip-detail__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: clamp(1.15rem, 3vw, 1.65rem);
+}
+
+.trip-detail-payment {
+  position: sticky;
+  top: calc(var(--nav-height, 4.5rem) + 0.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.15rem 1.2rem;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+}
+
+@media (max-width: 720px) {
+  .trip-detail-payment {
+    position: static;
+  }
+}
+
+.trip-detail-payment__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.trip-detail-payment__method {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 1.45;
+}
+
+.trip-detail-payment__method-icon {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.trip-detail-payment__total {
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+
+.trip-detail-payment__total-label {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.trip-detail-payment__total-amount {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1.1;
+}
+
+.trip-detail-payment__breakdown {
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.trip-detail-payment__breakdown-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.trip-detail-payment__line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  padding: 0.32rem 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.trip-detail-payment__line:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.trip-detail-payment__line-label {
+  color: var(--text-muted);
+}
+
+.trip-detail-payment__line-value {
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: right;
+}
+
+.trip-detail__hotel-name {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(1.2rem, 2.5vw, 1.45rem);
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+}
+
+.trip-detail__meta-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.trip-detail__row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-h);
+  line-height: 1.45;
+}
+
+.trip-detail__row--muted {
+  color: var(--text-muted);
+}
+
+.trip-detail__row--ref {
+  font-size: 0.8125rem;
+}
+
+.trip-detail__row-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+.trip-detail__times {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.trip-detail__rating-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.trip-detail__rating-num {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.trip-detail-included {
+  margin-top: 0.35rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+
+.trip-detail-included__title {
+  margin: 0 0 0.85rem;
+  font-family: var(--heading);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+}
+
+.trip-detail-included__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.45rem;
+}
+
+.trip-detail-included__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.75rem 0.42rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent-border) 55%, var(--border));
+  line-height: 1.25;
+}
+
+.trip-detail-included__glyph {
+  flex-shrink: 0;
+  display: block;
+  color: var(--accent);
+  opacity: 0.92;
+}
+
+.trip-detail-stars {
+  display: inline-flex;
+  gap: 0.08rem;
+}
+
+.trip-detail-stars__icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--border);
+}
+
+.trip-detail-stars__icon--fill {
+  color: #fbbf24;
+}
+
+.trip-detail__note {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.trip-detail__note--ok {
+  color: #15803d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .trip-detail__note--ok {
+    color: #4ade80;
+  }
+}

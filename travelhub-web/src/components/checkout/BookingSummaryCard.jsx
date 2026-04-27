@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createReservation } from "../../services/api";
+import {
+  isAuthenticated,
+  isLoggedIn,
+  persistSessionFromLogin,
+} from "../../auth/sessionAuth";
+import { processPayment, registerUser } from "../../services/api";
 import "./BookingSummaryCard.css";
 
 function buildPaymentLabel(
@@ -66,9 +71,10 @@ function formatDateLabel(iso) {
 
 function BookingSummaryCard({
   hotel,
-  hotelId = "",
+  hotelId: _hotelId = "",
+  reservationId = "",
   roomType,
-  roomTypeId = "",
+  roomTypeId: _roomTypeId = "",
   checkIn = "",
   checkOut = "",
   guests: guestsProp = 2,
@@ -90,6 +96,13 @@ function BookingSummaryCard({
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
+  const [errorModal, setErrorModal] = useState({ show: false, message: "" });
+  /** Solo huéspedes sin sesión pueden optar por registro en el checkout. */
+  const [createAccount, setCreateAccount] = useState(
+    () => !isAuthenticated() && !isLoggedIn(),
+  );
+
+  const hasAuthSession = isAuthenticated() || isLoggedIn();
 
   const name = hotel?.name ?? "Hotel";
   const locationText = hotel?.location ?? "—";
@@ -109,22 +122,86 @@ function BookingSummaryCard({
     setApiError(null);
 
     try {
-      const response = await createReservation({
-        hotelId: hotelId || hotel?.id || "",
-        roomTypeId,
-        checkIn,
-        checkOut,
-        guests: guestCount,
-        totalPrice: Number(total),
-        pricePerNight: Number(pricePerNight),
-        nights: Number(nights),
-        guestFirstName: guestFirstName || "Guest",
-        guestLastName: guestLastName || "",
-        guestEmail: guestEmail || "",
-        cardNumber: cardNumber || "4242424242424242",
-      });
+      const paymentPayload = {
+        reservation_id: reservationId,
+        primary_guest: {
+          first_name: guestFirstName || "Huésped",
+          last_name: guestLastName || "",
+          document_type: "CC",
+          document_number: "1234567890", // Debería capturarse en el form si es real
+          nationality: "COL",
+          email: guestEmail || "guest@example.com",
+        },
+        payment: {
+          amount: Number(total).toFixed(2),
+          currency_code: "USD",
+          payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
+        },
+      };
 
-      const reference = response?.result?.confirmation_code || response?.result?.confirmationCode || "N/A";
+      const response = await processPayment(paymentPayload);
+
+      // Verificamos si el pago fue exitoso según la respuesta del backend
+      // El backend devuelve 200 OK pero con success: false en caso de error
+      const result = response.result || {};
+
+      if (result.success === false) {
+        setSubmitting(false);
+        setErrorModal({
+          show: true,
+          message: result.error || "No se pudo procesar el pago",
+        });
+        return;
+      }
+
+      // El id que debemos usar para GET /reservations/{id} es el mismo `reservation_id`
+      // que se envía a /reservation-flow/payment. Si el backend no lo devuelve en la respuesta,
+      // lo tomamos del payload/local.
+      const reservationIdFromPayment =
+        result.reservation_id ??
+        result.reservationId ??
+        result.id ??
+        response.reservation_id ??
+        response.reservationId ??
+        response.id ??
+        paymentPayload.reservation_id ??
+        reservationId ??
+        null;
+      const confirmationCodeFromPayment =
+        result.confirmation_code ??
+        result.confirmationCode ??
+        result.reference ??
+        null;
+
+      const reference = confirmationCodeFromPayment || reservationIdFromPayment || "N/A";
+
+      const loggedInOrHasToken = isAuthenticated() || isLoggedIn();
+
+      if (createAccount && !loggedInOrHasToken) {
+        const email = String(guestEmail || "").trim();
+        if (email) {
+          try {
+            const reg = await registerUser({
+              email: email.toLowerCase(),
+              password: Math.random().toString(36).slice(-10),
+              first_name: guestFirstName || "Huésped",
+              last_name: guestLastName || "",
+            });
+            if (reg.token) {
+              persistSessionFromLogin({
+                email: reg.email || email,
+                accessToken: reg.token,
+                userType: reg.user_type,
+                firstName: reg.first_name || guestFirstName,
+                lastName: reg.last_name || guestLastName,
+                remember: true,
+              });
+            }
+          } catch (err) {
+            console.error("Registro automático falló:", err);
+          }
+        }
+      }
 
       const hotelPayload = hotel
         ? {
@@ -136,30 +213,41 @@ function BookingSummaryCard({
           }
         : null;
 
-      navigate("/confirmation", {
-        state: {
-          reference,
-          total: Number(total),
-          hotel: hotelPayload,
-          roomType: roomType || null,
-          checkIn,
-          checkOut,
-          guests: guestCount,
-          nights: Number(nights),
-          pricePerNight: Number(pricePerNight),
-          cleaningFee: Number(cleaningFee),
-          serviceFee: Number(serviceFee),
-          taxes: Number(taxes),
-          guestEmail:
-            typeof guestEmail === "string" && guestEmail.trim() !== ""
-              ? guestEmail.trim()
-              : null,
-          paymentMethod,
-          paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
-          checkInTime: "15:00",
-          checkOutTime: "11:00",
+      // Misma forma que develop envía a /confirmation (no perder campos)
+      const confirmationState = {
+        reference,
+        apiReservationId:
+          reservationIdFromPayment != null && String(reservationIdFromPayment).trim() !== ""
+            ? String(reservationIdFromPayment)
+            : null,
+        total: Number(total),
+        hotel: hotelPayload,
+        roomType: roomType || null,
+        checkIn,
+        checkOut,
+        guests: guestCount,
+        nights: Number(nights),
+        pricePerNight: Number(pricePerNight),
+        cleaningFee: Number(cleaningFee),
+        serviceFee: Number(serviceFee),
+        taxes: Number(taxes),
+        guestEmail: guestEmail || null,
+        paymentMethod,
+        paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
+        checkInTime: "15:00",
+        checkOutTime: "11:00",
+      };
+
+      const rid = confirmationState.apiReservationId
+        ? String(confirmationState.apiReservationId).trim()
+        : "";
+      navigate(
+        {
+          pathname: "/confirmation",
+          search: rid ? `?rid=${encodeURIComponent(rid)}` : "",
         },
-      });
+        { state: confirmationState },
+      );
     } catch (err) {
       console.error("Reservation failed:", err);
       setApiError(err.message || "Error al crear la reserva");
@@ -275,6 +363,29 @@ function BookingSummaryCard({
         {submitting ? "Procesando..." : "Confirmar y Pagar"}
       </button>
 
+      {hasAuthSession ? (
+        <p className="booking-summary-card__account-check booking-summary-card__check-note">
+          Ya tienes sesión activa; el pago quedará asociado a tu cuenta.
+        </p>
+      ) : (
+        <div className="booking-summary-card__account-check">
+          <label className="booking-summary-card__check-label">
+            <input
+              type="checkbox"
+              checked={createAccount}
+              onChange={(e) => setCreateAccount(e.target.checked)}
+              className="booking-summary-card__checkbox"
+            />
+            <span className="booking-summary-card__check-text">
+              Autorizo la creación de una cuenta para gestionar mis reservas.
+              <small className="booking-summary-card__check-note">
+                De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
+              </small>
+            </span>
+          </label>
+        </div>
+      )}
+
       <footer className="booking-summary-card__footer">
         <p className="booking-summary-card__cancellation">Cancelación gratuita</p>
         <p className="booking-summary-card__ssl">
@@ -282,6 +393,30 @@ function BookingSummaryCard({
           <span>Pago seguro con SSL</span>
         </p>
       </footer>
+
+      {errorModal.show && (
+        <div className="booking-modal-overlay">
+          <div className="booking-modal booking-modal--error">
+            <div className="booking-modal__icon">
+              <svg viewBox="0 0 24 24" width="48" height="48">
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+            </div>
+            <h3 className="booking-modal__title">No se pudo completar el pago</h3>
+            <p className="booking-modal__text">{errorModal.message}</p>
+            <button
+              type="button"
+              className="booking-modal__button"
+              onClick={() => {
+                setErrorModal({ show: false, message: "" });
+                navigate("/");
+              }}
+            >
+              Volver a buscar
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

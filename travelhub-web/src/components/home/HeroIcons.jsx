@@ -44,6 +44,30 @@ export function IconBed({ className }) {
   );
 }
 
+/** Ticket / referencia de reserva (Mis viajes, detalles) */
+export function IconTicket({ className }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#6366f1"
+        d="M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-2 .89-2 2v4c1.1 0 2 .9 2 2s-.9 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-4v12H4V6h16zm-2 6h-2v2h2v-2zm0-4h-2v2h2V8z"
+      />
+    </svg>
+  );
+}
+
+/** Cartera / pago (Mis viajes) */
+export function IconWallet({ className }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#059669"
+        d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8h-10v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+      />
+    </svg>
+  );
+}
+
 export function IconSearch({ className }) {
   return (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">

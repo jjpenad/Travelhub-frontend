@@ -16,6 +16,15 @@ data class HotelDto(
 )
 
 // GET /service-core/accommodations/search?city=&check_in=&check_out=
+// Wrapper response — carries the guest user_session that must be persisted client-side.
+data class HotelSearchResponseDto(
+    @SerializedName("user_session") val userSession: String?,
+    val page: Int = 1,
+    @SerializedName("page_size") val pageSize: Int = 20,
+    val total: Int = 0,
+    val result: List<HotelSearchResultDto> = emptyList()
+)
+
 data class HotelSearchResultDto(
     @SerializedName("hotel_id") val hotelId: String,
     @SerializedName("hotel_name") val hotelName: String,

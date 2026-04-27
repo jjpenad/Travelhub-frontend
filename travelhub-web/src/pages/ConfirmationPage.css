@@ -181,6 +181,24 @@
   display: inline-block;
 }
 
+.confirmation-header__api-status {
+  margin: 0.75rem 0 0;
+  max-width: 28rem;
+  font-size: var(--type-body-muted);
+  line-height: var(--leading-body);
+  color: var(--text-muted, var(--text));
+  text-align: center;
+}
+
+.confirmation-header__api-status-label {
+  font-weight: 500;
+}
+
+.confirmation-header__api-raw {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
 @keyframes confirmation-header-pulse {
   0%,
   100% {

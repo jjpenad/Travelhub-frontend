@@ -1,9 +1,12 @@
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { getAuthToken } from "../auth/sessionAuth";
 import CheckoutStepper from "../components/checkout/CheckoutStepper";
 import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { getTravelerReservationByIdForPoll } from "../services/api";
 import "./ConfirmationPage.css";
 
 /** MVP: en `false` oculta «Ver detalles del viaje», «Descargar recibo» y la nota del QR asociada. */
@@ -85,13 +88,60 @@ function buildReceiptText({
   return `${lines.join("\n")}\n`;
 }
 
+function labelForReservationStatusNorm(norm) {
+  if (norm === "confirmed") return "Confirmada";
+  if (norm === "pending") return "Pendiente";
+  if (norm === "cancelled") return "Cancelada";
+  return "En proceso";
+}
+
 function ConfirmationPage() {
   const location = useLocation();
   const data = location.state;
+  const [reservationStatusQuery, setReservationStatusQuery] = useState("idle");
 
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const apiReservationId = data?.apiReservationId;
+  useEffect(() => {
+    const schedule = (next) => {
+      queueMicrotask(() => {
+        setReservationStatusQuery(next);
+      });
+    };
+    if (!apiReservationId || String(apiReservationId).trim() === "") {
+      schedule("idle");
+      return undefined;
+    }
+    if (!getAuthToken()) {
+      schedule("idle");
+      return undefined;
+    }
+    let cancel = false;
+    schedule("loading");
+    const id = String(apiReservationId).trim();
+    (async () => {
+      const item = await getTravelerReservationByIdForPoll(id);
+      if (cancel) return;
+      if (!item) {
+        schedule({ ok: false });
+        return;
+      }
+      const raw = String(
+        (item.raw && item.raw.status) != null ? item.raw.status : "",
+      ).trim();
+      schedule({
+        ok: true,
+        label: labelForReservationStatusNorm(item.statusNorm),
+        raw: raw || "—",
+      });
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [apiReservationId]);
 
   const hotel = data?.hotel;
   const reference = data?.reference;
@@ -109,6 +159,9 @@ function ConfirmationPage() {
       : "tu correo electrónico";
 
   const hasBooking = Boolean(hotel && reference);
+  const canQueryReservationApi =
+    Boolean(apiReservationId && String(apiReservationId).trim() !== "") &&
+    Boolean(getAuthToken());
 
   function handleDownloadReceipt() {
     if (!reference) return;
@@ -137,7 +190,7 @@ function ConfirmationPage() {
   const tripDetailsTo =
     hotel?.id != null && hotel.id !== ""
       ? `/hotel/${encodeURIComponent(String(hotel.id))}`
-      : "/";
+      : PATH_TRAVELERS_HOME;
 
   return (
     <div className="confirmation-page">
@@ -182,6 +235,48 @@ function ConfirmationPage() {
                     <p className="confirmation-header__ref">
                       Ref. de reserva: #{reference}
                     </p>
+                    {apiReservationId && String(apiReservationId).trim() !== "" ? (
+                      <p
+                        className="confirmation-header__api-status"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        {!canQueryReservationApi ? (
+                          <>
+                            Inicia sesión con tu cuenta de viajero para ver el
+                            estado actual de la reserva en el sistema.
+                          </>
+                        ) : null}
+                        {canQueryReservationApi && reservationStatusQuery === "loading" ? (
+                          <>Consultando estado de la reserva en el sistema…</>
+                        ) : null}
+                        {canQueryReservationApi &&
+                        typeof reservationStatusQuery === "object" &&
+                        reservationStatusQuery.ok === true ? (
+                          <>
+                            <span className="confirmation-header__api-status-label">
+                              Estado en el sistema:{" "}
+                            </span>
+                            <strong>{reservationStatusQuery.label}</strong>
+                            {reservationStatusQuery.raw &&
+                            reservationStatusQuery.raw !== "—" ? (
+                              <span className="confirmation-header__api-raw">
+                                {" "}
+                                ({reservationStatusQuery.raw})
+                              </span>
+                            ) : null}
+                          </>
+                        ) : null}
+                        {canQueryReservationApi &&
+                        typeof reservationStatusQuery === "object" &&
+                        reservationStatusQuery.ok === false ? (
+                          <>
+                            No se pudo consultar el estado. Revisa la sesión o
+                            inténtalo de nuevo.
+                          </>
+                        ) : null}
+                      </p>
+                    ) : null}
                   </div>
                 </section>
 
@@ -227,7 +322,7 @@ function ConfirmationPage() {
                   </div>
                 ) : null}
 
-                <Link className="confirmation-card__cta" to="/">
+                <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
                   Volver al inicio
                 </Link>
               </div>
@@ -238,7 +333,7 @@ function ConfirmationPage() {
                   No hay datos de reserva. Si acabas de completar el pago, vuelve
                   desde el checkout.
                 </p>
-                <Link className="confirmation-card__cta" to="/">
+                <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
                   Ir al inicio
                 </Link>
               </div>

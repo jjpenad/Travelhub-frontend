@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.travelhub.ui.components.TravelHubOutlinedButton
 import com.example.travelhub.ui.theme.TravelHubTheme
 import com.example.travelhub.ui.theme.GreenAccent
@@ -61,9 +63,13 @@ import com.example.travelhub.ui.theme.White
 
 @Composable
 fun ProfileSettingsScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     var notificationsEnabled by remember { mutableStateOf(true) }
+    val guestSessionId by profileViewModel.guestSessionId.collectAsStateWithLifecycle()
+    val session by profileViewModel.session.collectAsStateWithLifecycle()
+    val isAuthenticated = session?.token?.isNotBlank() == true
 
     Column(
         modifier = Modifier
@@ -91,8 +97,22 @@ fun ProfileSettingsScreen(
                     Text("A", color = White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Alejandra Pinzon", color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("alejandra@email.com", color = White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                if (isAuthenticated) {
+                    val name = session?.fullName?.takeIf { it.isNotBlank() } ?: "Guest"
+                    Text(name, color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        text = session?.email.orEmpty(),
+                        color = White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    Text("Browsing as Guest", color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        "Sign in to track your trips across devices",
+                        color = White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         }
 
@@ -133,11 +153,39 @@ fun ProfileSettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        TravelHubOutlinedButton(
-            text = "Log Out",
-            onClick = onLogout,
-            modifier = Modifier.padding(horizontal = 20.dp)
-        )
+        // Logout — only when actually signed in. Anonymous users have nothing
+        // to log out from; their identity is the X-Guest-Id (reset below).
+        if (isAuthenticated) {
+            TravelHubOutlinedButton(
+                text = "Log Out",
+                onClick = {
+                    profileViewModel.logout()
+                    onLogout()
+                },
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Guest session — shows the current X-Guest-Id and lets the user reset it.
+        SectionTitle("GUEST SESSION")
+        Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
+            Text(
+                text = "Session ID",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary
+            )
+            Text(
+                text = guestSessionId.ifBlank { "(not yet assigned)" },
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TravelHubOutlinedButton(
+                text = "Reset guest session",
+                onClick = { profileViewModel.resetGuestSession() }
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
     }
@@ -189,6 +237,7 @@ private fun SettingsRow(
 @Composable
 private fun ProfileSettingsScreenPreview() {
     TravelHubTheme {
+        // Preview without ViewModel — uses default empty session id.
         ProfileSettingsScreen(onLogout = {})
     }
 }

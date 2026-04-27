@@ -10,11 +10,17 @@ build
 # Pruebas y cobertura
 coverage
 .nyc_output
+test-results
+playwright-report
+playwright/.cache
 
 # Variables de entorno (secretos / solo máquina local)
 .env
 .env.*
 !.env.example
+
+# Opcional: datos mock grandes solo en tu máquina (no develop)
+src/data/mockReservations.local.js
 
 # Cachés de herramientas
 .cache

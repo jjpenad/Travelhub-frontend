@@ -115,6 +115,22 @@
   line-height: 1.35;
 }
 
+/*
+ * Campos pre-rellenados desde el JWT del usuario autenticado: visualmente
+ * en read-only para indicar "estos son tus datos de cuenta, no se editan
+ * desde aquí" — mismo trato que la pantalla de booking de Android, que
+ * deshabilita esos inputs cuando hay sesión.
+ */
+.guest-form__input--locked {
+  background: var(--surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.guest-form__input--locked:focus {
+  border-color: var(--border);
+}
+
 @media (max-width: 640px) {
   .guest-form__grid {
     grid-template-columns: 1fr;

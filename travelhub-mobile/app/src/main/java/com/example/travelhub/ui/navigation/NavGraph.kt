@@ -34,14 +34,18 @@ import com.example.travelhub.ui.screens.trips.TripDetailsScreen
 fun NavGraph(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    startDestination: String = Screen.Login.route
+    // Guests start at Home. Login screens remain in the graph and reachable on demand
+    // (e.g. from Profile), but no longer gate the app.
+    startDestination: String = Screen.Home.route
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
-        // Auth
+        // Auth — share the AuthViewModel between Login and SignUp via the Login back
+        // stack entry so the email/password the user typed on one screen carries over
+        // to the other (handy when bouncing between "I have an account" and "Create one").
         composable(Screen.Login.route) {
             val authViewModel: AuthViewModel = hiltViewModel()
             LoginScreen(
@@ -55,7 +59,18 @@ fun NavGraph(
             )
         }
         composable(Screen.SignUp.route) {
-            SignUpScreen(onNavigateBack = { navController.popBackStack() })
+            val authViewModel: AuthViewModel = hiltViewModel()
+            SignUpScreen(
+                viewModel = authViewModel,
+                onSignUpSuccess = {
+                    navController.navigate(Screen.MyTrips.route) {
+                        // Clear the auth screens from the back stack so back doesn't
+                        // bounce the user back into a stale signup form.
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // Home
@@ -92,9 +107,10 @@ fun NavGraph(
         }
 
         // Results — shares the SearchViewModel from the Search back stack entry
-        composable(Screen.Results.route) {
-            // Use the route pattern to find the Search entry
-            val parentEntry = remember(navController) {
+        composable(Screen.Results.route) { backStackEntry ->
+            // Key the remember on the current NavBackStackEntry so Lint is happy and
+            // the parent reference is refreshed if the back stack changes.
+            val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Screen.Search.route)
             }
             val searchViewModel: SearchViewModel = hiltViewModel(parentEntry)
@@ -187,7 +203,8 @@ fun NavGraph(
             val viewModel: MyTripsViewModel = hiltViewModel()
             MyTripsScreen(
                 viewModel = viewModel,
-                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) }
+                onTripClick = { id -> navController.navigate(Screen.TripDetails.createRoute(id)) },
+                onSignInClick = { navController.navigate(Screen.Login.route) }
             )
         }
 
@@ -197,9 +214,10 @@ fun NavGraph(
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val viewModel: MyTripsViewModel = hiltViewModel(
+            val tripsEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Screen.MyTrips.route)
-            )
+            }
+            val viewModel: MyTripsViewModel = hiltViewModel(tripsEntry)
             TripDetailsScreen(
                 viewModel = viewModel,
                 bookingId = bookingId,
@@ -214,9 +232,10 @@ fun NavGraph(
             arguments = listOf(navArgument("bookingId") { type = NavType.StringType })
         ) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val viewModel: MyTripsViewModel = hiltViewModel(
+            val tripsEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Screen.MyTrips.route)
-            )
+            }
+            val viewModel: MyTripsViewModel = hiltViewModel(tripsEntry)
             QRCheckInScreen(
                 viewModel = viewModel,
                 bookingId = bookingId,

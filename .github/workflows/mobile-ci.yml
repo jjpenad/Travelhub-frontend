@@ -1,0 +1,122 @@
+# CI for travelhub-mobile (Kotlin + Jetpack Compose).
+# Builds, tests, enforces 80% coverage with Kover, and produces an APK as artifact.
+# On `travelhub-mobile-v*` tags, attaches the APK to a GitHub Release.
+
+name: Mobile CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feat/**"
+      - "feature/**"
+    tags:
+      - "travelhub-mobile-v*"
+    paths:
+      - "travelhub-mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - "travelhub-mobile/**"
+      - ".github/workflows/mobile-ci.yml"
+
+permissions:
+  contents: write   # needed by softprops/action-gh-release
+
+concurrency:
+  group: mobile-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ./travelhub-mobile
+
+jobs:
+  Lint_Test_Build:
+    name: Lint, test, coverage and APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('travelhub-mobile/**/*.gradle*', 'travelhub-mobile/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Android Lint
+        run: ./gradlew lint
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      # Generate reports first so they're on disk even if verification fails next.
+      - name: Coverage reports
+        run: ./gradlew koverXmlReport koverHtmlReport
+
+      - name: Verify 80% coverage threshold
+        run: ./gradlew koverVerify
+
+      # Upload coverage only when something failed earlier (tests or threshold),
+      # so devs can download the report and inspect what's missing. On a green
+      # run there's nothing to debug, so we save the artifact slot.
+      - name: Upload coverage report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: travelhub-mobile-coverage
+          path: travelhub-mobile/app/build/reports/kover
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # APK is only built (and uploaded) for main + release tags. PRs and
+      # feature branches skip the APK to keep the pipeline fast and avoid
+      # leaking artifacts of unmerged code.
+      #
+      # We always produce a debug APK — this is an academic project, no
+      # Play Store distribution, so we don't deal with a release keystore.
+      # Gradle signs the debug build automatically with its built-in
+      # debug.keystore, which is enough to install on any device or
+      # emulator. If we ever need a signed release artifact, restore the
+      # signingConfigs block in app/build.gradle.kts and the original
+      # `assembleRelease` step from git history.
+      - name: Build debug APK
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK artifact
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: travelhub-mobile-apk
+          path: travelhub-mobile/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Attach APK to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: travelhub-mobile/app/build/outputs/apk/debug/*.apk

@@ -1,0 +1,112 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Login of an existing user
+#
+# Goal:
+#   A user that already has an account can sign in directly from the Login
+#   screen. Distinct from flow 02 (which exercises signup).
+#
+# Pre-conditions:
+#   - We register the account inline (so the flow is self-contained), then
+#     log out, then test the login path.
+#
+# Post-conditions:
+#   - JWT is restored after login.
+#   - Profile shows the user's name + Log Out button.
+#   - My Trips no longer shows the "Sign in" CTA.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Login existing user
+tags:
+  - auth
+  - login
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# ── Setup: register so we have a real account on the backend ─────────────
+- tapOn: "Trips"
+- tapOn: "Sign in"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# ── Logout to reset to anonymous state ───────────────────────────────────
+# NavGraph routes the logout to Login with popUpTo(0): the back stack is
+# wiped and we're already on the Login screen — no need (and no way) to
+# tap a "Trips → Sign in" path to reach it.
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+- tapOn: "Log Out"
+
+# ── The actual login test ────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 10000
+
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+- tapOn:
+    text: "Sign In|Log In|Continue"
+
+# ── Verify authenticated state ───────────────────────────────────────────
+# NavGraph routes the login success to Home (popUpTo Login inclusive),
+# so the visible markers are Home's headers, not the My Trips / Search /
+# Profile screens.
+- extendedWaitUntil:
+    visible: "Where to next?"
+    timeout: 15000
+
+# Profile should show the registered user's name. Log Out lives below
+# the fold on smaller screens — scrolling to it implicitly proves we're
+# in the authenticated state, no extra assertVisible needed before scroll.
+- tapOn: "Profile"
+- assertVisible:
+    text: ".*${output.firstName}.*"
+- scrollUntilVisible:
+    element:
+      text: "Log Out"
+
+# My Trips no longer shows the anonymous CTA.
+- tapOn: "Trips"
+- assertNotVisible: "Sign in to track your trips"

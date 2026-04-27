@@ -7,7 +7,7 @@ import com.example.travelhub.data.local.entity.BookingEntity
 
 @Database(
     entities = [BookingEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class TravelHubDatabase : RoomDatabase() {

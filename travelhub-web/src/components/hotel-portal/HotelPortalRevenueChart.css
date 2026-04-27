@@ -1,0 +1,144 @@
+.hp-revenue {
+  background: var(--bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem 1.25rem 1rem;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hp-revenue__head {
+  margin-bottom: 1rem;
+}
+
+.hp-revenue__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.hp-revenue__title-muted {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.hp-revenue__chart-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hp-revenue__chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2px;
+  flex: 1;
+  min-height: 180px;
+  padding: 0 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.hp-revenue__bar-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 14px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.hp-revenue__bar-wrap:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.hp-revenue__bar {
+  display: block;
+  width: 100%;
+  max-width: 10px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #a78bfa 0%, #7c3aed 40%, #5b21b6 100%);
+  transition: opacity 0.15s ease, filter 0.15s ease;
+}
+
+.hp-revenue__bar-wrap--hover .hp-revenue__bar {
+  filter: brightness(1.08);
+}
+
+.hp-revenue__tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--text-h);
+  color: #fff;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  box-shadow: var(--shadow-md);
+}
+
+.hp-revenue__tooltip strong {
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.hp-revenue__axis {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 0.35rem 0.15rem 0;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.hp-revenue__tick {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.hp-revenue__legend {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.hp-revenue__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hp-revenue__legend-item::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.hp-revenue__legend-item--real::before {
+  background: #5b21b6;
+}

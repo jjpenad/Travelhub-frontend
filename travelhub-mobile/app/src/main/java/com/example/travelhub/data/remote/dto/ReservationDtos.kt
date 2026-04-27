@@ -40,7 +40,8 @@ data class PaymentRequestDto(
 data class CreateReservationResponse(
     val completed: Boolean,
     val step: String,
-    val result: ReservationResultDto
+    val result: ReservationResultDto,
+    @SerializedName("user_session") val userSession: String? = null
 )
 
 data class ReservationResultDto(
@@ -63,4 +64,36 @@ data class ReservationDto(
     @SerializedName("check_in") val checkIn: String,
     @SerializedName("check_out") val checkOut: String,
     @SerializedName("total_price") val totalPrice: String
+)
+
+// GET /service-core/reservations/user/{user_id}?limit=&offset=
+data class ReservationListResponseDto(
+    val items: List<ReservationItemDto> = emptyList(),
+    val total: Int = 0,
+    val limit: Int = 20,
+    val offset: Int = 0
+)
+
+data class ReservationItemDto(
+    val id: String,
+    @SerializedName("user_id") val userId: String,
+    @SerializedName("hotel_id") val hotelId: String,
+    @SerializedName("room_type_id") val roomTypeId: String,
+    @SerializedName("check_in") val checkIn: String,
+    @SerializedName("check_out") val checkOut: String,
+    val guests: Int = 1,
+    @SerializedName("total_price") val totalPrice: String = "0.00",
+    val status: String = "pending",
+    @SerializedName("confirmation_code") val confirmationCode: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null
+)
+
+// PATCH /service-core/reservations/{id}/status
+data class UpdateStatusRequestDto(val status: String)
+
+data class UpdateStatusResponseDto(
+    val id: String? = null,
+    @SerializedName("previous_status") val previousStatus: String? = null,
+    @SerializedName("new_status") val newStatus: String? = null,
+    val message: String? = null
 )

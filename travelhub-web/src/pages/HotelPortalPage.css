@@ -1,0 +1,72 @@
+/* Dashboard del administrador hotelero (home portal) */
+
+.hotel-portal-dashboard {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--page-bg);
+}
+
+.hotel-portal-dashboard__shell {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: stretch;
+}
+
+.hotel-portal-dashboard__main {
+  flex: 1;
+  min-width: 0;
+  max-width: 1180px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: clamp(1.25rem, 3vw, 1.75rem) var(--page-padding-x)
+    clamp(2rem, 5vw, 3rem);
+}
+
+/* Título + selector de mes: selector a la derecha, alineado al título y sobre la columna de la última KPI (huéspedes) */
+.hotel-portal-dashboard__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin-bottom: clamp(1.5rem, 3.5vw, 2.35rem);
+}
+
+.hotel-portal-dashboard__top .hp-dash-header {
+  flex: 1;
+  min-width: min(100%, 16rem);
+}
+
+.hotel-portal-dashboard__month-wrap {
+  flex-shrink: 0;
+  /* Alineación óptica con la primera línea del título "Dashboard" */
+  padding-top: 0.15rem;
+}
+
+.hotel-portal-dashboard__mid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(240px, 0.95fr);
+  gap: 1.25rem;
+  margin-top: 1.35rem;
+  align-items: stretch;
+}
+
+.hotel-portal-dashboard__arrivals {
+  margin-top: 1.35rem;
+}
+
+@media (max-width: 960px) {
+  .hotel-portal-dashboard__mid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .hotel-portal-dashboard__shell {
+    flex-direction: column;
+  }
+}

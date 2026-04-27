@@ -2,9 +2,14 @@ package com.example.travelhub.data.remote.api
 
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
 import com.example.travelhub.data.remote.dto.CreateReservationResponse
+import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.HotelAvailabilityDto
 import com.example.travelhub.data.remote.dto.HotelDto
-import com.example.travelhub.data.remote.dto.HotelSearchResultDto
+import com.example.travelhub.data.remote.dto.HotelSearchResponseDto
+import com.example.travelhub.data.remote.dto.ReservationListResponseDto
+import com.example.travelhub.data.remote.dto.UpdateStatusRequestDto
+import com.example.travelhub.data.remote.dto.UpdateStatusResponseDto
+import retrofit2.http.PATCH
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -20,8 +25,27 @@ interface AccommodationApi {
     suspend fun searchAccommodations(
         @Query("city") city: String,
         @Query("check_in") checkIn: String,
-        @Query("check_out") checkOut: String
-    ): List<HotelSearchResultDto>
+        @Query("check_out") checkOut: String,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20
+    ): HotelSearchResponseDto
+
+    /**
+     * Lists reservations of the authenticated user. Backend reads the user_id
+     * from the JWT (`current_user`); the path no longer takes a user id, and
+     * `Authorization: Bearer <jwt>` is required (the AuthInterceptor adds it).
+     */
+    @GET("service-core/reservations/user")
+    suspend fun listReservationsByUser(
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
+    ): ReservationListResponseDto
+
+    @PATCH("service-core/reservations/{reservationId}/status")
+    suspend fun updateReservationStatus(
+        @Path("reservationId") reservationId: String,
+        @Body request: UpdateStatusRequestDto
+    ): UpdateStatusResponseDto
 
     @GET("service-core/accommodations/hotels/{hotelId}/availability")
     suspend fun getHotelAvailability(
@@ -33,5 +57,11 @@ interface AccommodationApi {
     @POST("service-core/reservation-flow/create")
     suspend fun createReservation(
         @Body request: CreateReservationRequest
+    ): CreateReservationResponse
+
+    /** Step 2 of the booking flow: confirm payment with primary guest details. */
+    @POST("service-core/reservation-flow/payment")
+    suspend fun confirmReservationPayment(
+        @Body request: ConfirmReservationRequestDto
     ): CreateReservationResponse
 }
