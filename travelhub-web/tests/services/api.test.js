@@ -38,6 +38,9 @@ import {
   createReservation,
   createBooking,
   processPayment,
+  listTravelerReservationsForStatusPoll,
+  getTravelerReservationByIdForPoll,
+  getTravelerReservationsListForUI,
 } from "../../src/services/api";
 
 const GUEST_ID_KEY = "travelhub_guest_id";
@@ -762,5 +765,92 @@ describe("buildAccommodationSearchQueryString", () => {
   it("returns empty string when input is not an object", () => {
     expect(buildAccommodationSearchQueryString(null)).toBe("");
     expect(buildAccommodationSearchQueryString(undefined)).toBe("");
+  });
+});
+
+describe("service-soport notification email", () => {
+  it("returns false when email is empty", async () => {
+    vi.resetModules();
+    import.meta.env.VITE_TOKEN_SOPORT_SERVICES = "svc";
+    const { sendEmailNotification } = await import("../../src/services/api");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({}, 201));
+    await expect(sendEmailNotification({ email: " ", message: "x" })).resolves.toBe(false);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("returns false when service token is missing", async () => {
+    vi.resetModules();
+    import.meta.env.VITE_TOKEN_SOPORT_SERVICES = "";
+    import.meta.env.VITE_SOPORT_SEND_EMAIL_BEARER = "";
+    const { sendEmailNotification } = await import("../../src/services/api");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({}, 201));
+    await expect(sendEmailNotification({ email: "a@b.com", message: "x" })).resolves.toBe(false);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("posts to /notification/send-email with service bearer and no X-Guest-Id", async () => {
+    vi.resetModules();
+    import.meta.env.VITE_TOKEN_SOPORT_SERVICES = "svc-token";
+    const { sendEmailNotification } = await import("../../src/services/api");
+    globalThis.fetch.mockResolvedValueOnce({ ok: true, status: 201, text: () => Promise.resolve("{}") });
+
+    const ok = await sendEmailNotification({ email: "a@b.com", message: "hello" });
+    expect(ok).toBe(true);
+
+    const [url, init] = lastFetchCall();
+    expect(url).toMatch(/service-soport\/notification\/send-email$/);
+    expect(init.method).toBe("POST");
+    expect(init.headers.Authorization).toBe("Bearer svc-token");
+    expect(init.headers["X-Guest-Id"]).toBeUndefined();
+    expect(JSON.parse(init.body)).toEqual({ email: "a@b.com", message: "hello" });
+  });
+});
+
+describe("traveler reservations poll + UI mapping", () => {
+  it("listTravelerReservationsForStatusPoll returns [] when no token", async () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse([]));
+    const out = await listTravelerReservationsForStatusPoll();
+    expect(out).toEqual([]);
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("listTravelerReservationsForStatusPoll maps list items into poll shape", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt");
+    globalThis.fetch.mockResolvedValueOnce(
+      jsonResponse([{ id: "r-1", status: "confirmed", check_in: "2026-05-01", check_out: "2026-05-02", hotel: { name: "H" } }]),
+    );
+
+    const out = await listTravelerReservationsForStatusPoll();
+    expect(out[0]).toMatchObject({
+      id: "r-1",
+      statusNorm: "confirmed",
+      hotelName: "H",
+      checkIn: "2026-05-01",
+      checkOut: "2026-05-02",
+    });
+
+    const [, init] = lastFetchCall();
+    expect(init.headers.Authorization).toBe("Bearer jwt");
+    expect(init.headers["X-Guest-Id"]).toBeTruthy();
+  });
+
+  it("getTravelerReservationByIdForPoll returns null when id missing", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt");
+    const out = await getTravelerReservationByIdForPoll("  ");
+    expect(out).toBeNull();
+  });
+
+  it("getTravelerReservationsListForUI maps raw reservations into trip detail shape", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt");
+    globalThis.fetch.mockResolvedValueOnce(
+      jsonResponse([{ id: "r-1", confirmation_code: "RESA1", total_price: "10.00", check_in: "2026-05-01", check_out: "2026-05-02", hotel: { id: "h1", name: "H" } }]),
+    );
+    const out = await getTravelerReservationsListForUI();
+    expect(out[0]).toMatchObject({
+      reference: "RESA1",
+      apiReservationId: "r-1",
+      hotel: expect.objectContaining({ name: "H" }),
+    });
   });
 });

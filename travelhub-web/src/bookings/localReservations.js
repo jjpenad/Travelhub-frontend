@@ -111,3 +111,4 @@ export function appendLocalReservation(entry) {
   list.unshift(record);
   localStorage.setItem(scopeKey, JSON.stringify(list));
 }
+

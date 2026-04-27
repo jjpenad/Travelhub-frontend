@@ -9,7 +9,10 @@ import {
   IconTicket,
   IconWallet,
 } from "../components/home/HeroIcons";
-import { encodeBookingDetailSlug } from "../bookings/bookingDetailSlug";
+import {
+  encodeApiReservationDetailSlug,
+  encodeBookingDetailSlug,
+} from "../bookings/bookingDetailSlug";
 import {
   getLocalReservations,
   LOCAL_RESERVATIONS_KEY,
@@ -218,7 +221,11 @@ function TripCard({ r, index }) {
         <div className="my-trips-card__actions">
           <Link
             className="my-trips-card__btn my-trips-card__btn--primary"
-            to={`${PATH_MY_TRIPS_RESERVATION}/${encodeBookingDetailSlug(r)}`}
+            to={`${PATH_MY_TRIPS_RESERVATION}/${
+              r.apiReservationId
+                ? encodeApiReservationDetailSlug(r.apiReservationId)
+                : encodeBookingDetailSlug(r)
+            }`}
           >
             Ver detalles
             <span className="my-trips-card__btn-arrow" aria-hidden="true">
@@ -274,11 +281,12 @@ function MyTripsPage() {
     return base;
   }, [storedReservations, remoteReservations]);
 
+  function refresh() {
+    setStoredReservations(getLocalReservations());
+  }
+
   useEffect(() => {
-    function refresh() {
-      setStoredReservations(getLocalReservations());
-    }
-    refresh();
+    queueMicrotask(() => refresh());
     function onStorage(e) {
       // Cualquier cambio en LOCAL_RESERVATIONS_KEY o sus variantes
       // segmentadas por usuario invalida el snapshot local.
@@ -363,7 +371,6 @@ function MyTripsPage() {
   }, [filtered, sort]);
 
   const hasAny = reservations.length > 0;
-
   return (
     <div className="my-trips-page">
       <Navbar />
@@ -446,8 +453,8 @@ function MyTripsPage() {
           ) : (
             <div className="my-trips__empty">
               <p className="my-trips__empty-text">
-                Aún no tienes reservas guardadas. Cuando completes un pago, la
-                verás en esta lista.
+                Aún no tienes reservas. Cuando completes un pago con tu sesión
+                iniciada, aparecerá aquí al cargarlas desde el servidor.
               </p>
               <Link className="my-trips__empty-cta" to={PATH_TRAVELERS_HOME}>
                 Explorar alojamientos

@@ -5,6 +5,7 @@
  */
 
 import { getAuthToken, isAuthenticated } from "../auth/sessionAuth";
+import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -32,12 +33,37 @@ const RESERVATION_DETAIL_PATH =
   import.meta.env.VITE_RESERVATION_DETAIL_PATH || "/reservations";
 
 /**
+ * Listado de reservas del viajero (OpenAPI: GET `/reservations/user` con JWT).
+ * Detección in-app: transición a confirmada. Sobrescribir con
+ * VITE_TRAVELER_RESERVATIONS_LIST_PATH si el backend difiere.
+ */
+const TRAVELER_RESERVATIONS_LIST_PATH =
+  import.meta.env.VITE_TRAVELER_RESERVATIONS_LIST_PATH || "/reservations/user";
+
+/**
  * GET listado JWT-only de reservas del usuario autenticado. El backend lee el
  * `user_id` del Bearer token (el path no recibe id de usuario). Si tu deploy
  * usa otra ruta, sobrescribir con VITE_USER_RESERVATIONS_PATH.
  */
 const USER_RESERVATIONS_PATH =
   import.meta.env.VITE_USER_RESERVATIONS_PATH || "/reservations/user";
+
+/**
+ * service-soport: `POST …/notification/send-email` exige el mismo Bearer que `API_BEARER_TOKEN` /
+ * `settings.TOKEN_SOPORT_SERVICES` (HTTPBearer, no el JWT de login del viajero).
+ * Ver `notification_router.py` → `verify_bearer_token`.
+ */
+const NOTIFICATION_SEND_EMAIL_PATH =
+  import.meta.env.VITE_NOTIFICATION_SEND_EMAIL_PATH || "/notification/send-email";
+
+/**
+ * Mismo secret que `TOKEN_SOPORT_SERVICES` en el backend. `VITE_SOPORT_SEND_EMAIL_BEARER` es alias.
+ */
+const TOKEN_SOPORT_SERVICES = (
+  import.meta.env.VITE_TOKEN_SOPORT_SERVICES ||
+  import.meta.env.VITE_SOPORT_SEND_EMAIL_BEARER ||
+  ""
+).trim();
 
 /** `user_type` por defecto en POST /auth/register si el cliente no lo envía. */
 const REGISTER_DEFAULT_USER_TYPE = "traveler";
@@ -61,6 +87,25 @@ function countryForCity(city) {
  * Retrieves or generates a unique guest ID for the session to identify the user
  * even if they are not logged in.
  */
+/**
+ * Limpia el valor guardado (sin prefijo "Bearer " duplicado).
+ * @param {string | null | undefined} raw
+ * @returns {string}
+ */
+function normalizeBearerValue(raw) {
+  if (raw == null) return "";
+  const s = String(raw).trim();
+  if (!s) return "";
+  return s.replace(/^Bearer\s+/i, "").trim();
+}
+
+/**
+ * @returns {string} Token de servicio (debe coincidir con `TOKEN_SOPORT_SERVICES` en el API).
+ */
+function bearerTokenForSoportSendEmail() {
+  return normalizeBearerValue(TOKEN_SOPORT_SERVICES);
+}
+
 function getGuestId() {
   let guestId = localStorage.getItem("travelhub_guest_id");
   if (!guestId) {
@@ -535,8 +580,11 @@ export async function loginUser({ email, password }) {
       throw err;
     }
 
+    const access_token = normalizeBearerValue(
+      data.access_token ?? data.token ?? data.accessToken,
+    );
     return {
-      access_token: data.access_token,
+      access_token,
       token_type: data.token_type,
       user_type: data.user_type,
       first_name: typeof data.first_name === "string" ? data.first_name : null,
@@ -636,6 +684,190 @@ export async function getHotelReservationDetailFromApi(id) {
       throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
     }
     throw err instanceof Error ? err : new Error("No se pudo cargar el detalle de la reserva.");
+  }
+}
+
+/**
+ * Normaliza un documento de reserva (listado, GET por id) para el sondeo in-app.
+ * @param {object} r
+ * @returns {null | { id: string, statusNorm: string, hotelName: string, checkIn: string, checkOut: string, raw: object }}
+ */
+function mapRawReservationToPollItem(r) {
+  if (!r || typeof r !== "object") return null;
+  const id =
+    (r.id != null && String(r.id).trim() !== "" ? String(r.id).trim() : null) ||
+    (r.reservation_id != null && String(r.reservation_id).trim() !== ""
+      ? String(r.reservation_id).trim()
+      : null) ||
+    (r.confirmation_code != null && String(r.confirmation_code).trim() !== ""
+      ? String(r.confirmation_code).trim()
+      : null);
+  if (!id) return null;
+  const statusStr = String(r.status || r.booking_status || r.state || "").toLowerCase();
+  let statusNorm = "other";
+  if (
+    statusStr.includes("confirm") ||
+    statusStr === "ok" ||
+    statusStr === "active"
+  ) {
+    statusNorm = "confirmed";
+  } else if (statusStr.includes("cancel") || statusStr.includes("anulad")) {
+    statusNorm = "cancelled";
+  } else if (
+    statusStr.includes("pend") ||
+    statusStr === "pending" ||
+    statusStr === "processing"
+  ) {
+    statusNorm = "pending";
+  }
+  const h = r.hotel && typeof r.hotel === "object" ? r.hotel : {};
+  const hotelName = String(
+    h.name || r.hotel_name || r.hotelName || "Alojamiento",
+  );
+  return {
+    id,
+    statusNorm,
+    hotelName,
+    checkIn: String(r.check_in || r.checkIn || "").slice(0, 10),
+    checkOut: String(r.check_out || r.checkOut || "").slice(0, 10),
+    raw: r,
+  };
+}
+
+/**
+ * Listado de reservas del viajero (GET `/reservations/user`) mapeado a la forma de Mis viajes / detalle.
+ * @returns {Promise<object[]>}
+ */
+export async function getTravelerReservationsListForUI() {
+  const rows = await listTravelerReservationsForStatusPoll();
+  const out = [];
+  for (const row of rows) {
+    if (!row.raw || typeof row.raw !== "object") continue;
+    const mapped = mapApiReservationToTripDetail(row.raw);
+    if (mapped) out.push(mapped);
+  }
+  return out;
+}
+
+/**
+ * Convierte distintas formas de respuesta del listado a un array de reservas.
+ * @param {object} data
+ * @returns {object[]}
+ */
+function pickReservationsArrayFromListBody(data) {
+  if (Array.isArray(data)) return data;
+  if (!data || typeof data !== "object") return [];
+  if (Array.isArray(data.reservations)) return data.reservations;
+  if (Array.isArray(data.items)) return data.items;
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.result)) return data.result;
+  return [];
+}
+
+/**
+ * Reservas del viajero (GET con Bearer) para comprobar cambios de estado. Errores o rutas
+ * inexistentes devuelven lista vacía para no interrumpir la app.
+ * @returns {Promise<Array<{
+ *   id: string,
+ *   statusNorm: "confirmed"|"pending"|"cancelled"|"other",
+ *   hotelName: string,
+ *   checkIn: string,
+ *   checkOut: string,
+ *   raw: object,
+ * }>>}
+ */
+export async function listTravelerReservationsForStatusPoll() {
+  const token = getAuthToken();
+  if (!token) return [];
+  const path = String(
+    TRAVELER_RESERVATIONS_LIST_PATH || "/reservations/user",
+  ).replace(/^\//, "");
+  const qs = new URLSearchParams({
+    limit: "100",
+    offset: "0",
+  });
+  const url = `${joinApiUrl(`/${path}`)}?${qs.toString()}`;
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-Guest-Id": getGuestId(),
+      },
+    });
+    if (res.status === 401 || res.status === 403) return [];
+    if (!res.ok) return [];
+    const text = await res.text();
+    const data = parseJsonSafe(text);
+    const list = pickReservationsArrayFromListBody(data);
+    return list
+      .map((item) => {
+        const row = item && typeof item === "object" ? item : {};
+        return mapRawReservationToPollItem(row);
+      })
+      .filter((x) => x != null && x.id);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * GET `/reservations/{reservation_id}` (OpenAPI) para un solo id; no lanza, útil en sondeo.
+ * @param {string} reservationId
+ * @returns {Promise<object | null>} mismo shape que el listado, o null
+ */
+export async function getTravelerReservationByIdForPoll(reservationId) {
+  if (!getAuthToken()) return null;
+  const id = String(reservationId || "").trim();
+  if (!id) return null;
+  try {
+    const raw = await getHotelReservationDetailFromApi(id);
+    return mapRawReservationToPollItem(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Listado (GET /reservations/user) + para cada reserva local con `apiReservationId`
+ * cuyo id aún no vino en el listado, GET `/reservations/{reservation_id}`.
+ * @returns {Promise<object[]>} ítems normalizados para el toast de confirmación
+ */
+export async function getTravelerReservationsForStatusPollMerged() {
+  return listTravelerReservationsForStatusPoll();
+}
+
+/**
+ * POST al microservicio de notificaciones (misma base que VITE_ANALYTICS_API_URL / service-soport).
+ * Cuerpo: `{ email, message }` según el contrato de `/notification/send-email`.
+ * @param {{ email: string, message: string }} p
+ * @returns {Promise<boolean>} true si la respuesta HTTP es 2xx
+ */
+export async function sendEmailNotification({ email, message }) {
+  const em = String(email || "").trim();
+  if (!em) return false;
+  const path = String(NOTIFICATION_SEND_EMAIL_PATH || "/notification/send-email")
+    .replace(/^\//, "");
+  const url = joinAnalyticsUrl(`/${path}`);
+  const body = { email: em, message: String(message || "") };
+  const token = bearerTokenForSoportSendEmail();
+  if (!token) {
+    return false;
+  }
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 

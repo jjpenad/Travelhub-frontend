@@ -33,7 +33,7 @@ function HotelManageReservationsPage() {
     const raw = location.state?.reservations;
     if (!Array.isArray(raw)) return null;
     return mapAnalyticsReservationsToManageRows(raw);
-  }, [location.key, location]);
+  }, [location.state?.reservations]);
 
   const allRows = useMemo(() => {
     if (rowsFromNavigate != null) return rowsFromNavigate;

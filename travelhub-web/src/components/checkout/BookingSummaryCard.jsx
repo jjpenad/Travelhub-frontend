@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { appendLocalReservation } from "../../bookings/localReservations";
 import {
   isAuthenticated,
   isLoggedIn,
@@ -155,11 +154,26 @@ function BookingSummaryCard({
         return;
       }
 
-      const reference =
-        result.confirmation_code ||
-        result.reservation_id ||
-        reservationId ||
-        "N/A";
+      // El id que debemos usar para GET /reservations/{id} es el mismo `reservation_id`
+      // que se envía a /reservation-flow/payment. Si el backend no lo devuelve en la respuesta,
+      // lo tomamos del payload/local.
+      const reservationIdFromPayment =
+        result.reservation_id ??
+        result.reservationId ??
+        result.id ??
+        response.reservation_id ??
+        response.reservationId ??
+        response.id ??
+        paymentPayload.reservation_id ??
+        reservationId ??
+        null;
+      const confirmationCodeFromPayment =
+        result.confirmation_code ??
+        result.confirmationCode ??
+        result.reference ??
+        null;
+
+      const reference = confirmationCodeFromPayment || reservationIdFromPayment || "N/A";
 
       const loggedInOrHasToken = isAuthenticated() || isLoggedIn();
 
@@ -202,6 +216,10 @@ function BookingSummaryCard({
       // Misma forma que develop envía a /confirmation (no perder campos)
       const confirmationState = {
         reference,
+        apiReservationId:
+          reservationIdFromPayment != null && String(reservationIdFromPayment).trim() !== ""
+            ? String(reservationIdFromPayment)
+            : null,
         total: Number(total),
         hotel: hotelPayload,
         roomType: roomType || null,
@@ -220,11 +238,16 @@ function BookingSummaryCard({
         checkOutTime: "11:00",
       };
 
-      appendLocalReservation(confirmationState);
-
-      navigate("/confirmation", {
-        state: confirmationState,
-      });
+      const rid = confirmationState.apiReservationId
+        ? String(confirmationState.apiReservationId).trim()
+        : "";
+      navigate(
+        {
+          pathname: "/confirmation",
+          search: rid ? `?rid=${encodeURIComponent(rid)}` : "",
+        },
+        { state: confirmationState },
+      );
     } catch (err) {
       console.error("Reservation failed:", err);
       setApiError(err.message || "Error al crear la reserva");
