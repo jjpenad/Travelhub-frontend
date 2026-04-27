@@ -448,8 +448,19 @@ export function mapUserReservationDto(dto, hotelsById) {
     const ms = b.getTime() - a.getTime();
     return ms > 0 ? Math.round(ms / 86400000) : null;
   })();
+  const reservationId = dto?.id ?? dto?.reservation_id ?? null;
   return {
-    id: dto?.id ?? dto?.reservation_id ?? null,
+    id: reservationId,
+    // `apiReservationId` activa el slug `t:"api"` en MyTripsPage al armar
+    // el link del card. Sin esto, la ruta cae al `encodeBookingDetailSlug`
+    // (forma local con `savedAt`), TripDetailPage no encuentra la reserva
+    // en el storage local porque vino solo del backend, y el detalle
+    // queda muerto. Con el id presente, TripDetailPage hace
+    // `getHotelReservationDetailFromApi(id)` y renderiza correctamente.
+    apiReservationId:
+      reservationId != null && String(reservationId).trim() !== ""
+        ? String(reservationId)
+        : null,
     reference: dto?.confirmation_code ?? dto?.confirmationCode ?? "",
     hotel: {
       id: hotelId,

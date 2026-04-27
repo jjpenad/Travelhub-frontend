@@ -418,6 +418,11 @@ describe("mapUserReservationDto", () => {
 
     expect(r).toMatchObject({
       id: "r-1",
+      // `apiReservationId` debe poblarse para que MyTripsPage encode el
+      // slug con `t:"api"` y TripDetailPage haga el GET correcto en
+      // /reservations/<id>. Sin este campo el card cae al slug local y
+      // el detalle nunca abre.
+      apiReservationId: "r-1",
       reference: "RES-XYZ",
       checkIn: "2026-05-01",
       checkOut: "2026-05-05",
@@ -431,6 +436,16 @@ describe("mapUserReservationDto", () => {
     // por defecto de la card cuando no hay datos del hotel.
     expect(r.hotel.name).toBe("Alojamiento");
     expect(r.hotel.location).toBe("—");
+  });
+
+  it("leaves apiReservationId null when the dto has no usable id", () => {
+    const r = mapUserReservationDto({
+      hotel_id: "h-1",
+      check_in: "2026-05-01",
+      check_out: "2026-05-05",
+    });
+    expect(r.id).toBeNull();
+    expect(r.apiReservationId).toBeNull();
   });
 
   it("resolves hotel name+location from the provided hotelsById map", () => {
