@@ -91,32 +91,27 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-      # APK is only built (and uploaded) for main + release tags. PRs and feature
-      # branches skip the APK to keep the pipeline fast and avoid leaking artifacts
-      # of unmerged code.
-      - name: Build APK (debug)
-        if: github.ref == 'refs/heads/main'
+      # APK is only built (and uploaded) for main + release tags. PRs and
+      # feature branches skip the APK to keep the pipeline fast and avoid
+      # leaking artifacts of unmerged code.
+      #
+      # We always produce a debug APK — this is an academic project, no
+      # Play Store distribution, so we don't deal with a release keystore.
+      # Gradle signs the debug build automatically with its built-in
+      # debug.keystore, which is enough to install on any device or
+      # emulator. If we ever need a signed release artifact, restore the
+      # signingConfigs block in app/build.gradle.kts and the original
+      # `assembleRelease` step from git history.
+      - name: Build debug APK
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
         run: ./gradlew assembleDebug
-
-      - name: Build APK (release)
-        if: startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
-          fi
-          ./gradlew assembleRelease
 
       - name: Upload APK artifact
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
         uses: actions/upload-artifact@v4
         with:
           name: travelhub-mobile-apk
-          path: travelhub-mobile/app/build/outputs/apk/**/*.apk
+          path: travelhub-mobile/app/build/outputs/apk/debug/*.apk
           retention-days: 14
           if-no-files-found: error
 
@@ -124,4 +119,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/travelhub-mobile-v')
         uses: softprops/action-gh-release@v2
         with:
-          files: travelhub-mobile/app/build/outputs/apk/release/*.apk
+          files: travelhub-mobile/app/build/outputs/apk/debug/*.apk
