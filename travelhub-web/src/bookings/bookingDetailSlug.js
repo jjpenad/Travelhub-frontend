@@ -11,6 +11,38 @@ export function encodeBookingDetailSlug(r) {
   );
 }
 
+/** Navegación a detalle desde listados/API: identificador de reserva en el backend. */
+export function encodeApiReservationDetailSlug(reservationId) {
+  return encodeURIComponent(
+    JSON.stringify({ t: "api", i: String(reservationId) }),
+  );
+}
+
+/**
+ * @returns {{ kind: "local", r: string, s: string } | { kind: "api", id: string } | null}
+ */
+export function parseTripBookingSlug(rawSlug) {
+  if (!rawSlug || typeof rawSlug !== "string") return null;
+  let o;
+  try {
+    o = JSON.parse(rawSlug);
+  } catch {
+    try {
+      o = JSON.parse(decodeURIComponent(rawSlug));
+    } catch {
+      return null;
+    }
+  }
+  if (!o || typeof o !== "object") return null;
+  if (o.t === "api" && o.i != null && String(o.i).trim() !== "") {
+    return { kind: "api", id: String(o.i).trim() };
+  }
+  if (typeof o.r === "string" && typeof o.s === "string") {
+    return { kind: "local", r: o.r, s: o.s };
+  }
+  return null;
+}
+
 export function findReservationBySlug(slug, reservations) {
   if (!slug || !Array.isArray(reservations)) return null;
   let o;

@@ -9,11 +9,11 @@ import {
   IconTicket,
   IconWallet,
 } from "../components/home/HeroIcons";
-import { encodeBookingDetailSlug } from "../bookings/bookingDetailSlug";
 import {
-  getLocalReservations,
-  LOCAL_RESERVATIONS_KEY,
-} from "../bookings/localReservations";
+  encodeApiReservationDetailSlug,
+  encodeBookingDetailSlug,
+} from "../bookings/bookingDetailSlug";
+import { getTravelerReservationsListForUI } from "../services/api";
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
@@ -211,7 +211,11 @@ function TripCard({ r, index }) {
         <div className="my-trips-card__actions">
           <Link
             className="my-trips-card__btn my-trips-card__btn--primary"
-            to={`${PATH_MY_TRIPS_RESERVATION}/${encodeBookingDetailSlug(r)}`}
+            to={`${PATH_MY_TRIPS_RESERVATION}/${
+              r.apiReservationId
+                ? encodeApiReservationDetailSlug(r.apiReservationId)
+                : encodeBookingDetailSlug(r)
+            }`}
           >
             Ver detalles
             <span className="my-trips-card__btn-arrow" aria-hidden="true">
@@ -240,9 +244,9 @@ function TripCard({ r, index }) {
 
 function MyTripsPage() {
   const navigate = useNavigate();
-  const [storedReservations, setStoredReservations] = useState(() =>
-    getLocalReservations(),
-  );
+  const [apiReservations, setApiReservations] = useState([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState(null);
   const [tab, setTab] = useState("upcoming");
   const [sort, setSort] = useState("checkin-asc");
 
@@ -252,22 +256,36 @@ function MyTripsPage() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (!isTravelerLoggedIn()) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await getTravelerReservationsListForUI();
+        if (!cancelled) setApiReservations(rows);
+      } catch {
+        if (!cancelled) {
+          setListError("No se pudieron cargar tus reservas.");
+          setApiReservations([]);
+        }
+      } finally {
+        if (!cancelled) setListLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const reservations = useMemo(() => {
     if (USE_MOCK_MY_TRIPS) {
-      return [...mockMyTripsReservations, ...storedReservations];
+      return [...mockMyTripsReservations, ...apiReservations];
     }
-    return storedReservations;
-  }, [storedReservations]);
+    return apiReservations;
+  }, [apiReservations]);
 
   useEffect(() => {
-    function refresh() {
-      setStoredReservations(getLocalReservations());
-    }
-    refresh();
     function onStorage(e) {
-      if (e.key === LOCAL_RESERVATIONS_KEY || e.key === null) {
-        refresh();
-      }
       if (
         e.key === AUTH_ROLE_KEY ||
         e.key === AUTH_EMAIL_KEY ||
@@ -310,6 +328,22 @@ function MyTripsPage() {
     return null;
   }
 
+  if (listLoading) {
+    return (
+      <div className="my-trips-page">
+        <Navbar />
+        <PageContainer>
+          <div className="my-trips">
+            <header className="my-trips__header">
+              <h1 className="my-trips__title">Mis viajes</h1>
+            </header>
+            <p className="my-trips__empty-text">Cargando reservas…</p>
+          </div>
+        </PageContainer>
+      </div>
+    );
+  }
+
   return (
     <div className="my-trips-page">
       <Navbar />
@@ -321,6 +355,12 @@ function MyTripsPage() {
               Administra y consulta todas tus reservas en un solo lugar.
             </p>
           </header>
+
+          {listError ? (
+            <p className="my-trips__empty-text" role="alert">
+              {listError}
+            </p>
+          ) : null}
 
           {hasAny ? (
             <>
@@ -392,8 +432,8 @@ function MyTripsPage() {
           ) : (
             <div className="my-trips__empty">
               <p className="my-trips__empty-text">
-                Aún no tienes reservas guardadas. Cuando completes un pago, la
-                verás en esta lista.
+                Aún no tienes reservas. Cuando completes un pago con tu sesión
+                iniciada, aparecerá aquí al cargarlas desde el servidor.
               </p>
               <Link className="my-trips__empty-cta" to={PATH_TRAVELERS_HOME}>
                 Explorar alojamientos

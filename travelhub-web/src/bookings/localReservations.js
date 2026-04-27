@@ -29,3 +29,4 @@ export function appendLocalReservation(entry) {
   list.unshift(record);
   localStorage.setItem(LOCAL_RESERVATIONS_KEY, JSON.stringify(list));
 }
+

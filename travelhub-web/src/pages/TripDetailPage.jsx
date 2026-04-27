@@ -9,11 +9,10 @@ import {
   IconTicket,
   IconWallet,
 } from "../components/home/HeroIcons";
-import { findReservationBySlug } from "../bookings/bookingDetailSlug";
 import {
-  getLocalReservations,
-  LOCAL_RESERVATIONS_KEY,
-} from "../bookings/localReservations";
+  findReservationBySlug,
+  parseTripBookingSlug,
+} from "../bookings/bookingDetailSlug";
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
@@ -25,6 +24,8 @@ import {
 } from "../data/mockReservations";
 import { mockHotels } from "../data/mockHotels";
 import { PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/routes";
+import { getHotelReservationDetailFromApi } from "../services/api";
+import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 import "./TripDetailPage.css";
 
 function parseISODate(iso) {
@@ -280,9 +281,13 @@ function mergeHotelMeta(hotel) {
 function TripDetailPage() {
   const navigate = useNavigate();
   const { bookingSlug } = useParams();
-  const [storedReservations, setStoredReservations] = useState(() =>
-    getLocalReservations(),
+  const parsedSlug = useMemo(
+    () => parseTripBookingSlug(bookingSlug ?? ""),
+    [bookingSlug],
   );
+  const [apiReservation, setApiReservation] = useState(null);
+  const [apiError, setApiError] = useState(null);
+  const [apiLoading, setApiLoading] = useState(false);
 
   useEffect(() => {
     if (!isTravelerLoggedIn()) {
@@ -290,22 +295,49 @@ function TripDetailPage() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    if (!isTravelerLoggedIn() || parsedSlug?.kind !== "api") {
+      return undefined;
+    }
+    const id = parsedSlug.id;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setApiLoading(true);
+      setApiError(null);
+      setApiReservation(null);
+    });
+    (async () => {
+      try {
+        const raw = await getHotelReservationDetailFromApi(id);
+        if (cancelled) return;
+        const mapped = mapApiReservationToTripDetail(raw);
+        if (!mapped) {
+          setApiError("Reserva no disponible");
+          return;
+        }
+        setApiReservation(mapped);
+      } catch (e) {
+        if (cancelled) return;
+        setApiError(e?.message || "No se pudo cargar la reserva");
+      } finally {
+        if (!cancelled) setApiLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [parsedSlug]);
+
   const reservations = useMemo(() => {
     if (USE_MOCK_MY_TRIPS) {
-      return [...mockMyTripsReservations, ...storedReservations];
+      return [...mockMyTripsReservations];
     }
-    return storedReservations;
-  }, [storedReservations]);
+    return [];
+  }, []);
 
   useEffect(() => {
-    function refresh() {
-      setStoredReservations(getLocalReservations());
-    }
-    refresh();
     function onStorage(e) {
-      if (e.key === LOCAL_RESERVATIONS_KEY || e.key === null) {
-        refresh();
-      }
       if (
         e.key === AUTH_ROLE_KEY ||
         e.key === AUTH_EMAIL_KEY ||
@@ -320,13 +352,50 @@ function TripDetailPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, [navigate]);
 
-  const reservation = useMemo(
-    () => findReservationBySlug(bookingSlug ?? "", reservations),
-    [bookingSlug, reservations],
-  );
+  const reservation = useMemo(() => {
+    if (parsedSlug?.kind === "api") {
+      return apiReservation;
+    }
+    return findReservationBySlug(bookingSlug ?? "", reservations);
+  }, [parsedSlug, bookingSlug, reservations, apiReservation]);
 
   if (!isTravelerLoggedIn()) {
     return null;
+  }
+
+  if (parsedSlug?.kind === "api" && apiLoading) {
+    return (
+      <div className="trip-detail-page">
+        <Navbar />
+        <PageContainer>
+          <div className="trip-detail trip-detail--narrow">
+            <p className="trip-detail__not-found">Cargando reserva…</p>
+            <Link className="trip-detail__back-cta" to={PATH_MY_TRIPS}>
+              Volver a Mis viajes
+            </Link>
+          </div>
+        </PageContainer>
+      </div>
+    );
+  }
+
+  if (parsedSlug?.kind === "api" && (apiError || !reservation)) {
+    return (
+      <div className="trip-detail-page">
+        <Navbar />
+        <PageContainer>
+          <div className="trip-detail trip-detail--narrow">
+            <p className="trip-detail__not-found">
+              {apiError ||
+                "No encontramos esta reserva o el enlace ya no es válido."}
+            </p>
+            <Link className="trip-detail__back-cta" to={PATH_MY_TRIPS}>
+              Volver a Mis viajes
+            </Link>
+          </div>
+        </PageContainer>
+      </div>
+    );
   }
 
   if (!reservation) {

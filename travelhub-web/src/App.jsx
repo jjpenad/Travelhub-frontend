@@ -19,10 +19,12 @@ import MyTripsPage from "./pages/MyTripsPage";
 import TripDetailPage from "./pages/TripDetailPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import SignupPage from "./pages/SignupPage";
+import TravelerConfirmToastProvider from "./components/notifications/TravelerConfirmToastProvider";
 
 function App() {
   return (
     <BrowserRouter>
+      <TravelerConfirmToastProvider>
       <Routes>
         <Route path="/" element={<Navigate to={PATH_TRAVELERS_HOME} replace />} />
         <Route path={PATH_TRAVELERS_HOME} element={<Home />} />
@@ -45,6 +47,7 @@ function App() {
         <Route path="/checkout/:hotelId" element={<CheckoutPage />} />
         <Route path="/confirmation" element={<ConfirmationPage />} />
       </Routes>
+      </TravelerConfirmToastProvider>
     </BrowserRouter>
   );
 }
