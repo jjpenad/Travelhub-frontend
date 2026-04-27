@@ -8,7 +8,9 @@
 import { describe, it, expect } from "vitest";
 import {
   encodeBookingDetailSlug,
+  encodeApiReservationDetailSlug,
   findReservationBySlug,
+  parseTripBookingSlug,
 } from "../../src/bookings/bookingDetailSlug";
 
 describe("encodeBookingDetailSlug", () => {
@@ -66,5 +68,39 @@ describe("findReservationBySlug", () => {
   it("returns null when reservations is not an array", () => {
     expect(findReservationBySlug("anything", null)).toBeNull();
     expect(findReservationBySlug("anything", undefined)).toBeNull();
+  });
+});
+
+describe("parseTripBookingSlug", () => {
+  it("parses api slug", () => {
+    const slug = encodeApiReservationDetailSlug("abc");
+    expect(parseTripBookingSlug(slug)).toEqual({ kind: "api", id: "abc" });
+  });
+
+  it("parses local slug (decoded or encoded)", () => {
+    const encoded = encodeBookingDetailSlug({
+      reference: "RES-1",
+      savedAt: "2026-01-02T10:00:00.000Z",
+    });
+    expect(parseTripBookingSlug(encoded)).toEqual({
+      kind: "local",
+      r: "RES-1",
+      s: "2026-01-02T10:00:00.000Z",
+    });
+
+    const raw = JSON.stringify({ r: "RES-2", s: "2026-01-03T11:00:00.000Z" });
+    expect(parseTripBookingSlug(raw)).toEqual({
+      kind: "local",
+      r: "RES-2",
+      s: "2026-01-03T11:00:00.000Z",
+    });
+  });
+
+  it("returns null for malformed slugs", () => {
+    expect(parseTripBookingSlug("")).toBeNull();
+    expect(parseTripBookingSlug(null)).toBeNull();
+    expect(parseTripBookingSlug("not-json")).toBeNull();
+    expect(parseTripBookingSlug(JSON.stringify({}))).toBeNull();
+    expect(parseTripBookingSlug(JSON.stringify({ t: "api", i: " " }))).toBeNull();
   });
 });
