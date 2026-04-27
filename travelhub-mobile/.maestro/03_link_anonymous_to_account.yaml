@@ -1,0 +1,154 @@
+# ─────────────────────────────────────────────────────────────────────────
+# E2E: Anonymous booking gets linked to a freshly registered account
+#
+# Goal (the "claim my reservations" flow):
+#   1. User books a hotel anonymously, providing an email in the form.
+#   2. User goes to My Trips → empty + "Sign in" CTA.
+#   3. User signs UP with the same email.
+#   4. Backend `_link_guest_reservations(user_id, email)` migrates the
+#      anonymous reservation to the new user_id.
+#   5. After register + auto-login, My Trips lists that reservation.
+#
+# This is the flow that proves end-to-end:
+#   - Anonymous + JWT-less booking works.
+#   - JWT-only listing endpoint can find the previously anonymous booking
+#     thanks to the email-based linking on the backend.
+#
+# Pre-conditions:
+#   - Backend `/auth/register` runs the linking handler.
+#   - The booking endpoint stores primary_guest.email server-side.
+# ─────────────────────────────────────────────────────────────────────────
+appId: com.example.travelhub
+name: Link anonymous booking to account
+tags:
+  - auth
+  - booking
+  - linking
+---
+- runScript:
+    file: utils/unique_email.js
+- clearState
+- launchApp
+
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# Wait until the Home screen finishes its initial render. Without this,
+# the tap on "Search" can fire while the bottom nav is still settling
+# and silently no-op, sending the next tap into the wrong destination.
+- extendedWaitUntil:
+    visible: "Explore"
+    timeout: 10000
+
+# ── PART 1: Anonymous booking with the email ─────────────────────────────
+- tapOn: "Search"
+- extendedWaitUntil:
+    visible: "Find your stay"
+    timeout: 10000
+- tapOn: "Select a city"
+- tapOn: "Lima"
+- tapOn: "Search Hotels"
+
+- extendedWaitUntil:
+    visible: "Book Now"
+    timeout: 10000
+- tapOn:
+    text: "Book Now"
+    index: 0
+
+- scrollUntilVisible:
+    element:
+      text: ".*guests.*"
+- tapOn:
+    text: ".*guests.*"
+    index: 0
+
+- extendedWaitUntil:
+    visible: "Complete Booking"
+    timeout: 10000
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+
+# Anonymous: leave "Create an account" OFF.
+- scrollUntilVisible:
+    element:
+      text: "Confirm & Pay.*"
+- tapOn:
+    text: "Confirm & Pay.*"
+
+# Wait for the *final* confirmation screen, not the intermediate Processing
+# state — the loose ".*confirm.*" regex used to match the in-flight UI and
+# the next tap fired before the screen settled.
+- extendedWaitUntil:
+    visible: "Booking Confirmed!"
+    timeout: 15000
+- assertVisible: "View My Trips"
+
+# ── PART 2: Sign up with the SAME email ──────────────────────────────────
+# BookingConfirmation isn't a tab route, so the bottom-nav "Trips" tab is
+# hidden here. Use the on-screen "View My Trips" button instead — it
+# routes through NavGraph and lands on the My Trips tab where the empty
+# state CTA shows up.
+- tapOn: "View My Trips"
+
+# When anonymous, MyTrips shows the sign-in CTA.
+- assertVisible: "Sign in to track your trips"
+- tapOn: "Sign in"
+
+- assertVisible: "Welcome back"
+- scrollUntilVisible:
+    element:
+      text: "Sign up"
+- tapOn: "Sign up"
+
+- assertVisible: "Create your account"
+
+- tapOn: "First name"
+- inputText: ${output.firstName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Last name"
+- inputText: ${output.lastName}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Email address"
+- inputText: ${output.email}
+- tapOn:
+    point: "50%,8%"
+- tapOn: "Password"
+- inputText: ${output.password}
+- tapOn:
+    point: "50%,8%"
+
+- scrollUntilVisible:
+    element:
+      text: "Create Account"
+    centerElement: true
+- tapOn: "Create Account"
+
+# ── PART 3: Verify the previously anonymous reservation appears ──────────
+- extendedWaitUntil:
+    visible: "My Trips"
+    timeout: 15000
+
+# The anonymous booking should now be visible in the upcoming list.
+# We don't know the exact confirmation code, but the hotel name is stable.
+- extendedWaitUntil:
+    visible:
+      text: ".*Casa Sol.*|.*Hotel.*"
+    timeout: 10000
+
+# We must NOT see the unauthenticated empty state any more.
+- assertNotVisible: "Sign in to track your trips"

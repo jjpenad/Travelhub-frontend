@@ -1,5 +1,6 @@
 package com.example.travelhub.di
 
+import com.example.travelhub.data.local.HmacQrTokenProvider
 import com.example.travelhub.data.repository.AuthRepositoryImpl
 import com.example.travelhub.data.repository.BookingRepositoryImpl
 import com.example.travelhub.data.repository.CheckinRepositoryImpl
@@ -12,6 +13,7 @@ import com.example.travelhub.domain.repository.CheckinRepository
 import com.example.travelhub.domain.repository.NotificationRepository
 import com.example.travelhub.domain.repository.PaymentRepository
 import com.example.travelhub.domain.repository.PropertyRepository
+import com.example.travelhub.domain.repository.QrTokenProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -45,4 +47,13 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    /**
+     * QR token provider — currently the client-side HMAC implementation.
+     * Replace with a `RemoteQrTokenProvider` once the backend exposes a real
+     * `/reservations/{id}/qr` endpoint; the use case + UI don't change.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindQrTokenProvider(impl: HmacQrTokenProvider): QrTokenProvider
 }

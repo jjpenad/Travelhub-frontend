@@ -35,7 +35,7 @@ class UserPreferencesTest {
             fullName = "Alex Doe", token = "tok-123"
         )
 
-        prefs.saveSession(user)
+        prefs.saveSession(user, password = "secret")
 
         val emitted = prefs.session.first()
         assertEquals(user, emitted)

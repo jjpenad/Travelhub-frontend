@@ -39,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -139,7 +141,17 @@ private fun SearchContent(
                         ),
                         singleLine = true
                     )
-                    Box(modifier = Modifier.matchParentSize().clickable { cityDropdownExpanded = true })
+                    Box(
+                        modifier = Modifier.matchParentSize()
+                            .clickable { cityDropdownExpanded = true }
+                            // mergeDescendants=true collapses the disabled
+                            // OutlinedTextField's semantics into this node so
+                            // accessibility tooling (Maestro, talkback) sees a
+                            // single tappable element exposing the description.
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Select a city"
+                            }
+                    )
                     DropdownMenu(
                         expanded = cityDropdownExpanded,
                         onDismissRequest = { cityDropdownExpanded = false }

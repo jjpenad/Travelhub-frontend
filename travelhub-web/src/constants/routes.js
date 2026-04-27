@@ -1,3 +1,6 @@
+/** Inicio de sesión (viajeros y hoteles) */
+export const PATH_LOGIN = "/login";
+
 /** Home del portal de viajeros (exploración y búsqueda pública) */
 export const PATH_TRAVELERS_HOME = "/travelers";
 

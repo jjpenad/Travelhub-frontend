@@ -1,5 +1,11 @@
 # CI del frontend (Vite + React en travelhub-web).
 # Monorepo: añade workflows separados cuando exista travelhub-mobile.
+# Gate de cobertura 80% (líneas/statements/functions) aplicado por Vitest
+# sobre los módulos de lógica `src/services`, `src/auth`, `src/bookings`,
+# `src/constants` — equivalente a `koverVerify minBound(80)` en mobile.
+#
+# Releases: en tags `travelhub-web-v*` empaquetamos `dist/` y lo adjuntamos
+# a una GitHub Release (mismo patrón que `mobile-ci.yml` con el APK).
 
 name: Frontend CI
 
@@ -8,17 +14,21 @@ on:
     branches:
       - main
       - develop
+    tags:
+      - "travelhub-web-v*"
     paths:
       - "travelhub-web/**"
+      - ".github/workflows/frontend-ci.yml"
   pull_request:
     branches:
       - main
       - develop
     paths:
       - "travelhub-web/**"
+      - ".github/workflows/frontend-ci.yml"
 
 permissions:
-  contents: read
+  contents: write   # needed by softprops/action-gh-release on release tags
 
 # Despliegue Amplify: opcional. Crea la variable del repo ENABLE_AMPLIFY_DEPLOY=true
 # y los secretos listados en el job Deploy_Amplify. Sin la variable, solo corre CI.
@@ -33,7 +43,7 @@ concurrency:
 
 jobs:
   Lint_Test_Build:
-    name: Lint, test and build
+    name: Lint, test, coverage and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -53,11 +63,58 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run unit tests (Vitest)
-        run: npm run test:ci
+      # `test:coverage` corre Vitest con el reporter v8 + el threshold del
+      # 80% configurado en vitest.config.js. Si la cobertura cae por debajo
+      # del umbral en cualquiera de las métricas (lines/statements/functions),
+      # vitest sale con código distinto de 0 y este step falla — mismo
+      # contrato que `./gradlew koverVerify` en travelhub-mobile.
+      - name: Run unit tests + coverage gate (Vitest)
+        run: npm run test:coverage
+
+      # Subimos el reporte HTML/JSON SOLO cuando algo falla, para que los
+      # devs puedan inspeccionar qué módulo bajó el threshold sin saturar
+      # el storage en runs verdes (mismo patrón del workflow mobile).
+      - name: Upload coverage report (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: travelhub-web-coverage
+          path: travelhub-web/coverage
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Production build
         run: npm run build
+
+      # En `main` y en tags `travelhub-web-v*` empaquetamos el `dist/` para
+      # que reviewers puedan descargar el bundle exacto que se desplegó (o
+      # que se adjuntará al release). PRs y feature branches lo omiten para
+      # mantener el pipeline rápido y no acumular artefactos sin uso.
+      - name: Package dist for release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-web-v')
+        working-directory: travelhub-web
+        run: |
+          cd dist
+          zip -r ../travelhub-web-dist.zip .
+
+      - name: Upload dist artifact
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/travelhub-web-v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: travelhub-web-dist
+          path: travelhub-web/travelhub-web-dist.zip
+          retention-days: 14
+          if-no-files-found: error
+
+      # En tags `travelhub-web-v*` adjuntamos el zip al GitHub Release. La
+      # release se crea automáticamente si no existe (`softprops/action-gh-release`).
+      # El cuerpo del release lo edita el equipo manualmente desde la UI con
+      # el extracto del CHANGELOG.md.
+      - name: Attach dist to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/travelhub-web-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: travelhub-web/travelhub-web-dist.zip
 
 #  Deploy_Amplify:
 #    name: Trigger Amplify deploy (main only)

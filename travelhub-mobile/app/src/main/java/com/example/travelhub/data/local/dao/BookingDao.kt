@@ -34,4 +34,10 @@ interface BookingDao {
     /** Drop every row whose userId is not the active guest session id. */
     @Query("DELETE FROM bookings WHERE userId != :userId")
     suspend fun deleteByUserIdNot(userId: String)
+
+    /** Local-only flag used to remember that the guest completed self check-in
+     *  on this device. Survives reservation list refreshes thanks to the
+     *  preservation logic in BookingRepositoryImpl.getReservations. */
+    @Query("UPDATE bookings SET isCheckedIn = :isCheckedIn WHERE id = :bookingId")
+    suspend fun updateCheckedIn(bookingId: String, isCheckedIn: Boolean)
 }

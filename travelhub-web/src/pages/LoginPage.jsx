@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
-import { pathAfterAuthForUserType, persistSessionFromLogin } from "../auth/sessionAuth";
+import { getPostAuthDestination, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser } from "../services/api";
 import "./AuthPage.css";
@@ -31,6 +31,8 @@ function IconEye({ open }) {
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -55,12 +57,14 @@ function LoginPage() {
     try {
       const result = await loginUser({ email: emailNorm, password });
       persistSessionFromLogin({
-        email: emailNorm,
+        email: result.email || emailNorm,
         accessToken: result.access_token,
         userType: result.user_type,
+        firstName: result.first_name,
+        lastName: result.last_name,
         remember,
       });
-      navigate(pathAfterAuthForUserType(result.user_type), { replace: true });
+      navigate(getPostAuthDestination(result.user_type, from), { replace: true });
     } catch (err) {
       setError(err?.message || "No se pudo iniciar sesión.");
     } finally {
@@ -144,7 +148,10 @@ function LoginPage() {
         </form>
 
         <p className="auth-card__footer">
-          ¿No tienes cuenta? <Link to="/signup">Crear cuenta gratis →</Link>
+          ¿No tienes cuenta?{" "}
+          <Link to="/signup" state={from ? { from } : undefined}>
+            Crear cuenta gratis →
+          </Link>
         </p>
         <p className="auth-card__legal">
           Al continuar, aceptas los{" "}

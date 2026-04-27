@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  isAuthenticated,
+  isLoggedIn,
+  persistSessionFromLogin,
+} from "../../auth/sessionAuth";
 import { processPayment, registerUser } from "../../services/api";
 import "./BookingSummaryCard.css";
 
@@ -92,7 +97,12 @@ function BookingSummaryCard({
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [errorModal, setErrorModal] = useState({ show: false, message: "" });
-  const [createAccount, setCreateAccount] = useState(true);
+  /** Solo huéspedes sin sesión pueden optar por registro en el checkout. */
+  const [createAccount, setCreateAccount] = useState(
+    () => !isAuthenticated() && !isLoggedIn(),
+  );
+
+  const hasAuthSession = isAuthenticated() || isLoggedIn();
 
   const name = hotel?.name ?? "Hotel";
   const locationText = hotel?.location ?? "—";
@@ -165,14 +175,32 @@ function BookingSummaryCard({
 
       const reference = confirmationCodeFromPayment || reservationIdFromPayment || "N/A";
 
-      // Si el usuario autorizó la creación de cuenta, la creamos en segundo plano
-      if (createAccount) {
-        registerUser({
-          email: guestEmail || "guest@example.com",
-          password: Math.random().toString(36).slice(-10), // Generar contraseña aleatoria
-          first_name: guestFirstName || "Huésped",
-          last_name: guestLastName || "",
-        }).catch((err) => console.error("Registro automático falló:", err));
+      const loggedInOrHasToken = isAuthenticated() || isLoggedIn();
+
+      if (createAccount && !loggedInOrHasToken) {
+        const email = String(guestEmail || "").trim();
+        if (email) {
+          try {
+            const reg = await registerUser({
+              email: email.toLowerCase(),
+              password: Math.random().toString(36).slice(-10),
+              first_name: guestFirstName || "Huésped",
+              last_name: guestLastName || "",
+            });
+            if (reg.token) {
+              persistSessionFromLogin({
+                email: reg.email || email,
+                accessToken: reg.token,
+                userType: reg.user_type,
+                firstName: reg.first_name || guestFirstName,
+                lastName: reg.last_name || guestLastName,
+                remember: true,
+              });
+            }
+          } catch (err) {
+            console.error("Registro automático falló:", err);
+          }
+        }
       }
 
       const hotelPayload = hotel
@@ -335,22 +363,28 @@ function BookingSummaryCard({
         {submitting ? "Procesando..." : "Confirmar y Pagar"}
       </button>
 
-      <div className="booking-summary-card__account-check">
-        <label className="booking-summary-card__check-label">
-          <input
-            type="checkbox"
-            checked={createAccount}
-            onChange={(e) => setCreateAccount(e.target.checked)}
-            className="booking-summary-card__checkbox"
-          />
-          <span className="booking-summary-card__check-text">
-            Autorizo la creación de una cuenta para gestionar mis reservas.
-            <small className="booking-summary-card__check-note">
-              De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
-            </small>
-          </span>
-        </label>
-      </div>
+      {hasAuthSession ? (
+        <p className="booking-summary-card__account-check booking-summary-card__check-note">
+          Ya tienes sesión activa; el pago quedará asociado a tu cuenta.
+        </p>
+      ) : (
+        <div className="booking-summary-card__account-check">
+          <label className="booking-summary-card__check-label">
+            <input
+              type="checkbox"
+              checked={createAccount}
+              onChange={(e) => setCreateAccount(e.target.checked)}
+              className="booking-summary-card__checkbox"
+            />
+            <span className="booking-summary-card__check-text">
+              Autorizo la creación de una cuenta para gestionar mis reservas.
+              <small className="booking-summary-card__check-note">
+                De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
+              </small>
+            </span>
+          </label>
+        </div>
+      )}
 
       <footer className="booking-summary-card__footer">
         <p className="booking-summary-card__cancellation">Cancelación gratuita</p>

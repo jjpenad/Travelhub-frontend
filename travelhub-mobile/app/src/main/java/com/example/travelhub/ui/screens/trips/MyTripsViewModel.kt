@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
+import com.example.travelhub.domain.repository.AuthRepository
 import com.example.travelhub.domain.usecase.CancelBookingUseCase
 import com.example.travelhub.domain.usecase.GetUserReservationsUseCase
 import com.example.travelhub.ui.state.PagedListState
@@ -22,8 +23,15 @@ import javax.inject.Inject
 @HiltViewModel
 class MyTripsViewModel @Inject constructor(
     private val getUserReservationsUseCase: GetUserReservationsUseCase,
-    private val cancelBookingUseCase: CancelBookingUseCase
+    private val cancelBookingUseCase: CancelBookingUseCase,
+    authRepository: AuthRepository
 ) : ViewModel() {
+
+    /** True when the user has an active session with a JWT. UI uses this to show
+     *  a "Sign in to track your trips" CTA when false. */
+    val isAuthenticated: StateFlow<Boolean> = authRepository.getSession()
+        .map { it?.token?.isNotBlank() == true }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     companion object {
         private const val PAGE_SIZE = 20

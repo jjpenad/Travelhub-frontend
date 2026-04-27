@@ -13,17 +13,27 @@ import {
   encodeApiReservationDetailSlug,
   encodeBookingDetailSlug,
 } from "../bookings/bookingDetailSlug";
-import { getTravelerReservationsListForUI } from "../services/api";
+import {
+  getLocalReservations,
+  LOCAL_RESERVATIONS_KEY,
+} from "../bookings/localReservations";
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
-  isTravelerLoggedIn,
+  AUTH_TOKEN_KEY,
+  canAccessTravelerAccountRoutes,
 } from "../auth/sessionAuth";
+import {
+  listHotels,
+  listUserReservations,
+  mapUserReservationDto,
+} from "../services/api";
 import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
 import {
+  PATH_LOGIN,
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
 } from "../constants/routes";
@@ -244,61 +254,99 @@ function TripCard({ r, index }) {
 
 function MyTripsPage() {
   const navigate = useNavigate();
-  const [apiReservations, setApiReservations] = useState([]);
-  const [listLoading, setListLoading] = useState(true);
-  const [listError, setListError] = useState(null);
+  const [storedReservations, setStoredReservations] = useState(() =>
+    getLocalReservations(),
+  );
+  const [remoteReservations, setRemoteReservations] = useState([]);
   const [tab, setTab] = useState("upcoming");
   const [sort, setSort] = useState("checkin-asc");
 
-  useEffect(() => {
-    if (!isTravelerLoggedIn()) {
-      navigate(PATH_TRAVELERS_HOME, { replace: true });
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!isTravelerLoggedIn()) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        const rows = await getTravelerReservationsListForUI();
-        if (!cancelled) setApiReservations(rows);
-      } catch {
-        if (!cancelled) {
-          setListError("No se pudieron cargar tus reservas.");
-          setApiReservations([]);
-        }
-      } finally {
-        if (!cancelled) setListLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+  /**
+   * Las reservas backend son la fuente autoritativa para usuarios
+   * autenticados; las locales pueden tener entradas que aún no han
+   * sincronizado con el servidor (offline / fallo intermitente).
+   * Mergemos por id evitando duplicados — el backend gana cuando coincide.
+   */
   const reservations = useMemo(() => {
+    const remoteIds = new Set(
+      remoteReservations.map((r) => r.id).filter(Boolean),
+    );
+    const localOnly = storedReservations.filter(
+      (r) => !r.id || !remoteIds.has(r.id),
+    );
+    const base = [...remoteReservations, ...localOnly];
     if (USE_MOCK_MY_TRIPS) {
-      return [...mockMyTripsReservations, ...apiReservations];
+      return [...mockMyTripsReservations, ...base];
     }
-    return apiReservations;
-  }, [apiReservations]);
+    return base;
+  }, [storedReservations, remoteReservations]);
+
+  function refresh() {
+    setStoredReservations(getLocalReservations());
+  }
 
   useEffect(() => {
+    queueMicrotask(() => refresh());
     function onStorage(e) {
+      // Cualquier cambio en LOCAL_RESERVATIONS_KEY o sus variantes
+      // segmentadas por usuario invalida el snapshot local.
+      if (
+        e.key == null ||
+        (typeof e.key === "string" && e.key.startsWith(LOCAL_RESERVATIONS_KEY))
+      ) {
+        refresh();
+      }
       if (
         e.key === AUTH_ROLE_KEY ||
         e.key === AUTH_EMAIL_KEY ||
+        e.key === AUTH_TOKEN_KEY ||
         e.key === null
       ) {
-        if (!isTravelerLoggedIn()) {
-          navigate(PATH_TRAVELERS_HOME, { replace: true });
+        if (!canAccessTravelerAccountRoutes()) {
+          navigate(PATH_LOGIN, { replace: true });
         }
       }
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [navigate]);
+
+  // Trae las reservas desde el backend al montar (y cuando vuelve la
+  // pestaña al foco). Mismo contrato que el `OnResumeEffect` de Android:
+  // la sesión autenticada es la fuente de verdad. Si la red falla, los
+  // datos locales siguen visibles vía `storedReservations`.
+  useEffect(() => {
+    if (!canAccessTravelerAccountRoutes()) return;
+    let cancelled = false;
+
+    async function loadFromBackend() {
+      try {
+        const [hotels, page] = await Promise.all([
+          listHotels().catch(() => []),
+          listUserReservations({ limit: 50, offset: 0 }),
+        ]);
+        if (cancelled) return;
+        const hotelsById = new Map(hotels.map((h) => [h.id, h]));
+        const mapped = page.items.map((dto) =>
+          mapUserReservationDto(dto, hotelsById),
+        );
+        setRemoteReservations(mapped);
+      } catch {
+        // Silenciamos: si fallamos online, dejamos visible lo local.
+        if (!cancelled) setRemoteReservations([]);
+      }
+    }
+
+    loadFromBackend();
+    function onFocus() {
+      loadFromBackend();
+    }
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
 
   const { upcoming: upcomingCount, past: pastCount } =
     useUpcomingPastCounts(reservations);
@@ -323,27 +371,6 @@ function MyTripsPage() {
   }, [filtered, sort]);
 
   const hasAny = reservations.length > 0;
-
-  if (!isTravelerLoggedIn()) {
-    return null;
-  }
-
-  if (listLoading) {
-    return (
-      <div className="my-trips-page">
-        <Navbar />
-        <PageContainer>
-          <div className="my-trips">
-            <header className="my-trips__header">
-              <h1 className="my-trips__title">Mis viajes</h1>
-            </header>
-            <p className="my-trips__empty-text">Cargando reservas…</p>
-          </div>
-        </PageContainer>
-      </div>
-    );
-  }
-
   return (
     <div className="my-trips-page">
       <Navbar />
@@ -355,12 +382,6 @@ function MyTripsPage() {
               Administra y consulta todas tus reservas en un solo lugar.
             </p>
           </header>
-
-          {listError ? (
-            <p className="my-trips__empty-text" role="alert">
-              {listError}
-            </p>
-          ) : null}
 
           {hasAny ? (
             <>

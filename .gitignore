@@ -1,0 +1,8 @@
+# Maestro debug output (`--debug-output ../out` from inside travelhub-mobile/
+# drops screenshots, logs and the JUnit report here). Per-run artifacts —
+# never commit.
+/out/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

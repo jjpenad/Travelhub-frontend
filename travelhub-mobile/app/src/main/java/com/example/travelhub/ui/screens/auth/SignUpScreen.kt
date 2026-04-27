@@ -1,7 +1,7 @@
 package com.example.travelhub.ui.screens.auth
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,68 +19,92 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.components.TravelHubTextField
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.travelhub.ui.theme.GreenAccent
-import com.example.travelhub.ui.theme.TravelHubTheme
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.RedAccent
 import com.example.travelhub.ui.theme.TextSecondary
+import com.example.travelhub.ui.theme.TravelHubTheme
 import com.example.travelhub.ui.theme.White
-
-// TODO(backend): This screen is UI-only. To make it functional:
-//   1. Create a SignUpUseCase that calls authRepository.signUp(name, email, password)
-//   2. Add signUp() method to AuthRepository and AuthApi
-//   3. Add a SignUpViewModel (or extend AuthViewModel) with SignUpUiState
-//   4. Wire the "Create Account" button to call the ViewModel
-//   5. On success, auto-login and navigate to Home
-//   6. Handle errors (email already exists, weak password, network error)
-//
-// TODO(backend): Add Google/Apple social sign-up via Firebase Auth or OAuth flow.
 
 @Composable
 fun SignUpScreen(
+    viewModel: AuthViewModel,
+    onSignUpSuccess: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var agreedToTerms by remember { mutableStateOf(false) }
+    val email by viewModel.email.collectAsStateWithLifecycle()
+    val password by viewModel.password.collectAsStateWithLifecycle()
+    val firstName by viewModel.firstName.collectAsStateWithLifecycle()
+    val lastName by viewModel.lastName.collectAsStateWithLifecycle()
+    val state by viewModel.signUpState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(state) {
+        if (state is SignUpUiState.Success) onSignUpSuccess()
+    }
+
+    SignUpContent(
+        firstName = firstName,
+        lastName = lastName,
+        email = email,
+        password = password,
+        state = state,
+        onFirstNameChange = viewModel::onFirstNameChange,
+        onLastNameChange = viewModel::onLastNameChange,
+        onEmailChange = viewModel::onEmailChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onSignUp = viewModel::signUp,
+        onNavigateBack = onNavigateBack
+    )
+}
+
+@Composable
+private fun SignUpContent(
+    firstName: String,
+    lastName: String,
+    email: String,
+    password: String,
+    state: SignUpUiState,
+    onFirstNameChange: (String) -> Unit,
+    onLastNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSignUp: () -> Unit,
+    onNavigateBack: () -> Unit
+) {
     val passwordStrength = when {
         password.length >= 8 && password.any { it.isDigit() } && password.any { !it.isLetterOrDigit() } -> "Strong"
         password.length >= 6 -> "Medium"
         password.isNotEmpty() -> "Weak"
         else -> ""
     }
-
     val strengthColor = when (passwordStrength) {
         "Strong" -> GreenAccent
         "Medium" -> OrangeAccent
         "Weak" -> RedAccent
         else -> TextSecondary
     }
-
     val strengthProgress = when (passwordStrength) {
         "Strong" -> 1f
         "Medium" -> 0.66f
@@ -88,54 +112,68 @@ fun SignUpScreen(
         else -> 0f
     }
 
+    val focusManager = LocalFocusManager.current
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        // imePadding() shrinks the scrollable area to exclude the soft
+        // keyboard's bounds, so the verticalScroll above can reach every
+        // field even when the IME is open.
+        //
+        // pointerInput + detectTapGestures clears focus on any tap that
+        // doesn't hit an interactive child (TextField, Button). That makes
+        // tapping anywhere outside a field — e.g. the purple header — close
+        // the keyboard, which both improves UX and gives Maestro flows a
+        // reliable way to dismiss the IME between fields without resorting
+        // to system Back (which navigates away from the screen).
+        modifier = Modifier.fillMaxSize()
+            .imePadding()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
             .verticalScroll(rememberScrollState())
     ) {
-        // Purple header
+        // Header
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Purple)
+            modifier = Modifier.fillMaxWidth().background(Purple)
                 .padding(top = 16.dp, bottom = 32.dp, start = 16.dp, end = 16.dp)
         ) {
             Column {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = White
-                    )
+                    Icon(Icons.Filled.ArrowBack, "Back", tint = White)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Create your account",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = White,
-                    modifier = Modifier.padding(start = 8.dp)
+                    fontSize = 24.sp, fontWeight = FontWeight.Bold,
+                    color = White, modifier = Modifier.padding(start = 8.dp)
                 )
                 Text(
-                    text = "Join millions of happy travellers",
-                    fontSize = 14.sp,
-                    color = White.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+                    text = "Already booked anonymously? Sign up with the same email and we'll link your reservations automatically.",
+                    fontSize = 13.sp,
+                    color = White.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 8.dp)
                 )
             }
         }
 
-        // Form
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp)) {
+            // Stacked vertically so each field gets full width and accessibility
+            // tooling (talkback, Maestro) can find both labels reliably even on
+            // narrow screens.
             TravelHubTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                label = "Full name",
-                placeholder = "Your full name",
+                value = firstName,
+                onValueChange = onFirstNameChange,
+                label = "First name",
+                placeholder = "John",
+                leadingIcon = Icons.Filled.Person
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            TravelHubTextField(
+                value = lastName,
+                onValueChange = onLastNameChange,
+                label = "Last name",
+                placeholder = "Doe",
                 leadingIcon = Icons.Filled.Person
             )
 
@@ -143,7 +181,7 @@ fun SignUpScreen(
 
             TravelHubTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = onEmailChange,
                 label = "Email address",
                 placeholder = "you@example.com",
                 leadingIcon = Icons.Filled.Email,
@@ -154,9 +192,9 @@ fun SignUpScreen(
 
             TravelHubTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = onPasswordChange,
                 label = "Password",
-                placeholder = "Create a password",
+                placeholder = "At least 6 characters",
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true
             )
@@ -177,33 +215,36 @@ fun SignUpScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = agreedToTerms,
-                    onCheckedChange = { agreedToTerms = it },
-                    colors = CheckboxDefaults.colors(checkedColor = Purple)
-                )
-                Text(
-                    text = "I agree to the Terms of Service & Privacy Policy",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+            if (state is SignUpUiState.Loading) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Purple)
+                }
+            } else {
+                TravelHubButton(
+                    text = "Create Account",
+                    onClick = onSignUp,
+                    enabled = firstName.isNotBlank() && lastName.isNotBlank() &&
+                        email.isNotBlank() && password.length >= 6
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            TravelHubButton(
-                text = "Create Account",
-                onClick = { /* Mock - just navigate back */ onNavigateBack() },
-                enabled = fullName.isNotBlank() && email.isNotBlank() && password.isNotBlank() && agreedToTerms
-            )
+            if (state is SignUpUiState.Error) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (state.emailAlreadyExists) {
+                        "That email is already registered. Go back and sign in instead."
+                    } else state.message,
+                    color = RedAccent,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "— or sign in —",
+                text = "Have an account? Tap back to sign in.",
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -216,6 +257,12 @@ fun SignUpScreen(
 @Composable
 private fun SignUpScreenPreview() {
     TravelHubTheme {
-        SignUpScreen(onNavigateBack = {})
+        SignUpContent(
+            firstName = "", lastName = "", email = "", password = "",
+            state = SignUpUiState.Idle,
+            onFirstNameChange = {}, onLastNameChange = {},
+            onEmailChange = {}, onPasswordChange = {},
+            onSignUp = {}, onNavigateBack = {}
+        )
     }
 }

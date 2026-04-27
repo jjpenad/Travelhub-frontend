@@ -16,6 +16,8 @@ import {
 import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
+  AUTH_TOKEN_KEY,
+  canAccessTravelerAccountRoutes,
   isTravelerLoggedIn,
 } from "../auth/sessionAuth";
 import {
@@ -23,7 +25,7 @@ import {
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
 import { mockHotels } from "../data/mockHotels";
-import { PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/routes";
+import { PATH_LOGIN, PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getHotelReservationDetailFromApi } from "../services/api";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 import "./TripDetailPage.css";
@@ -328,7 +330,6 @@ function TripDetailPage() {
       cancelled = true;
     };
   }, [parsedSlug]);
-
   const reservations = useMemo(() => {
     if (USE_MOCK_MY_TRIPS) {
       return [...mockMyTripsReservations];
@@ -341,10 +342,11 @@ function TripDetailPage() {
       if (
         e.key === AUTH_ROLE_KEY ||
         e.key === AUTH_EMAIL_KEY ||
+        e.key === AUTH_TOKEN_KEY ||
         e.key === null
       ) {
-        if (!isTravelerLoggedIn()) {
-          navigate(PATH_TRAVELERS_HOME, { replace: true });
+        if (!canAccessTravelerAccountRoutes()) {
+          navigate(PATH_LOGIN, { replace: true });
         }
       }
     }
@@ -397,7 +399,6 @@ function TripDetailPage() {
       </div>
     );
   }
-
   if (!reservation) {
     return (
       <div className="trip-detail-page">
