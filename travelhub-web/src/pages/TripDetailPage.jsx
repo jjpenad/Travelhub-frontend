@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
@@ -24,10 +25,12 @@ import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
 } from "../data/mockReservations";
-import { mockHotels } from "../data/mockHotels";
+import { getLocalizedMockHotels } from "../data/mockHotels";
 import { PATH_LOGIN, PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getHotelReservationDetailFromApi } from "../services/api";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
+import { formatApiUserError } from "../utils/formatApiUserError";
+import { localeTagForI18n } from "../utils/locale";
 import "./TripDetailPage.css";
 
 function parseISODate(iso) {
@@ -50,26 +53,26 @@ function isReservationPast(r) {
   return stripCalendarDate(co) < startOfToday();
 }
 
-function formatDateRangeShort(checkIn, checkOut) {
+function formatDateRangeShort(checkIn, checkOut, localeTag) {
   const a = parseISODate(checkIn);
   const b = parseISODate(checkOut);
   if (!a || !b) return "—";
   const opts = { day: "numeric", month: "short", year: "numeric" };
-  return `${a.toLocaleDateString("es-ES", opts)} – ${b.toLocaleDateString("es-ES", opts)}`;
+  return `${a.toLocaleDateString(localeTag, opts)} – ${b.toLocaleDateString(localeTag, opts)}`;
 }
 
-function formatTimeLabel(t) {
-  if (!t || typeof t !== "string") return "—";
-  const [h, m] = t.split(":");
+function formatTimeLabel(timeStr, localeTag) {
+  if (!timeStr || typeof timeStr !== "string") return "—";
+  const [h, m] = timeStr.split(":");
   const hr = Number(h);
   const min = Number(m);
-  if (!Number.isFinite(hr) || !Number.isFinite(min)) return t;
+  if (!Number.isFinite(hr) || !Number.isFinite(min)) return timeStr;
   const d = new Date();
   d.setHours(hr, min, 0, 0);
-  return d.toLocaleTimeString("es-ES", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString(localeTag, { hour: "numeric", minute: "2-digit" });
 }
 
-function getTripUrgencyLabel(r, past) {
+function getTripUrgencyLabel(r, past, tr) {
   if (past) return null;
   const ci = parseISODate(r.checkIn);
   const co = parseISODate(r.checkOut);
@@ -78,17 +81,17 @@ function getTripUrgencyLabel(r, past) {
   const ciDay = stripCalendarDate(ci);
   const coDay = stripCalendarDate(co);
   if (today > coDay) return null;
-  if (today >= ciDay && today <= coDay) return "Estancia en curso";
+  if (today >= ciDay && today <= coDay) return tr("tripDetail.stayRunning");
   const msPerDay = 86400000;
   const days = Math.round((ciDay - today) / msPerDay);
-  if (days <= 0) return "Check-in hoy";
-  if (days === 1) return "Check-in ¡mañana!";
-  return `Check-in en ${days} días`;
+  if (days <= 0) return tr("tripDetail.checkInToday");
+  if (days === 1) return tr("tripDetail.checkInTomorrow");
+  return tr("tripDetail.checkInDays", { count: days });
 }
 
-function fmtMoney(n) {
+function fmtMoney(n, localeTag) {
   if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString("es-ES")}`;
+  return `$${Number(n).toLocaleString(localeTag)}`;
 }
 
 function StarRow({ value }) {
@@ -262,9 +265,12 @@ function AmenityGlyph({ kind }) {
   }
 }
 
-function mergeHotelMeta(hotel) {
+function mergeHotelMeta(hotel, localizedMockHotels) {
   if (!hotel || typeof hotel !== "object" || hotel.id == null) return hotel;
-  const full = mockHotels.find((h) => h.id === hotel.id);
+  if (!Array.isArray(localizedMockHotels) || localizedMockHotels.length === 0) {
+    return hotel;
+  }
+  const full = localizedMockHotels.find((h) => h.id === hotel.id);
   if (!full) return hotel;
   return {
     ...hotel,
@@ -281,13 +287,16 @@ function mergeHotelMeta(hotel) {
 }
 
 function TripDetailPage() {
+  const { t, i18n } = useTranslation();
+  const loc = localeTagForI18n(i18n.language);
   const navigate = useNavigate();
   const { bookingSlug } = useParams();
   const parsedSlug = useMemo(
     () => parseTripBookingSlug(bookingSlug ?? ""),
     [bookingSlug],
   );
-  const [apiReservation, setApiReservation] = useState(null);
+  /** Crudo API; los textos fallback se aplican via `mapApiReservationToTripDetail` según idioma. */
+  const [apiReservationRaw, setApiReservationRaw] = useState(null);
   const [apiError, setApiError] = useState(null);
   const [apiLoading, setApiLoading] = useState(false);
 
@@ -307,21 +316,21 @@ function TripDetailPage() {
       if (cancelled) return;
       setApiLoading(true);
       setApiError(null);
-      setApiReservation(null);
+      setApiReservationRaw(null);
     });
     (async () => {
       try {
         const raw = await getHotelReservationDetailFromApi(id);
         if (cancelled) return;
-        const mapped = mapApiReservationToTripDetail(raw);
-        if (!mapped) {
-          setApiError("Reserva no disponible");
+        if (!raw || typeof raw !== "object") {
+          setApiError(t("tripDetail.notAvailable"));
+          setApiReservationRaw(null);
           return;
         }
-        setApiReservation(mapped);
+        setApiReservationRaw(raw);
       } catch (e) {
         if (cancelled) return;
-        setApiError(e?.message || "No se pudo cargar la reserva");
+        setApiError(formatApiUserError(e, "tripDetail.loadFailed"));
       } finally {
         if (!cancelled) setApiLoading(false);
       }
@@ -329,7 +338,19 @@ function TripDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [parsedSlug]);
+  }, [parsedSlug, t]);
+
+  const apiReservation = useMemo(() => {
+    void i18n.resolvedLanguage;
+    if (!apiReservationRaw || typeof apiReservationRaw !== "object") return null;
+    return mapApiReservationToTripDetail(apiReservationRaw);
+  }, [apiReservationRaw, i18n.resolvedLanguage]);
+
+  const localizedDemoHotels = useMemo(() => {
+    void i18n.resolvedLanguage;
+    return getLocalizedMockHotels();
+  }, [i18n.resolvedLanguage]);
+
   const reservations = useMemo(() => {
     if (USE_MOCK_MY_TRIPS) {
       return [...mockMyTripsReservations];
@@ -371,9 +392,9 @@ function TripDetailPage() {
         <Navbar />
         <PageContainer>
           <div className="trip-detail trip-detail--narrow">
-            <p className="trip-detail__not-found">Cargando reserva…</p>
+            <p className="trip-detail__not-found">{t("tripDetail.loading")}</p>
             <Link className="trip-detail__back-cta" to={PATH_MY_TRIPS}>
-              Volver a Mis viajes
+              {t("tripDetail.backTrips")}
             </Link>
           </div>
         </PageContainer>
@@ -388,11 +409,10 @@ function TripDetailPage() {
         <PageContainer>
           <div className="trip-detail trip-detail--narrow">
             <p className="trip-detail__not-found">
-              {apiError ||
-                "No encontramos esta reserva o el enlace ya no es válido."}
+              {apiError || t("tripDetail.notFound")}
             </p>
             <Link className="trip-detail__back-cta" to={PATH_MY_TRIPS}>
-              Volver a Mis viajes
+              {t("tripDetail.backTrips")}
             </Link>
           </div>
         </PageContainer>
@@ -405,11 +425,9 @@ function TripDetailPage() {
         <Navbar />
         <PageContainer>
           <div className="trip-detail trip-detail--narrow">
-            <p className="trip-detail__not-found">
-              No encontramos esta reserva o el enlace ya no es válido.
-            </p>
+            <p className="trip-detail__not-found">{t("tripDetail.notFound")}</p>
             <Link className="trip-detail__back-cta" to={PATH_MY_TRIPS}>
-              Volver a Mis viajes
+              {t("tripDetail.backTrips")}
             </Link>
           </div>
         </PageContainer>
@@ -422,10 +440,10 @@ function TripDetailPage() {
     reservation.hotel && typeof reservation.hotel === "object"
       ? reservation.hotel
       : null;
-  const hotel = mergeHotelMeta(rawHotel);
-  const name = hotel?.name ?? "Alojamiento";
+  const hotel = mergeHotelMeta(rawHotel, localizedDemoHotels);
+  const name = hotel?.name ?? t("tripDetail.accommodationFallback");
   const locationText =
-    typeof hotel?.location === "string" ? hotel.location : "—";
+    typeof hotel?.location === "string" ? hotel.location : t("reservationData.dash");
   const imageSrc = typeof hotel?.image === "string" ? hotel.image : null;
   const ref = reservation.reference != null ? String(reservation.reference) : "";
   const checkIn = typeof reservation.checkIn === "string" ? reservation.checkIn : "";
@@ -447,7 +465,7 @@ function TripDetailPage() {
     typeof reservation.paymentLabel === "string" &&
     reservation.paymentLabel.trim() !== ""
       ? reservation.paymentLabel
-      : "Tarjeta";
+      : t("trips.card");
   const rating =
     typeof hotel?.rating === "number" && !Number.isNaN(hotel.rating)
       ? hotel.rating
@@ -458,7 +476,7 @@ function TripDetailPage() {
     typeof reservation.checkOutTime === "string"
       ? reservation.checkOutTime
       : "11:00";
-  const urgency = getTripUrgencyLabel(reservation, past);
+  const urgency = getTripUrgencyLabel(reservation, past, t);
   const toneClass = "trip-detail-hero__placeholder--tone-1";
 
   const amenitiesList = Array.isArray(hotel?.amenities)
@@ -479,14 +497,14 @@ function TripDetailPage() {
       <PageContainer>
         <div className="trip-detail">
           <Link className="trip-detail__back" to={PATH_MY_TRIPS}>
-            ← Volver a Mis viajes
+            {t("tripDetail.backChevron")}
           </Link>
 
           <header className="trip-detail__header">
             <div className="trip-detail__header-titles">
-              <h1 className="trip-detail__title">Detalle del viaje</h1>
+              <h1 className="trip-detail__title">{t("tripDetail.detailTitle")}</h1>
               <span className="trip-detail__badge trip-detail__badge--ok">
-                ✓ Confirmada
+                {t("tripDetail.confirmed")}
               </span>
             </div>
             {urgency ? (
@@ -497,7 +515,7 @@ function TripDetailPage() {
           </header>
 
           <div className="trip-detail__columns">
-            <article className="trip-detail__card" aria-label="Alojamiento y reserva">
+            <article className="trip-detail__card" aria-label={t("tripDetail.cardArticleAria")}>
               <div className="trip-detail-hero">
                 {imageSrc ? (
                   <img
@@ -532,23 +550,29 @@ function TripDetailPage() {
                   <p className="trip-detail__row">
                     <IconCalendar className="trip-detail__row-icon" aria-hidden="true" />
                     <span>
-                      {formatDateRangeShort(checkIn, checkOut)}
+                      {formatDateRangeShort(checkIn, checkOut, loc)}
                       {nights != null
-                        ? ` · ${nights} ${nights === 1 ? "noche" : "noches"}`
+                        ? ` · ${t(
+                            nights === 1 ? "trips.night_one" : "trips.night_other",
+                            { count: nights },
+                          )}`
                         : ""}
                       {" · "}
-                      {guests} {guests === 1 ? "huésped" : "huéspedes"}
+                      {guests}{" "}
+                      {t(guests === 1 ? "trips.guest_one" : "trips.guest_other")}
                     </span>
                   </p>
                   <p className="trip-detail__row trip-detail__row--ref">
                     <IconTicket className="trip-detail__row-icon" aria-hidden="true" />
-                    <span>Ref. #{ref || "—"}</span>
+                    <span>{t("tripDetail.refLabel", { ref: ref || "—" })}</span>
                   </p>
                 </div>
 
                 <p className="trip-detail__times">
-                  Entrada desde las {formatTimeLabel(checkInTime)} · Salida hasta las{" "}
-                  {formatTimeLabel(checkOutTime)}
+                  {t("tripDetail.times", {
+                    in: formatTimeLabel(checkInTime, loc),
+                    out: formatTimeLabel(checkOutTime, loc),
+                  })}
                 </p>
 
                 {rating != null ? (
@@ -567,7 +591,7 @@ function TripDetailPage() {
                       id="trip-detail-included-title"
                       className="trip-detail-included__title"
                     >
-                      Qué incluye tu estancia
+                      {t("tripDetail.includedTitle")}
                     </h3>
                     <ul className="trip-detail-included__chips" role="list">
                       {amenitiesList.map((label, i) => (
@@ -585,7 +609,7 @@ function TripDetailPage() {
 
                 {hotel?.isRefundable ? (
                   <p className="trip-detail__note trip-detail__note--ok">
-                    ✓ Cancelación gratuita según política del alojamiento
+                    {t("tripDetail.refundOk")}
                   </p>
                 ) : null}
               </div>
@@ -593,23 +617,26 @@ function TripDetailPage() {
 
             <aside
               className="trip-detail-payment"
-              aria-label="Pago y desglose de la reserva"
+              aria-label={t("tripDetail.paymentAria")}
             >
-              <h3 className="trip-detail-payment__title">Pago</h3>
+              <h3 className="trip-detail-payment__title">{t("tripDetail.paymentTitle")}</h3>
               <p className="trip-detail-payment__method">
                 <IconWallet
                   className="trip-detail-payment__method-icon"
                   aria-hidden="true"
                 />
                 <span>
-                  {fmtMoney(reservation.total)} pagado · {paymentLabel}
+                  {t("tripDetail.paidRow", {
+                    total: fmtMoney(reservation.total, loc),
+                    method: paymentLabel,
+                  })}
                 </span>
               </p>
 
               <div className="trip-detail-payment__total">
-                <p className="trip-detail-payment__total-label">Total de la reserva</p>
+                <p className="trip-detail-payment__total-label">{t("tripDetail.totalReservation")}</p>
                 <p className="trip-detail-payment__total-amount">
-                  {fmtMoney(reservation.total)}
+                  {fmtMoney(reservation.total, loc)}
                 </p>
               </div>
 
@@ -617,13 +644,23 @@ function TripDetailPage() {
               Number.isFinite(reservation.pricePerNight) ? (
                 <div
                   className="trip-detail-payment__breakdown"
-                  aria-label="Desglose de precio"
+                  aria-label={t("tripDetail.paymentBreakdownAria")}
                 >
-                  <h4 className="trip-detail-payment__breakdown-title">Desglose</h4>
+                  <h4 className="trip-detail-payment__breakdown-title">{t("tripDetail.breakdownTitle")}</h4>
                   {line(
                     "ppn",
-                    "Precio por noche",
-                    `${fmtMoney(reservation.pricePerNight)} × ${nights ?? "—"} noches`,
+                    t("tripDetail.pricePerNight"),
+                    nights != null && Number.isFinite(nights)
+                      ? t(
+                          nights === 1
+                            ? "tripDetail.nights_one"
+                            : "tripDetail.nights_other",
+                          {
+                            price: fmtMoney(reservation.pricePerNight, loc),
+                            count: nights,
+                          },
+                        )
+                      : `${fmtMoney(reservation.pricePerNight, loc)} × —`,
                   )}
                 </div>
               ) : null}

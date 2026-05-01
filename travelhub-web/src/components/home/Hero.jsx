@@ -2,18 +2,13 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
 import { AVAILABLE_CITIES } from "../../services/api";
+import { useTranslation } from "react-i18next";
 import { IconCalendar, IconMapPin, IconSearch, IconUsers } from "./HeroIcons";
 import "./Hero.css";
 
-const guestOptions = [
-  { value: "1", label: "1 huésped" },
-  { value: "2", label: "2 huéspedes" },
-  { value: "3", label: "3 huéspedes" },
-  { value: "4", label: "4 huéspedes" },
-  { value: "5", label: "5+ huéspedes" },
-];
-
 const SEARCH_STORAGE_KEY = "travelhub-search";
+
+const KNOWN_GUEST_VALUES = new Set(["1", "2", "3", "4", "5"]);
 
 /** @param {string} yyyyMmDd */
 function parseLocalDate(yyyyMmDd) {
@@ -77,7 +72,7 @@ function ensureIsoYmd(value) {
 function normalizeGuestsValue(g) {
   if (g == null || g === "") return "1";
   const s = String(g);
-  return guestOptions.some((o) => o.value === s) ? s : "1";
+  return KNOWN_GUEST_VALUES.has(s) ? s : "1";
 }
 
 function withClearError(reg, clearErrors, names) {
@@ -96,6 +91,15 @@ function withClearError(reg, clearErrors, names) {
 }
 
 function Hero() {
+  const { t } = useTranslation();
+  const guestOptions = [
+    { value: "1", label: t("hero.guestsOpts.1") },
+    { value: "2", label: t("hero.guestsOpts.2") },
+    { value: "3", label: t("hero.guestsOpts.3") },
+    { value: "4", label: t("hero.guestsOpts.4") },
+    { value: "5", label: t("hero.guestsOpts.5") },
+  ];
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const {
@@ -223,41 +227,42 @@ function Hero() {
   }, [trigger]);
 
   const destReg = register("destination", {
-    required: "Indica un destino.",
-    validate: (v) => (v.trim().length > 0 ? true : "Indica un destino."),
+    required: t("hero.validation.destinationRequired"),
+    validate: (v) =>
+      v.trim().length > 0 ? true : t("hero.validation.destinationRequired"),
   });
 
   const checkInReg = register("checkIn", {
-    required: "Selecciona la fecha de entrada.",
+    required: t("hero.validation.checkInRequired"),
     validate: (val) => {
       const d = parseLocalDate(val);
-      if (!d) return "Fecha no válida.";
+      if (!d) return t("hero.validation.invalidDate");
       const today = startOfToday();
       if (d.getTime() < today.getTime()) {
-        return "La fecha debe ser hoy o posterior.";
+        return t("hero.validation.todayOrLater");
       }
       return true;
     },
   });
 
   const checkOutReg = register("checkOut", {
-    required: "Selecciona la fecha de salida.",
+    required: t("hero.validation.checkOutRequired"),
     validate: (val, formValues) => {
       if (!val) return true;
       const out = parseLocalDate(val);
-      if (!out) return "Fecha no válida.";
+      if (!out) return t("hero.validation.invalidDate");
       if (!formValues.checkIn) return true;
       const inn = parseLocalDate(formValues.checkIn);
       if (!inn) return true;
       if (out.getTime() <= inn.getTime()) {
-        return "La fecha de salida debe ser posterior a la de entrada.";
+        return t("hero.validation.checkoutAfter");
       }
       return true;
     },
   });
 
   const guestsReg = register("guests", {
-    required: "Selecciona el número de huéspedes.",
+    required: t("hero.validation.guestsRequired"),
   });
 
   return (
@@ -265,10 +270,10 @@ function Hero() {
       <div className="home-hero__content">
         <div className="home-hero__intro">
           <h1 id="home-hero-title" className="home-hero__title">
-            Encuentra tu estadía perfecta
+            {t("hero.title")}
           </h1>
           <p className="home-hero__subtitle">
-            Descubre hoteles, villas y alojamientos entre más de 50.000 anuncios en todo el mundo
+            {t("hero.subtitle")}
           </p>
         </div>
 
@@ -282,7 +287,7 @@ function Hero() {
             <div className="home-hero__search-row">
               <div className="home-hero__field home-hero__field--destination">
                 <label htmlFor="hero-destination" className="home-hero__field-label">
-                  Destino
+                  {t("hero.destination")}
                 </label>
                 <div className="home-hero__field-wrap">
                   <div className="home-hero__field-control">
@@ -300,7 +305,7 @@ function Hero() {
                       }
                       {...withClearError(destReg, clearErrors, "destination")}
                     >
-                      <option value="">¿A dónde vas?</option>
+                      <option value="">{t("hero.destinationPlaceholder")}</option>
                       {AVAILABLE_CITIES.map((city) => (
                         <option key={city} value={city}>{city}</option>
                       ))}
@@ -320,7 +325,7 @@ function Hero() {
 
               <div className="home-hero__field home-hero__field--datecol">
                 <label htmlFor="hero-checkin" className="home-hero__field-label">
-                  Fecha de entrada
+                  {t("hero.checkIn")}
                 </label>
                 <div className="home-hero__field-wrap">
                   <div className="home-hero__field-control">
@@ -351,7 +356,7 @@ function Hero() {
 
               <div className="home-hero__field home-hero__field--datecol">
                 <label htmlFor="hero-checkout" className="home-hero__field-label">
-                  Fecha de salida
+                  {t("hero.checkOut")}
                 </label>
                 <div className="home-hero__field-wrap">
                   <div className="home-hero__field-control">
@@ -382,7 +387,7 @@ function Hero() {
 
               <div className="home-hero__field home-hero__field--guests">
                 <label htmlFor="hero-guests" className="home-hero__field-label">
-                  Huéspedes
+                  {t("hero.guests")}
                 </label>
                 <div className="home-hero__field-wrap">
                   <div className="home-hero__field-control">
@@ -420,9 +425,9 @@ function Hero() {
                   className="home-hero__field-label home-hero__field-label--spacer"
                   aria-hidden="true"
                 >
-                  Buscar
+                  {t("hero.searchAction")}
                 </span>
-                <button type="submit" className="home-hero__search-btn" aria-label="Buscar">
+                <button type="submit" className="home-hero__search-btn" aria-label={t("hero.searchAria")}>
                   <IconSearch />
                 </button>
               </div>
@@ -430,19 +435,19 @@ function Hero() {
           </div>
 
           <p className="home-hero__trust">
-            <span className="home-hero__trust-item">✓ Más de 50.000 propiedades</span>
+            <span className="home-hero__trust-item">{t("hero.trust1")}</span>
             <span className="home-hero__trust-sep" aria-hidden="true">
               ·
             </span>
-            <span className="home-hero__trust-item">✓ Mejor precio garantizado</span>
+            <span className="home-hero__trust-item">{t("hero.trust2")}</span>
             <span className="home-hero__trust-sep" aria-hidden="true">
               ·
             </span>
-            <span className="home-hero__trust-item">✓ Cancelación gratuita</span>
+            <span className="home-hero__trust-item">{t("hero.trust3")}</span>
             <span className="home-hero__trust-sep" aria-hidden="true">
               ·
             </span>
-            <span className="home-hero__trust-item">✓ Atención 24/7</span>
+            <span className="home-hero__trust-item">{t("hero.trust4")}</span>
           </p>
         </form>
       </div>

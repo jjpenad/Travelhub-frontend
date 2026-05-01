@@ -2,9 +2,13 @@
  * TravelHub API service layer.
  * VITE_API_URL debe ser la raíz del API (incluye `/service-core` si el backend lo usa así).
  * VITE_ANALYTICS_API_URL: raíz del microservicio de analytics (ej. …/service-soport).
+ *
+ * Errores: muchas rutas lanzan `Error` con `message` generada aquí (suele estar en español) o propagada del backend.
+ * En la UI, {@link ../utils/formatApiUserError} muestra ese texto si existe; si no, una clave i18n. No se traducen mensajes arbitrarios del servidor en el cliente.
  */
 
 import { getAuthToken, isAuthenticated } from "../auth/sessionAuth";
+import i18n from "../i18n";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 
 const BASE_URL =
@@ -722,7 +726,7 @@ function mapRawReservationToPollItem(r) {
   }
   const h = r.hotel && typeof r.hotel === "object" ? r.hotel : {};
   const hotelName = String(
-    h.name || r.hotel_name || r.hotelName || "Alojamiento",
+    h.name || r.hotel_name || r.hotelName || i18n.t("tripDetail.accommodationFallback"),
   );
   return {
     id,

@@ -1,20 +1,31 @@
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { buildGalleryThumbs } from "../../utils/hotelDetailHelpers";
 import "./HotelGallery.css";
 
 /**
  * Galería: imagen principal + 3 miniaturas.
- * Recibe el objeto `hotel` del mock (id, name, image, …).
  */
 function HotelGallery({ hotel }) {
+  const { t } = useTranslation();
+
+  const displayName = useMemo(
+    () => hotel?.name ?? t("hotelDetail.aboutHotelFallback"),
+    [hotel?.name, t],
+  );
+
+  const main = useMemo(() => {
+    if (!hotel?.image) return null;
+    return {
+      src: hotel.image,
+      alt: t("hotelDetail.galleryMainAlt", { name: displayName }),
+    };
+  }, [hotel, displayName, t]);
+
   if (!hotel?.image) {
     return null;
   }
 
-  const displayName = hotel.name ?? "Hotel";
-  const main = {
-    src: hotel.image,
-    alt: `Foto principal — ${displayName}`,
-  };
   const thumbs = buildGalleryThumbs(hotel, displayName);
 
   const list = Array.isArray(thumbs) ? thumbs.slice(0, 3) : [];
@@ -23,7 +34,7 @@ function HotelGallery({ hotel }) {
   }
 
   return (
-    <section className="gallery" aria-label="Galería de fotos del alojamiento">
+    <section className="gallery" aria-label={t("hotelDetail.galleryAria")}>
       <div className="gallery__main">
         {main?.src ? (
           <img

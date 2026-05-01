@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { formatFriendlyDate, formatGuestsLabel } from "../../utils/searchUrlParams";
+import { localeTagForI18n } from "../../utils/locale";
 import { createBooking } from "../../services/api";
 import "./BookingWidget.css";
 
@@ -41,10 +43,6 @@ function IconShieldSsl({ className }) {
   );
 }
 
-function fmtMoney(n) {
-  return `$${Number(n).toLocaleString("es-ES")}`;
-}
-
 function BookingWidget({
   hotel,
   pricePerNight: pricePerNightProp,
@@ -63,7 +61,11 @@ function BookingWidget({
   defaultGuests = "2",
   roomTypeId = "",
 }) {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const loc = localeTagForI18n(i18n.language);
+  const fmtMoney = (n) => `$${Number(n).toLocaleString(loc)}`;
+
   const [, setUserState] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorModal, setErrorModal] = useState({ show: false, message: "" });
@@ -72,8 +74,8 @@ function BookingWidget({
   const cancellationText =
     cancellationTextProp ??
     (hotel?.isRefundable === false
-      ? "Tarifa no reembolsable"
-      : "Cancelación gratuita");
+      ? t("bookingWidget.notRefundable")
+      : t("bookingWidget.refundable"));
 
   const nights = typeof nightsProp === "number" && nightsProp > 0 ? nightsProp : 5;
   const roomSubtotal = pricePerNight * nights;
@@ -109,15 +111,14 @@ function BookingWidget({
   async function handleSubmit(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
-    
+
     const checkIn = String(fd.get("checkIn") ?? defaultCheckIn);
     const checkOut = String(fd.get("checkOut") ?? defaultCheckOut);
     const guestsRaw = fd.get("guests");
     const guests = guestsRaw != null ? Number(guestsRaw) : Number(defaultGuests);
 
-    // Validación de datos requeridos
     if (!hotelId || !roomTypeId || !checkIn || !checkOut) {
-      alert("Por favor completa la selección de fechas y habitación antes de continuar.");
+      alert(t("bookingWidget.alertIncomplete"));
       return;
     }
 
@@ -126,53 +127,50 @@ function BookingWidget({
       room_type_id: roomTypeId,
       check_in: checkIn,
       check_out: checkOut,
-      guests: guests,
+      guests,
       base_price: roomSubtotal.toFixed(2),
       taxes: taxesApplied.toFixed(2),
       discounts: "0.00",
       total_price: total.toFixed(2),
       currency_code: "USD",
-      special_requests: "" // Se puede expandir en el futuro
+      special_requests: "",
     };
 
     setIsBooking(true);
     try {
       const response = await createBooking(bookingPayload);
-      
-      // Caso 1: La reserva no puede proceder (ej: No hay agenda disponible)
+
       if (response.result?.proceed === false) {
         console.warn("Reserva rechazada:", response.result.message);
-        setErrorModal({ 
-          show: true, 
-          message: response.result.message || "No hay disponibilidad para las fechas seleccionadas." 
+        setErrorModal({
+          show: true,
+          message: response.result.message || t("bookingWidget.noAvailability"),
         });
         return;
       }
 
-      // Caso 2: Éxito
       setUserState(response);
       console.log("Reserva creada con éxito:", response);
-      
+
       setShowSuccessModal(true);
-      
+
       setTimeout(() => {
-        navigate(`/checkout/${hotelId}`, { 
-          state: { 
-            bookingResponse: response 
-          } 
+        navigate(`/checkout/${hotelId}`, {
+          state: {
+            bookingResponse: response,
+          },
         });
       }, 2000);
-      
     } catch (err) {
       console.error("Error al crear la reserva:", err);
-      setErrorModal({ 
-        show: true, 
-        message: "Hubo un problema al procesar tu reserva. Por favor intenta de nuevo." 
+      setErrorModal({
+        show: true,
+        message: t("bookingWidget.genericError"),
       });
     } finally {
       setIsBooking(false);
     }
-    
+
     onReserve?.(e);
   }
 
@@ -184,9 +182,9 @@ function BookingWidget({
             <span className="booking-widget__price-amount">
               {fmtMoney(pricePerNight)}
             </span>
-            <span className="booking-widget__price-unit"> / noche</span>
+            <span className="booking-widget__price-unit">{t("bookingWidget.perNight")}</span>
           </p>
-          <p className="booking-widget__rating" aria-label={`Valoración ${ratingDisplay}`}>
+          <p className="booking-widget__rating" aria-label={t("bookingWidget.ratingAria", { value: ratingDisplay })}>
             <span className="booking-widget__rating-value">{ratingDisplay}</span>
             <span className="booking-widget__rating-max">/5</span>
           </p>
@@ -200,31 +198,31 @@ function BookingWidget({
       >
         <div className="booking-widget__grid">
           <div className="booking-widget__field">
-            <span className="booking-widget__label">Entrada</span>
+            <span className="booking-widget__label">{t("bookingWidget.checkInLabel")}</span>
             <input type="hidden" name="checkIn" value={defaultCheckIn} />
             <div
               className="booking-widget__static-field"
-              aria-label={`Entrada: ${checkInDisplay}`}
+              aria-label={`${t("bookingWidget.checkInLabel")}: ${checkInDisplay}`}
             >
               {checkInDisplay}
             </div>
           </div>
           <div className="booking-widget__field">
-            <span className="booking-widget__label">Salida</span>
+            <span className="booking-widget__label">{t("bookingWidget.checkOutLabel")}</span>
             <input type="hidden" name="checkOut" value={defaultCheckOut} />
             <div
               className="booking-widget__static-field"
-              aria-label={`Salida: ${checkOutDisplay}`}
+              aria-label={`${t("bookingWidget.checkOutLabel")}: ${checkOutDisplay}`}
             >
               {checkOutDisplay}
             </div>
           </div>
           <div className="booking-widget__field booking-widget__field--full">
-            <span className="booking-widget__label">Huéspedes</span>
+            <span className="booking-widget__label">{t("bookingWidget.guestsLabel")}</span>
             <input type="hidden" name="guests" value={defaultGuests} />
             <div
               className="booking-widget__static-field booking-widget__static-field--guests"
-              aria-label={`Huéspedes: ${guestsDisplay}`}
+              aria-label={`${t("bookingWidget.guestsLabel")}: ${guestsDisplay}`}
             >
               {guestsDisplay}
             </div>
@@ -237,7 +235,7 @@ function BookingWidget({
               className="booking-widget__room-type-label"
               htmlFor="booking-widget-room-type"
             >
-              Tipo de habitación
+              {t("bookingWidget.roomType")}
             </label>
             <select
               id="booking-widget-room-type"
@@ -245,7 +243,7 @@ function BookingWidget({
               name="roomType"
               value={selectedRoom ?? availableRooms[0] ?? ""}
               onChange={(e) => onSelectedRoomChange(e.target.value)}
-              aria-label="Tipo de habitación"
+              aria-label={t("bookingWidget.roomTypeAria")}
             >
               {availableRooms.map((room) => (
                 <option key={room} value={room}>
@@ -259,39 +257,42 @@ function BookingWidget({
         <div className="booking-widget__breakdown">
           <div className="booking-widget__row">
             <span>
-              {fmtMoney(pricePerNight)} × {nights} noches
+              {t(
+                nights === 1 ? "bookingWidget.nightsLine_one" : "bookingWidget.nightsLine_other",
+                { price: fmtMoney(pricePerNight), count: nights },
+              )}
             </span>
             <span>{fmtMoney(roomSubtotal)}</span>
           </div>
           {showBreakdownExtraFees ? (
             <>
               <div className="booking-widget__row">
-                <span>Tarifa de limpieza</span>
+                <span>{t("bookingSummary.feeCleaning")}</span>
                 <span>{fmtMoney(cleaningFee)}</span>
               </div>
               <div className="booking-widget__row">
-                <span>Tarifa de servicio</span>
+                <span>{t("bookingSummary.feeService")}</span>
                 <span>{fmtMoney(serviceFee)}</span>
               </div>
               <div className="booking-widget__row">
-                <span>Impuestos</span>
+                <span>{t("bookingSummary.taxes")}</span>
                 <span>{fmtMoney(taxes)}</span>
               </div>
             </>
           ) : null}
           <div className="booking-widget__row booking-widget__row--total">
-            <span>Total</span>
+            <span>{t("bookingWidget.total")}</span>
             <span>{fmtMoney(total)}</span>
           </div>
         </div>
 
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           className="booking-widget__reserve"
           disabled={isBooking}
         >
           <IconLock className="booking-widget__reserve-icon" />
-          {isBooking ? "Procesando..." : "Reservar ahora"}
+          {isBooking ? t("bookingWidget.processing") : t("bookingWidget.reserve")}
         </button>
       </form>
 
@@ -299,7 +300,7 @@ function BookingWidget({
         <p className="booking-widget__cancel-note">{cancellationText}</p>
         <p className="booking-widget__ssl">
           <IconShieldSsl className="booking-widget__ssl-icon" />
-          <span>Pago seguro con SSL</span>
+          <span>{t("bookingWidget.ssl")}</span>
         </p>
       </footer>
 
@@ -308,11 +309,11 @@ function BookingWidget({
           <div className="booking-modal">
             <div className="booking-modal__icon">
               <svg viewBox="0 0 24 24" width="48" height="48">
-                <path fill="#4caf50" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                <path fill="#4caf50" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
               </svg>
             </div>
-            <h3 className="booking-modal__title">¡Ya está hecha la reserva!</h3>
-            <p className="booking-modal__text">Estamos preparando todo para tu viaje. Redirigiéndote al pago...</p>
+            <h3 className="booking-modal__title">{t("bookingWidget.successTitle")}</h3>
+            <p className="booking-modal__text">{t("bookingWidget.successLead")}</p>
             <div className="booking-modal__loader"></div>
           </div>
         </div>
@@ -323,19 +324,20 @@ function BookingWidget({
           <div className="booking-modal booking-modal--error">
             <div className="booking-modal__icon">
               <svg viewBox="0 0 24 24" width="48" height="48">
-                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
               </svg>
             </div>
-            <h3 className="booking-modal__title">No se pudo completar</h3>
+            <h3 className="booking-modal__title">{t("bookingWidget.errorTitle")}</h3>
             <p className="booking-modal__text">{errorModal.message}</p>
-            <button 
-              className="booking-modal__button" 
+            <button
+              type="button"
+              className="booking-modal__button"
               onClick={() => {
                 setErrorModal({ show: false, message: "" });
                 navigate("/");
               }}
             >
-              Volver a buscar
+              {t("bookingWidget.backSearch")}
             </button>
           </div>
         </div>

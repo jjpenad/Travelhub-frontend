@@ -1,3 +1,6 @@
+import i18n from "../i18n";
+import { currentLocaleTag } from "./currentLocaleTag";
+
 export const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed", "#dc2626"];
 
 export function simpleHash(str) {
@@ -19,10 +22,10 @@ export function initialsFromName(name) {
 }
 
 export function formatShortDate(isoDate) {
-  if (!isoDate) return "—";
+  if (!isoDate) return i18n.t("reservationData.dash");
   const d = new Date(`${isoDate}T12:00:00`);
   if (Number.isNaN(d.getTime())) return String(isoDate);
-  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+  return d.toLocaleDateString(currentLocaleTag(), { day: "numeric", month: "short" });
 }
 
 export function nightsBetween(checkInIso, checkOutIso) {
@@ -34,16 +37,16 @@ export function nightsBetween(checkInIso, checkOutIso) {
 }
 
 export function statusLabel(st) {
-  if (st === "confirmed") return "Confirmada";
-  if (st === "pending") return "Pendiente";
-  if (st === "cancelled") return "Cancelada";
-  return st;
+  if (st === "confirmed" || st === "pending" || st === "cancelled") {
+    return i18n.t(`reservationData.status.${st}`);
+  }
+  return String(st);
 }
 
 export function paymentLabelForStatus(st) {
-  if (st === "cancelled") return "Reembolsado";
-  if (st === "pending") return "Pago pend.";
-  return "Pagado";
+  if (st === "cancelled") return i18n.t("reservationData.paymentShort.refunded");
+  if (st === "pending") return i18n.t("reservationData.paymentShort.pending");
+  return i18n.t("reservationData.paymentShort.paid");
 }
 
 /**
@@ -62,30 +65,32 @@ export function mapAnalyticsReservationsToManageRows(reservations) {
         : statusRaw === "cancelled"
           ? "cancelled"
           : "pending";
-    const guestName = (r.user_name && String(r.user_name).trim()) || "Huésped";
+    const guestName =
+      (r.user_name && String(r.user_name).trim()) || i18n.t("reservationData.guestFallback");
     const id = String(r.id ?? "");
     const amountValue = Number.parseFloat(r.total_price) || 0;
+    const dash = i18n.t("reservationData.dash");
     const code = r.confirmation_code ? String(r.confirmation_code) : "";
-    const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : "—";
-    const roomLabel = r.room_type?.name ? String(r.room_type.name) : "—";
+    const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : dash;
+    const roomLabel = r.room_type?.name ? String(r.room_type.name) : dash;
 
     return {
       id,
       reference,
-      bookedAt: r.created_at ? String(r.created_at) : "—",
+      bookedAt: r.created_at ? String(r.created_at) : dash,
       guestName,
-      guestEmail: "—",
-      guestPhone: "—",
+      guestEmail: dash,
+      guestPhone: dash,
       initials: initialsFromName(guestName),
       avatarTone: AVATAR_TONES[simpleHash(id || reference) % AVATAR_TONES.length],
       roomHab: roomLabel,
       roomTipo: roomLabel,
-      roomCamas: "—",
+      roomCamas: dash,
       dateFrom: formatShortDate(r.check_in),
       dateTo: formatShortDate(r.check_out),
       nights: nightsBetween(r.check_in, r.check_out),
       guestCount: Number(r.guests) || 0,
-      amount: `$${amountValue.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
+      amount: `$${amountValue.toLocaleString(currentLocaleTag(), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
       amountValue,
       paymentLabel: paymentLabelForStatus(status),
       status,

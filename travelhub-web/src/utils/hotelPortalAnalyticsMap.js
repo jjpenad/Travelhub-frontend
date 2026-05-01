@@ -1,21 +1,12 @@
-const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed"];
+import i18n from "../i18n";
+import { currentLocaleTag } from "./currentLocaleTag";
 
-const PCT_LABELS = {
-  pending: "Pendientes",
-  confirmed: "Confirmadas",
-  cancelled: "Canceladas",
-};
+const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed"];
 
 const PCT_COLORS = {
   pending: "#ea580c",
   confirmed: "#5b21b6",
   cancelled: "#dc2626",
-};
-
-const STATUS_LABEL = {
-  pending: "Pendiente",
-  confirmed: "Confirmada",
-  cancelled: "Cancelada",
 };
 
 function simpleHash(str) {
@@ -36,11 +27,26 @@ function initialsFromName(name) {
   return t.slice(0, 2).toUpperCase();
 }
 
-function formatDateEs(isoDate) {
-  if (!isoDate) return "—";
+function segmentLabelForKey(key) {
+  if (key === "pending" || key === "confirmed" || key === "cancelled") {
+    return i18n.t(`reservationData.segment.${key}`);
+  }
+  return String(key);
+}
+
+function statusLabelShort(statusKey) {
+  if (statusKey === "confirmed" || statusKey === "pending" || statusKey === "cancelled") {
+    return i18n.t(`reservationData.status.${statusKey}`);
+  }
+  return String(statusKey);
+}
+
+function formatArrivalDate(isoDate) {
+  const dash = i18n.t("reservationData.dash");
+  if (!isoDate) return dash;
   const d = new Date(`${isoDate}T12:00:00`);
   if (Number.isNaN(d.getTime())) return String(isoDate);
-  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(currentLocaleTag(), { day: "numeric", month: "short", year: "numeric" });
 }
 
 function mapRevenuePerDayToBars(revenuePerDay, fallbackDaysInMonth) {
@@ -80,14 +86,20 @@ function mapPercentStatusToSegments(percentStatus, reservations) {
   const entries = Object.entries(percentStatus || {});
   if (!entries.length) {
     return [
-      { key: "none", label: "Sin datos", percent: 100, count: 0, color: "#e2e8f0" },
+      {
+        key: "none",
+        label: i18n.t("reservationData.noDataSegment"),
+        percent: 100,
+        count: 0,
+        color: "#e2e8f0",
+      },
     ];
   }
   return entries.map(([key, pctStr]) => {
     const pct = parseFloat(String(pctStr).replace("%", "").replace(",", ".")) || 0;
     return {
       key,
-      label: PCT_LABELS[key] || key,
+      label: segmentLabelForKey(key),
       percent: Math.round(pct),
       count: counts[key] ?? 0,
       color: PCT_COLORS[key] || "#64748b",
@@ -96,19 +108,32 @@ function mapPercentStatusToSegments(percentStatus, reservations) {
 }
 
 function mapReservationsToArrivalRows(reservations) {
+  const dash = i18n.t("reservationData.dash");
+  const guestFb = i18n.t("reservationData.guestFallback");
   return reservations.slice(0, 12).map((r) => {
-    const name = r.user_name?.trim() || "Huésped";
-    const status = String(r.status || "pending").toLowerCase();
+    const name = r.user_name?.trim() || guestFb;
+    const statusRaw = String(r.status || "pending").toLowerCase();
+    const statusNormalized =
+      statusRaw === "confirmed"
+        ? "confirmed"
+        : statusRaw === "cancelled"
+          ? "cancelled"
+          : "pending";
     return {
       id: r.id,
       guestName: name,
-      guestEmail: "—",
+      guestEmail: dash,
       initials: initialsFromName(name),
       avatarTone: AVATAR_TONES[simpleHash(String(r.id)) % AVATAR_TONES.length],
-      room: r.room_type?.name || "—",
-      arrival: formatDateEs(r.check_in),
-      status: status === "confirmed" ? "confirmed" : "pending",
-      statusLabel: STATUS_LABEL[status] || status,
+      room: r.room_type?.name || dash,
+      arrival: formatArrivalDate(r.check_in),
+      status:
+        statusNormalized === "confirmed"
+          ? "confirmed"
+          : statusNormalized === "cancelled"
+            ? "cancelled"
+            : "pending",
+      statusLabel: statusLabelShort(statusNormalized),
     };
   });
 }
@@ -124,7 +149,7 @@ export function buildDashboardViewModel(dto, options = {}) {
   const totalRev = Number(dto?.total_ganancias ?? 0);
 
   const fmtMoney = (n) =>
-    `$${Number(n).toLocaleString("es-CO", {
+    `$${Number(n).toLocaleString(currentLocaleTag(), {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     })}`;
@@ -132,30 +157,21 @@ export function buildDashboardViewModel(dto, options = {}) {
   const metrics = [
     {
       id: "bookings",
-      label: "Reservas del mes",
       value: String(totalRes),
       hint: "",
       trend: null,
-      trendUp: true,
-      tone: "purple",
     },
     {
       id: "revenue-month",
-      label: "Total de ingresos del mes",
       value: fmtMoney(totalRev),
       hint: "",
       trend: null,
-      trendUp: true,
-      tone: "green",
     },
     {
       id: "guests",
-      label: "Total huéspedes",
       value: String(totalGuests),
       hint: "",
       trend: null,
-      trendUp: true,
-      tone: "blue",
     },
   ];
 
@@ -166,7 +182,6 @@ export function buildDashboardViewModel(dto, options = {}) {
     bars: mapRevenuePerDayToBars(dto?.revenue_per_day, options.daysInMonth),
     segments: mapPercentStatusToSegments(dto?.percent_status, reservations),
     arrivalRows: mapReservationsToArrivalRows(reservations),
-    statusCenterLine1: String(totalRes),
-    statusCenterLine2: totalRes === 1 ? "reserva" : "reservas",
+    bookingRingCount: totalRes,
   };
 }

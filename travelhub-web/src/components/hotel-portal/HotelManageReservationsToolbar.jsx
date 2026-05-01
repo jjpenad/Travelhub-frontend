@@ -1,16 +1,5 @@
-const FILTERS = [
-  { id: "all", label: "Todas", countKey: "all" },
-  { id: "confirmed", label: "Confirmadas", countKey: "confirmed" },
-  { id: "pending", label: "Pendientes", countKey: "pending" },
-  { id: "cancelled", label: "Canceladas", countKey: "cancelled" },
-];
-
-const SORT_OPTIONS = [
-  { value: "recent", label: "Recientes" },
-  { value: "oldest", label: "Más antiguas" },
-  { value: "amount_high", label: "Mayor monto" },
-  { value: "amount_low", label: "Menor monto" },
-];
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
 function HotelManageReservationsToolbar({
   searchQuery,
@@ -21,21 +10,43 @@ function HotelManageReservationsToolbar({
   onSortChange,
   filterCounts,
 }) {
+  const { t } = useTranslation();
+
+  const filters = useMemo(
+    () => [
+      { id: "all", label: t("hotelManage.filterAll"), countKey: "all" },
+      { id: "confirmed", label: t("hotelManage.filterConfirmed"), countKey: "confirmed" },
+      { id: "pending", label: t("hotelManage.filterPending"), countKey: "pending" },
+      { id: "cancelled", label: t("hotelManage.filterCancelled"), countKey: "cancelled" },
+    ],
+    [t],
+  );
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "recent", label: t("hotelManage.sortRecent") },
+      { value: "oldest", label: t("hotelManage.sortOldest") },
+      { value: "amount_high", label: t("hotelManage.sortAmountHigh") },
+      { value: "amount_low", label: t("hotelManage.sortAmountLow") },
+    ],
+    [t],
+  );
+
   return (
     <div className="hp-mres-toolbar">
       <label className="hp-mres-toolbar__search">
-        <span className="visually-hidden">Buscar reserva o cliente</span>
+        <span className="visually-hidden">{t("hotelManage.searchAria")}</span>
         <input
           type="search"
           className="hp-mres-toolbar__input"
-          placeholder="Nº Reserva o nombre cliente…"
+          placeholder={t("hotelManage.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           autoComplete="off"
         />
       </label>
-      <div className="hp-mres-toolbar__filters" role="group" aria-label="Filtrar por estado">
-        {FILTERS.map((f) => {
+      <div className="hp-mres-toolbar__filters" role="group" aria-label={t("hotelManage.filtersGroupAria")}>
+        {filters.map((f) => {
           const count = filterCounts[f.countKey] ?? 0;
           const active = filter === f.id;
           return (
@@ -52,14 +63,14 @@ function HotelManageReservationsToolbar({
         })}
       </div>
       <label className="hp-mres-toolbar__sort">
-        <span className="hp-mres-toolbar__sort-label">Ordenar:</span>
+        <span className="hp-mres-toolbar__sort-label">{t("hotelManage.sortLabel")}</span>
         <select
           className="hp-mres-toolbar__select"
           value={sort}
           onChange={(e) => onSortChange(e.target.value)}
-          aria-label="Ordenar lista"
+          aria-label={t("hotelManage.sortListAria")}
         >
-          {SORT_OPTIONS.map((o) => (
+          {sortOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>

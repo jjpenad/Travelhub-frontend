@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import HotelPortalDashboardHeader from "../components/hotel-portal/HotelPortalDashboardHeader";
@@ -16,34 +17,41 @@ import {
 } from "../auth/sessionAuth";
 import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getDashboardAnalytics } from "../services/api";
+import { formatApiUserError } from "../utils/formatApiUserError";
 import { buildDashboardViewModel } from "../utils/hotelPortalAnalyticsMap";
 import { getCalendarMonthBounds } from "../utils/hotelPortalMonthRange";
+import { displayMonthLocalized } from "../utils/displayMonthLocalized";
 import { displayNameFromEmail, welcomeNameFromEmail } from "../utils/hotelPortalFormat";
 import "./HotelPortalPage.css";
 
-const LOADING_SEGMENTS = [
-  { key: "placeholder", label: "Cargando…", percent: 100, count: 0, color: "#e2e8f0" },
-];
-
-const EMPTY_SEGMENTS = [
-  { key: "none", label: "Sin datos", percent: 100, count: 0, color: "#e2e8f0" },
-];
-
-/** Solo etiquetas/tonos para KPIs antes de recibir datos del API (sin valores demo). */
-const METRIC_CARD_SLOTS = [
-  { id: "bookings", label: "Reservas del mes", tone: "purple", trendUp: true },
-  { id: "revenue-month", label: "Total de ingresos del mes", tone: "green", trendUp: true },
-  { id: "guests", label: "Total huéspedes", tone: "blue", trendUp: true },
-];
-
 function HotelPortalPage() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const email = getSessionEmail() ?? "";
+
+  const loadingSegments = useMemo(
+    () => [{ key: "placeholder", label: t("hotelPortal.loadingSeg"), percent: 100, count: 0, color: "#e2e8f0" }],
+    [t],
+  );
+  const emptySegments = useMemo(
+    () => [{ key: "none", label: t("hotelPortal.emptySeg"), percent: 100, count: 0, color: "#e2e8f0" }],
+    [t],
+  );
+  const metricCardSlots = useMemo(
+    () => [
+      { id: "bookings", label: t("hotelPortal.metricBookings"), tone: "purple", trendUp: true },
+      { id: "revenue-month", label: t("hotelPortal.metricRevenue"), tone: "green", trendUp: true },
+      { id: "guests", label: t("hotelPortal.metricGuests"), tone: "blue", trendUp: true },
+    ],
+    [t],
+  );
+
   const [periodMonth, setPeriodMonth] = useState("Enero");
   const [periodYear, setPeriodYear] = useState("2026");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [viewModel, setViewModel] = useState(null);
+  /** JSON crudo de analíticas; el view model depende del idioma. */
+  const [analyticsDto, setAnalyticsDto] = useState(null);
   const [dashboardReservations, setDashboardReservations] = useState([]);
 
   const periodRange = useMemo(
@@ -60,6 +68,14 @@ function HotelPortalPage() {
     [periodRange.daysInMonth],
   );
 
+  const viewModel = useMemo(() => {
+    void i18n.resolvedLanguage;
+    if (!analyticsDto) return null;
+    return buildDashboardViewModel(analyticsDto, {
+      daysInMonth: periodRange.daysInMonth,
+    });
+  }, [analyticsDto, periodRange.daysInMonth, i18n.resolvedLanguage]);
+
   useEffect(() => {
     if (getSessionRole() !== ROLE_HOTEL) {
       navigate(PATH_TRAVELERS_HOME, { replace: true });
@@ -70,19 +86,20 @@ function HotelPortalPage() {
     if (getSessionRole() !== ROLE_HOTEL) return undefined;
 
     let cancelled = false;
-    const { startDate, endDate, daysInMonth } = periodRange;
+    const { startDate, endDate } = periodRange;
     (async () => {
       setLoading(true);
       setError(null);
       try {
         const dto = await getDashboardAnalytics({ startDate, endDate });
         if (!cancelled) {
-          setViewModel(buildDashboardViewModel(dto, { daysInMonth }));
+          setAnalyticsDto(dto ?? null);
           setDashboardReservations(Array.isArray(dto?.reservations) ? dto.reservations : []);
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e?.message || "No se pudo cargar el panel.");
+          setAnalyticsDto(null);
+          setError(formatApiUserError(e, "hotelPortal.loadError"));
           if (e?.status === 401 || e?.status === 403) {
             clearSessionUser();
             navigate("/login", { replace: true });
@@ -98,41 +115,61 @@ function HotelPortalPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, periodRange]);
+  }, [navigate, periodRange, t]);
 
-  const firstName = useMemo(() => welcomeNameFromEmail(email), [email]);
-  const sidebarDisplayName = useMemo(() => displayNameFromEmail(email), [email]);
+  const firstName = useMemo(() => {
+    void i18n.resolvedLanguage;
+    return welcomeNameFromEmail(email);
+  }, [email, i18n.resolvedLanguage]);
+
+  const sidebarDisplayName = useMemo(() => {
+    void i18n.resolvedLanguage;
+    return displayNameFromEmail(email);
+  }, [email, i18n.resolvedLanguage]);
 
   const metrics = useMemo(() => {
-    if (viewModel?.metrics) return viewModel.metrics;
+    const mergeSlots = (apiMetrics) =>
+      metricCardSlots.map((slot) => {
+        const vm = apiMetrics.find((x) => x.id === slot.id);
+        return {
+          ...slot,
+          value: vm?.value ?? "—",
+          hint: vm?.hint ?? "",
+          trend: vm?.trend ?? null,
+        };
+      });
+
+    if (viewModel?.metrics) return mergeSlots(viewModel.metrics);
     if (loading) {
-      return METRIC_CARD_SLOTS.map((m) => ({
+      return metricCardSlots.map((m) => ({
         ...m,
         value: "…",
-        hint: "Cargando…",
+        hint: t("hotelPortal.metricLoading"),
         trend: null,
       }));
     }
     if (error) {
-      return METRIC_CARD_SLOTS.map((m) => ({
+      return metricCardSlots.map((m) => ({
         ...m,
         value: "—",
         hint: "",
         trend: null,
       }));
     }
-    return METRIC_CARD_SLOTS.map((m) => ({
+    return metricCardSlots.map((m) => ({
       ...m,
       value: "—",
       hint: "",
       trend: null,
     }));
-  }, [viewModel, loading, error]);
+  }, [viewModel, loading, error, metricCardSlots, t]);
 
-  const chartTitle = `Ingresos mes ${periodMonth}`;
+  const chartTitle = t("hotelPortal.chartTitle", {
+    month: displayMonthLocalized(periodMonth),
+  });
   const bars = viewModel?.bars ?? emptyBarsForPeriod;
   const segments =
-    viewModel?.segments ?? (loading ? LOADING_SEGMENTS : EMPTY_SEGMENTS);
+    viewModel?.segments ?? (loading ? loadingSegments : emptySegments);
   const arrivalRows = viewModel?.arrivalRows ?? [];
 
   if (getSessionRole() !== ROLE_HOTEL) {
@@ -146,7 +183,6 @@ function HotelPortalPage() {
         <HotelPortalSidebar
           activeId="dashboard"
           displayName={sidebarDisplayName}
-          propertyLabel="Establecimiento asociado"
         />
         <main className="hotel-portal-dashboard__main" aria-busy={loading}>
           {error ? (
@@ -179,9 +215,9 @@ function HotelPortalPage() {
           <div className="hotel-portal-dashboard__mid">
             <HotelPortalRevenueChart title={chartTitle} bars={bars} />
             <HotelPortalReservationStatus
+              title={t("hotelPortal.statusChartTitle")}
+              bookingCount={viewModel != null ? Number(viewModel.bookingRingCount ?? 0) : null}
               segments={segments}
-              centerLine1={viewModel?.statusCenterLine1 ?? "—"}
-              centerLine2={viewModel?.statusCenterLine2 ?? "reservas"}
             />
           </div>
           <div className="hotel-portal-dashboard__arrivals">

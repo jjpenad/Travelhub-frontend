@@ -1,10 +1,5 @@
 import "./CheckoutStepper.css";
-
-const STEPS = [
-  { id: "details", label: "Reserva" },
-  { id: "payment", label: "Pago" },
-  { id: "confirm", label: "Confirmación", labelDone: "Confirmado" },
-];
+import { useTranslation } from "react-i18next";
 
 function IconCheck({ className }) {
   return (
@@ -24,6 +19,17 @@ function IconCheck({ className }) {
 }
 
 function CheckoutStepper({ activeStep = "payment", variant = "default" }) {
+  const { t } = useTranslation();
+  const steps = [
+    { id: "details", label: t("checkoutStepper.booking") },
+    { id: "payment", label: t("checkoutStepper.pay") },
+    {
+      id: "confirm",
+      label: t("checkoutStepper.confirm"),
+      labelDone: t("checkoutStepper.confirmed"),
+    },
+  ];
+
   const isConfirmationDone = variant === "confirmation";
 
   return (
@@ -32,14 +38,14 @@ function CheckoutStepper({ activeStep = "payment", variant = "default" }) {
         "checkout-stepper" +
         (isConfirmationDone ? " checkout-stepper--confirmation-done" : "")
       }
-      aria-label="Progreso del pago"
+      aria-label={t("checkoutStepper.aria")}
     >
-      {STEPS.map((step, index) => {
-        const activeIndex = STEPS.findIndex((s) => s.id === activeStep);
+      {steps.map((step, index) => {
+        const activeIndex = steps.findIndex((s) => s.id === activeStep);
         const isPast =
           isConfirmationDone || activeIndex > index;
         const isActive = !isConfirmationDone && activeStep === step.id;
-        const isLast = index === STEPS.length - 1;
+        const isLast = index === steps.length - 1;
         const showCheckmark = isConfirmationDone && isLast;
         const label =
           showCheckmark && step.labelDone ? step.labelDone : step.label;
@@ -69,7 +75,7 @@ function CheckoutStepper({ activeStep = "payment", variant = "default" }) {
               )}
             </span>
             <span className="checkout-stepper__label">{label}</span>
-            {index < STEPS.length - 1 ? (
+            {index < steps.length - 1 ? (
               <span className="checkout-stepper__connector" aria-hidden="true" />
             ) : null}
           </li>

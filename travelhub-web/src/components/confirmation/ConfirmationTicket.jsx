@@ -1,21 +1,6 @@
+import { useTranslation } from "react-i18next";
+import { localeTagForI18n } from "../../utils/locale";
 import "./ConfirmationTicket.css";
-
-function fmtMoney(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString("es-ES")}`;
-}
-
-function formatTicketDate(iso) {
-  if (!iso || typeof iso !== "string") return "—";
-  const d = new Date(iso + "T12:00:00");
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-ES", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function ConfirmationTicket({
   hotel,
@@ -24,10 +9,30 @@ function ConfirmationTicket({
   checkInTime = "15:00",
   checkOutTime = "11:00",
   total = 0,
-  paymentLabel = "Visa ···· 4242",
-  paymentStatus = "Pagado",
+  paymentLabel = "",
+  paymentStatus = "",
 }) {
-  const name = hotel?.name ?? "Hotel";
+  const { t, i18n } = useTranslation();
+  const loc = localeTagForI18n(i18n.language);
+
+  function fmtMoney(n) {
+    if (n == null || Number.isNaN(Number(n))) return "—";
+    return `$${Number(n).toLocaleString(loc)}`;
+  }
+
+  function formatTicketDate(iso) {
+    if (!iso || typeof iso !== "string") return "—";
+    const d = new Date(iso + "T12:00:00");
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(loc, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  const name = hotel?.name ?? t("bookingSummary.hotelFallback");
   const locationText = hotel?.location ?? "—";
   const imageSrc = hotel?.image;
   const rating =
@@ -38,7 +43,7 @@ function ConfirmationTicket({
   return (
     <article
       className="confirmation-ticket"
-      aria-label="Resumen del ticket de reserva"
+      aria-label={t("confirmation.ticketAria")}
     >
       <div className="confirmation-ticket__header">
         <div className="confirmation-ticket__thumb-wrap">
@@ -65,7 +70,7 @@ function ConfirmationTicket({
         </div>
         <p
           className="confirmation-ticket__rating"
-          aria-label={`Valoración ${rating} de 5`}
+          aria-label={t("confirmation.ticketRatingAria", { value: rating })}
         >
           <span className="confirmation-ticket__rating-value">{rating}</span>
           <span className="confirmation-ticket__rating-max">/5</span>
@@ -74,25 +79,25 @@ function ConfirmationTicket({
 
       <div className="confirmation-ticket__grid">
         <div className="confirmation-ticket__cell">
-          <h3 className="confirmation-ticket__cell-title">Entrada</h3>
+          <h3 className="confirmation-ticket__cell-title">{t("confirmation.ticketCheckIn")}</h3>
           <p className="confirmation-ticket__cell-date">
             {formatTicketDate(checkIn)}
           </p>
           <p className="confirmation-ticket__cell-time">
-            Desde las {checkInTime}
+            {t("confirmation.ticketFrom", { time: checkInTime })}
           </p>
         </div>
         <div className="confirmation-ticket__cell">
-          <h3 className="confirmation-ticket__cell-title">Salida</h3>
+          <h3 className="confirmation-ticket__cell-title">{t("confirmation.ticketCheckOut")}</h3>
           <p className="confirmation-ticket__cell-date">
             {formatTicketDate(checkOut)}
           </p>
           <p className="confirmation-ticket__cell-time">
-            Hasta las {checkOutTime}
+            {t("confirmation.ticketUntil", { time: checkOutTime })}
           </p>
         </div>
         <div className="confirmation-ticket__cell confirmation-ticket__cell--payment">
-          <h3 className="confirmation-ticket__cell-title">Total pagado</h3>
+          <h3 className="confirmation-ticket__cell-title">{t("confirmation.ticketTotalPaid")}</h3>
           <p className="confirmation-ticket__cell-amount">{fmtMoney(total)}</p>
           <p className="confirmation-ticket__cell-method">{paymentLabel}</p>
           <p className="confirmation-ticket__cell-status">{paymentStatus}</p>

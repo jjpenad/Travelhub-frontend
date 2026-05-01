@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import HotelManageReservationsHeader from "../components/hotel-portal/HotelManageReservationsHeader";
@@ -26,20 +27,30 @@ function HotelManageReservationsPage() {
   const [sort, setSort] = useState("recent");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
-  /** Filas obtenidas del backend vía analytics; `key` debe coincidir con `location.key` del momento del fetch. */
+  /** Reservas crudas de analytics vía analytics; `key` debe coincidir con `location.key` del momento del fetch. */
   const [remotePayload, setRemotePayload] = useState(null);
+  const { i18n } = useTranslation();
+  const sidebarDisplayName = useMemo(() => {
+    void i18n.resolvedLanguage;
+    return displayNameFromEmail(email);
+  }, [email, i18n.resolvedLanguage]);
 
   const rowsFromNavigate = useMemo(() => {
+    void i18n.resolvedLanguage;
     const raw = location.state?.reservations;
     if (!Array.isArray(raw)) return null;
     return mapAnalyticsReservationsToManageRows(raw);
-  }, [location.state?.reservations]);
+  }, [location.state?.reservations, i18n.resolvedLanguage]);
 
   const allRows = useMemo(() => {
+    void i18n.resolvedLanguage;
     if (rowsFromNavigate != null) return rowsFromNavigate;
-    if (remotePayload && remotePayload.key === location.key) return remotePayload.rows;
+    if (remotePayload && remotePayload.key === location.key) {
+      const raw = remotePayload.reservations;
+      return mapAnalyticsReservationsToManageRows(Array.isArray(raw) ? raw : []);
+    }
     return [];
-  }, [rowsFromNavigate, remotePayload, location.key]);
+  }, [rowsFromNavigate, remotePayload, location.key, i18n.resolvedLanguage]);
 
   useEffect(() => {
     if (getSessionRole() !== ROLE_HOTEL) {
@@ -65,11 +76,11 @@ function HotelManageReservationsPage() {
         if (cancelled) return;
         setRemotePayload({
           key: targetKey,
-          rows: mapAnalyticsReservationsToManageRows(dto?.reservations),
+          reservations: Array.isArray(dto?.reservations) ? dto.reservations : [],
         });
       } catch (e) {
         if (cancelled) return;
-        setRemotePayload({ key: targetKey, rows: [] });
+        setRemotePayload({ key: targetKey, reservations: [] });
         if (e?.status === 401 || e?.status === 403) {
           clearSessionUser();
           navigate("/login", { replace: true });
@@ -148,8 +159,6 @@ function HotelManageReservationsPage() {
     setPage(1);
   };
 
-  const sidebarDisplayName = useMemo(() => displayNameFromEmail(email), [email]);
-
   if (getSessionRole() !== ROLE_HOTEL) {
     return null;
   }
@@ -158,11 +167,7 @@ function HotelManageReservationsPage() {
     <div className="hotel-portal-dashboard">
       <Navbar />
       <div className="hotel-portal-dashboard__shell">
-        <HotelPortalSidebar
-          activeId="bookings"
-          displayName={sidebarDisplayName}
-          propertyLabel="Establecimiento asociado"
-        />
+        <HotelPortalSidebar activeId="bookings" displayName={sidebarDisplayName} />
         <main className="hotel-portal-dashboard__main hp-manage-reservations">
           <HotelManageReservationsHeader />
           <HotelManageReservationsToolbar

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   isAuthenticated,
@@ -6,6 +7,7 @@ import {
   persistSessionFromLogin,
 } from "../../auth/sessionAuth";
 import { processPayment, registerUser } from "../../services/api";
+import { localeTagForI18n } from "../../utils/locale";
 import "./BookingSummaryCard.css";
 
 function buildPaymentLabel(
@@ -53,16 +55,16 @@ function IconShieldSsl({ className }) {
   );
 }
 
-function fmtMoney(n) {
+function fmtMoney(n, localeTag) {
   if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString("es-ES")}`;
+  return `$${Number(n).toLocaleString(localeTag)}`;
 }
 
-function formatDateLabel(iso) {
+function formatDateLabel(iso, localeTag) {
   if (!iso || typeof iso !== "string") return "—";
   const d = new Date(iso + "T12:00:00");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-ES", {
+  return d.toLocaleDateString(localeTag, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -93,6 +95,8 @@ function BookingSummaryCard({
   guestLastName = "",
   onConfirm,
 }) {
+  const { t, i18n } = useTranslation();
+  const loc = localeTagForI18n(i18n.language);
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
@@ -104,7 +108,7 @@ function BookingSummaryCard({
 
   const hasAuthSession = isAuthenticated() || isLoggedIn();
 
-  const name = hotel?.name ?? "Hotel";
+  const name = hotel?.name ?? t("bookingSummary.hotelFallback");
   const locationText = hotel?.location ?? "—";
   const imageSrc = hotel?.image;
   const rating =
@@ -125,7 +129,7 @@ function BookingSummaryCard({
       const paymentPayload = {
         reservation_id: reservationId,
         primary_guest: {
-          first_name: guestFirstName || "Huésped",
+          first_name: guestFirstName || t("bookingSummary.guestDefault"),
           last_name: guestLastName || "",
           document_type: "CC",
           document_number: "1234567890", // Debería capturarse en el form si es real
@@ -149,7 +153,7 @@ function BookingSummaryCard({
         setSubmitting(false);
         setErrorModal({
           show: true,
-          message: result.error || "No se pudo procesar el pago",
+          message: result.error || t("bookingSummary.processFailed"),
         });
         return;
       }
@@ -184,7 +188,7 @@ function BookingSummaryCard({
             const reg = await registerUser({
               email: email.toLowerCase(),
               password: Math.random().toString(36).slice(-10),
-              first_name: guestFirstName || "Huésped",
+              first_name: guestFirstName || t("bookingSummary.guestDefault"),
               last_name: guestLastName || "",
             });
             if (reg.token) {
@@ -250,7 +254,7 @@ function BookingSummaryCard({
       );
     } catch (err) {
       console.error("Reservation failed:", err);
-      setApiError(err.message || "Error al crear la reserva");
+      setApiError(err.message || t("bookingSummary.reservationFail"));
       setSubmitting(false);
     }
   }
@@ -294,22 +298,23 @@ function BookingSummaryCard({
 
       <ul className="booking-summary-card__trip-meta">
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Fechas</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.dates")}</span>
           <span className="booking-summary-card__trip-value">
             {checkIn && checkOut
-              ? `${formatDateLabel(checkIn)} – ${formatDateLabel(checkOut)}`
+              ? `${formatDateLabel(checkIn, loc)} – ${formatDateLabel(checkOut, loc)}`
               : "—"}
           </span>
         </li>
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Huéspedes</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.guests")}</span>
           <span className="booking-summary-card__trip-value">
-            {guestCount}{" "}
-            {guestCount === 1 ? "huésped" : "huéspedes"}
+            {t(guestCount === 1 ? "bookingSummary.guest_one" : "bookingSummary.guest_other", {
+              count: guestCount,
+            })}
           </span>
         </li>
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Noches</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.nights")}</span>
           <span className="booking-summary-card__trip-value">{nights}</span>
         </li>
       </ul>
@@ -317,32 +322,40 @@ function BookingSummaryCard({
       <div className="booking-summary-card__breakdown">
         <div className="booking-summary-card__row">
           <span>
-            {fmtMoney(pricePerNight)} × {nights} noches
+            {t(
+              nights === 1
+                ? "bookingSummary.nightsFormula_one"
+                : "bookingSummary.nightsFormula_other",
+              {
+                price: fmtMoney(pricePerNight, loc),
+                count: nights,
+              },
+            )}
           </span>
-          <span>{fmtMoney(roomSubtotal)}</span>
+          <span>{fmtMoney(roomSubtotal, loc)}</span>
         </div>
         {cleaningFee > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Tarifa de limpieza</span>
-            <span>{fmtMoney(cleaningFee)}</span>
+            <span>{t("bookingSummary.feeCleaning")}</span>
+            <span>{fmtMoney(cleaningFee, loc)}</span>
           </div>
         ) : null}
         {serviceFee > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Tarifa de servicio</span>
-            <span>{fmtMoney(serviceFee)}</span>
+            <span>{t("bookingSummary.feeService")}</span>
+            <span>{fmtMoney(serviceFee, loc)}</span>
           </div>
         ) : null}
         {taxes > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Impuestos</span>
-            <span>{fmtMoney(taxes)}</span>
+            <span>{t("bookingSummary.taxes")}</span>
+            <span>{fmtMoney(taxes, loc)}</span>
           </div>
         ) : null}
         <div className="booking-summary-card__row booking-summary-card__row--total">
-          <span>Total</span>
+          <span>{t("bookingSummary.total")}</span>
           <span className="booking-summary-card__total-amount">
-            {fmtMoney(total)}
+            {fmtMoney(total, loc)}
           </span>
         </div>
       </div>
@@ -360,12 +373,12 @@ function BookingSummaryCard({
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />
-        {submitting ? "Procesando..." : "Confirmar y Pagar"}
+        {submitting ? t("bookingSummary.processing") : t("bookingSummary.confirmPay")}
       </button>
 
       {hasAuthSession ? (
         <p className="booking-summary-card__account-check booking-summary-card__check-note">
-          Ya tienes sesión activa; el pago quedará asociado a tu cuenta.
+          {t("bookingSummary.hasSessionNote")}
         </p>
       ) : (
         <div className="booking-summary-card__account-check">
@@ -377,9 +390,9 @@ function BookingSummaryCard({
               className="booking-summary-card__checkbox"
             />
             <span className="booking-summary-card__check-text">
-              Autorizo la creación de una cuenta para gestionar mis reservas.
+              {t("bookingSummary.createAccount")}
               <small className="booking-summary-card__check-note">
-                De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
+                {t("bookingSummary.createNote")}
               </small>
             </span>
           </label>
@@ -387,10 +400,10 @@ function BookingSummaryCard({
       )}
 
       <footer className="booking-summary-card__footer">
-        <p className="booking-summary-card__cancellation">Cancelación gratuita</p>
+        <p className="booking-summary-card__cancellation">{t("bookingSummary.freeCancellation")}</p>
         <p className="booking-summary-card__ssl">
           <IconShieldSsl className="booking-summary-card__ssl-icon" />
-          <span>Pago seguro con SSL</span>
+          <span>{t("bookingSummary.ssl")}</span>
         </p>
       </footer>
 
@@ -402,7 +415,7 @@ function BookingSummaryCard({
                 <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
               </svg>
             </div>
-            <h3 className="booking-modal__title">No se pudo completar el pago</h3>
+            <h3 className="booking-modal__title">{t("bookingSummary.modalTitle")}</h3>
             <p className="booking-modal__text">{errorModal.message}</p>
             <button
               type="button"
@@ -412,7 +425,7 @@ function BookingSummaryCard({
                 navigate("/");
               }}
             >
-              Volver a buscar
+              {t("bookingSummary.backSearch")}
             </button>
           </div>
         </div>

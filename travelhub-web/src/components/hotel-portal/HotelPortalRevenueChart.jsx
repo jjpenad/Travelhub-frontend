@@ -1,19 +1,20 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { currentLocaleTag } from "../../utils/currentLocaleTag";
 import "./HotelPortalRevenueChart.css";
 
-function fmtMoney(n) {
-  return `$${Number(n).toLocaleString("es-ES", { maximumFractionDigits: 0 })}`;
-}
-
 /**
- * Gráfico de barras de ingresos por día del mes (datos demo).
+ * Gráfico de barras de ingresos por día del mes.
  */
-function HotelPortalRevenueChart({ title = "Ingresos mes Enero", bars = [] }) {
-  const max = useMemo(
-    () => Math.max(1, ...bars.map((b) => b.value)),
-    [bars],
-  );
+function HotelPortalRevenueChart({ title, bars = [] }) {
+  const { t } = useTranslation();
+  const fmtMoney = (n) =>
+    `$${Number(n).toLocaleString(currentLocaleTag(), { maximumFractionDigits: 0 })}`;
+
+  const max = useMemo(() => Math.max(1, ...bars.map((b) => b.value)), [bars]);
   const [hover, setHover] = useState(null);
+
+  const chartAria = useMemo(() => t("hotelPortal.chartDailyAria", { count: bars.length }), [bars.length, t]);
 
   return (
     <section className="hp-revenue" aria-labelledby="hp-revenue-title">
@@ -23,12 +24,7 @@ function HotelPortalRevenueChart({ title = "Ingresos mes Enero", bars = [] }) {
         </h2>
       </div>
       <div className="hp-revenue__chart-wrap">
-        <div
-          className="hp-revenue__chart"
-          role="img"
-          aria-label={`Ingresos diarios, ${bars.length} días`}
-          onMouseLeave={() => setHover(null)}
-        >
+        <div className="hp-revenue__chart" role="img" aria-label={chartAria} onMouseLeave={() => setHover(null)}>
           {bars.map((b) => {
             const h = Math.round((b.value / max) * 100);
             const isHover = hover === b.day;
@@ -40,15 +36,12 @@ function HotelPortalRevenueChart({ title = "Ingresos mes Enero", bars = [] }) {
                 onMouseEnter={() => setHover(b.day)}
                 onFocus={() => setHover(b.day)}
                 onBlur={() => setHover(null)}
-                aria-label={`Día ${b.day}, ${fmtMoney(b.value)}`}
+                aria-label={t("hotelPortal.chartDayAria", { day: b.day, amount: fmtMoney(b.value) })}
               >
-                <span
-                  className="hp-revenue__bar"
-                  style={{ height: `${Math.max(8, h)}%` }}
-                />
+                <span className="hp-revenue__bar" style={{ height: `${Math.max(8, h)}%` }} />
                 {isHover ? (
                   <span className="hp-revenue__tooltip" role="tooltip">
-                    Día {b.day}
+                    {t("hotelPortal.chartDayTooltipDay", { day: b.day })}
                     <strong>{fmtMoney(b.value)}</strong>
                   </span>
                 ) : null}
@@ -65,7 +58,7 @@ function HotelPortalRevenueChart({ title = "Ingresos mes Enero", bars = [] }) {
         </div>
         <div className="hp-revenue__legend">
           <span className="hp-revenue__legend-item hp-revenue__legend-item--real">
-            Ingresos reales
+            {t("hotelPortal.chartLegendActual")}
           </span>
         </div>
       </div>

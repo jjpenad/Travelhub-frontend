@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import BookingWidget from "../components/hotel/BookingWidget";
 import GuestReviews from "../components/hotel/GuestReviews";
@@ -15,6 +16,7 @@ import "./HotelDetailPage.css";
 const showGuestReviewsSection = false;
 
 function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
+  const { t } = useTranslation();
   const roomObjects = hotel.availableRoomObjects || [];
   const roomNames = roomObjects.length > 0
     ? roomObjects.map((r) => r.name)
@@ -30,16 +32,16 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
       <Navbar />
       <PageContainer>
         <div className="hotel-detail" data-selected-room={selectedRoom}>
-          <nav className="hotel-detail__breadcrumb" aria-label="Migas de pan">
+          <nav className="hotel-detail__breadcrumb" aria-label={t("hotelDetail.breadcrumbAria")}>
             <ol className="hotel-detail__breadcrumb-list">
               <li className="hotel-detail__breadcrumb-item">
                 <Link className="hotel-detail__breadcrumb-link" to={PATH_TRAVELERS_HOME}>
-                  Inicio
+                  {t("hotelDetail.home")}
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item">
                 <Link className="hotel-detail__breadcrumb-link" to={`/search${searchSuffix}`}>
-                  {hotel.city || "Búsqueda"}
+                  {hotel.city || t("hotelDetail.search")}
                 </Link>
               </li>
               <li className="hotel-detail__breadcrumb-item hotel-detail__breadcrumb-item--current" aria-current="page">
@@ -62,7 +64,7 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                 {roomObjects.length > 0 && (
                   <section className="hotel-detail__rooms">
                     <h2 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "1rem" }}>
-                      Habitaciones disponibles
+                      {t("hotelDetail.roomsHeading")}
                     </h2>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       {roomObjects.map((room) => (
@@ -77,11 +79,13 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <strong>{room.name}</strong>
-                            <span style={{ color: "#6c63ff", fontWeight: 700 }}>${room.pricePerNight}/noche</span>
+                            <span style={{ color: "#6c63ff", fontWeight: 700 }}>
+                              {t("hotelDetail.perNightShort", { price: `$${room.pricePerNight}` })}
+                            </span>
                           </div>
                           <p style={{ color: "#6b7280", fontSize: "0.875rem", margin: "0.25rem 0" }}>{room.description}</p>
                           <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "#9ca3af" }}>
-                            <span>Máx. {room.maxCapacity} huéspedes</span>
+                            <span>{t("hotelDetail.maxGuests", { count: room.maxCapacity })}</span>
                             <span>{room.bedType}</span>
                             {room.sizeSqm > 0 && <span>{room.sizeSqm} m²</span>}
                           </div>
@@ -92,7 +96,7 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                           )}
                           {room.totalPrice > 0 && (
                             <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                              Total: ${room.totalPrice}
+                              {t("hotelDetail.totalLabel", { amount: `$${room.totalPrice}` })}
                             </p>
                           )}
                         </div>
@@ -103,7 +107,7 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
 
                 {roomObjects.length === 0 && (
                   <div style={{ padding: "1.5rem", background: "#fff7ed", borderRadius: "12px", textAlign: "center" }}>
-                    <p style={{ color: "#c2410c", fontWeight: 500 }}>No hay habitaciones disponibles para estas fechas.</p>
+                    <p style={{ color: "#c2410c", fontWeight: 500 }}>{t("hotelDetail.noRoomsForDates")}</p>
                   </div>
                 )}
 
@@ -111,7 +115,7 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
               </div>
             </div>
 
-            <aside className="hotel-detail__booking-sidebar" aria-label="Reserva">
+            <aside className="hotel-detail__booking-sidebar" aria-label={t("hotelDetail.bookingAsideAria")}>
               <BookingWidget
                 hotel={hotel}
                 pricePerNight={pricePerNight}
@@ -133,6 +137,7 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
 }
 
 function HotelDetailPage() {
+  const { t } = useTranslation();
   const { hotelId: hotelIdParam } = useParams();
   const [searchParams] = useSearchParams();
   const hotelId = hotelIdParam ? decodeURIComponent(hotelIdParam) : "";
@@ -166,7 +171,7 @@ function HotelDetailPage() {
     if (!id) return;
     dispatch({ type: "loading" });
     if (!ci || !co) {
-      dispatch({ type: "error", error: "Selecciona fechas para ver disponibilidad." });
+      dispatch({ type: "error", error: t("hotelDetail.datesRequired") });
       return;
     }
     try {
@@ -175,7 +180,7 @@ function HotelDetailPage() {
     } catch (err) {
       if (!signal.aborted) dispatch({ type: "error", error: err.message });
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const ac = new AbortController();
@@ -188,7 +193,7 @@ function HotelDetailPage() {
   if (loading) {
     return (
       <div className="hotel-detail-page"><Navbar /><PageContainer>
-        <p style={{ padding: "3rem", textAlign: "center" }}>Cargando hotel...</p>
+        <p style={{ padding: "3rem", textAlign: "center" }}>{t("hotelDetail.loadingHotel")}</p>
       </PageContainer></div>
     );
   }
@@ -198,8 +203,8 @@ function HotelDetailPage() {
       <div className="hotel-detail-page"><Navbar /><PageContainer>
         <div className="hotel-detail hotel-detail--not-found">
           <h1 className="hotel-detail__not-found-title">{error || "Hotel no encontrado"}</h1>
-          <p className="hotel-detail__not-found-text">Verifica el enlace o vuelve a buscar.</p>
-          <Link className="hotel-detail__not-found-link" to={`/search${searchSuffix}`}>Volver a resultados</Link>
+          <p className="hotel-detail__not-found-text">{t("hotelDetail.tryAgainSearch")}</p>
+          <Link className="hotel-detail__not-found-link" to={`/search${searchSuffix}`}>{t("hotelDetail.backResults")}</Link>
         </div>
       </PageContainer></div>
     );

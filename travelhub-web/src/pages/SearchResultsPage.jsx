@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
@@ -10,7 +11,7 @@ import HotelCard from "../components/search/HotelCard";
 import ResultsToolbar from "../components/search/ResultsToolbar";
 import SearchSummary from "../components/search/SearchSummary";
 import { searchAccommodations, SEARCH_AMENITY_QUERY_TO_UI } from "../services/api";
-import { searchResultsCopy } from "../data/searchResultsCopy";
+import { localeTagForI18n } from "../utils/locale";
 import "./SearchResults.css";
 
 /** MVP: oculta la columna de filtros; pon en true para mostrar el sidebar */
@@ -52,12 +53,70 @@ function amenitiesRecordFromParams(searchParams, knownKeys) {
 }
 
 function SearchResultsPage() {
-  const {
-    resultsRegionLabel,
-    toolbar: toolbarCopy,
-    filters: filtersCopy,
-  } = searchResultsCopy;
-  const cardCopy = searchResultsCopy.hotelCard;
+  const { t, i18n } = useTranslation();
+
+  const toolbarCopyBase = useMemo(
+    () => ({
+      filtersToolbarLabel: t("search.toolbar.filtersToolbarLabel"),
+      filterPrice: t("search.toolbar.filterPrice"),
+      filterRating: t("search.toolbar.filterRating"),
+      sortLabel: t("search.toolbar.sortLabel"),
+      sortBestMatch: t("search.toolbar.sortBestMatch"),
+      sortPriceLow: t("search.toolbar.sortPriceLow"),
+      sortPriceHigh: t("search.toolbar.sortPriceHigh"),
+    }),
+    [t],
+  );
+
+  const filtersCopy = useMemo(
+    () => ({
+      title: t("search.filters.title"),
+      resetAll: t("search.filters.resetAll"),
+      sidebarPlaceholder: t("search.filters.sidebarPlaceholder"),
+      priceRange: t("search.filters.priceRange"),
+      priceMinLabel: t("search.filters.priceMinLabel"),
+      priceMaxLabel: t("search.filters.priceMaxLabel"),
+      starRating: t("search.filters.starRating"),
+      starOptions: [
+        { value: 5, label: t("search.filters.stars5") },
+        { value: 4, label: t("search.filters.stars4") },
+        { value: 3, label: t("search.filters.stars3") },
+      ],
+      amenities: t("search.filters.amenities"),
+      amenityOptions: [
+        { key: "pool", label: t("search.filters.pool"), icon: "🏊" },
+        { key: "wifi", label: t("search.filters.wifi"), icon: "📶" },
+        { key: "breakfast_included", label: t("search.filters.breakfast"), icon: "🍳" },
+        { key: "parking", label: t("search.filters.parking"), icon: "🅿️" },
+        { key: "air_conditioning", label: t("search.filters.ac"), icon: "❄️" },
+        { key: "gym", label: t("search.filters.gym"), icon: "🏋️" },
+        { key: "pet_friendly", label: t("search.filters.pets"), icon: "🐾" },
+      ],
+      applyFilters: t("search.filters.applyFilters"),
+      activeFilters: (count) => t(`search.filters.activeFilters_${count === 1 ? "one" : "other"}`, { count }),
+    }),
+    [t],
+  );
+
+  const cardCopy = useMemo(
+    () => ({
+      imageAlt: (hotelName) => t("hotelCard.imageAlt", { name: hotelName }),
+      ratingAria: (value) => t("hotelCard.ratingAria", { value }),
+      reviews: (count) =>
+        t(count === 1 ? "hotelCard.reviews_one" : "hotelCard.reviews_other", {
+          count,
+        }),
+      priceLabel: (amount) =>
+        `$${amount.toLocaleString(localeTagForI18n(i18n.language))}`,
+      perNight: t("hotelCard.perNight"),
+      priceTaxNote: t("hotelCard.taxNote"),
+      bookNow: t("hotelCard.bookNow"),
+      refundable: t("hotelCard.refundable"),
+      notRefundable: t("hotelCard.notRefundable"),
+      amenitiesMore: (n) => t("hotelCard.amenitiesMore", { n }),
+    }),
+    [t, i18n.language],
+  );
 
   const knownAmenityKeys = useMemo(
     () =>
@@ -213,19 +272,25 @@ function SearchResultsPage() {
   const { hotels, loading, error } = state;
 
   const toolbarCopyResolved = useMemo(() => {
+    const cityLabel = destination.trim() || t("search.toolbar.defaultCity");
     if (loading) {
-      return { ...toolbarCopy, summaryLead: "Buscando alojamientos…" };
+      return { ...toolbarCopyBase, summaryLead: t("search.toolbar.loading") };
     }
     const n = hotels.length;
-    const cityLabel = destination.trim() || "tu destino";
+    if (n === 0) {
+      return {
+        ...toolbarCopyBase,
+        summaryLead: t("search.toolbar.noneInCity", { city: cityLabel }),
+      };
+    }
     return {
-      ...toolbarCopy,
-      summaryLead:
-        n === 0
-          ? `Sin resultados en ${cityLabel}`
-          : `${n} ${n === 1 ? "alojamiento" : "alojamientos"} en ${cityLabel}`,
+      ...toolbarCopyBase,
+      summaryLead: t(
+        n === 1 ? "search.toolbar.count_one" : "search.toolbar.count_other",
+        { count: n, city: cityLabel },
+      ),
     };
-  }, [toolbarCopy, loading, hotels.length, destination]);
+  }, [toolbarCopyBase, loading, hotels.length, destination, t]);
 
   const filterSidebarKey = searchParams.toString();
 
@@ -259,16 +324,18 @@ function SearchResultsPage() {
             <div
               className="results__list"
               role="list"
-              aria-label={resultsRegionLabel}
+              aria-label={t("search.resultsRegionAria")}
             >
               {loading ? (
-                <p style={{ padding: "2rem", textAlign: "center" }}>Buscando hoteles disponibles...</p>
+                <p style={{ padding: "2rem", textAlign: "center" }}>{t("search.toolbar.loadingAlt")}</p>
               ) : error ? (
-                <p style={{ padding: "2rem", textAlign: "center", color: "#e53935" }}>Error: {error}</p>
+                <p style={{ padding: "2rem", textAlign: "center", color: "#e53935" }}>
+                  {t("search.errors.prefix")} {error}
+                </p>
               ) : hotels.length === 0 ? (
                 <div style={{ padding: "2rem", textAlign: "center" }}>
-                  <p><strong>No se encontraron hoteles disponibles.</strong></p>
-                  <p>Prueba con otras fechas u otra ciudad.</p>
+                  <p><strong>{t("search.emptyStrong")}</strong></p>
+                  <p>{t("search.emptyLead")}</p>
                 </div>
               ) : (
                 hotels.map((hotel) => (

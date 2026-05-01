@@ -1,9 +1,12 @@
+import { useTranslation } from "react-i18next";
+
 function HotelManageReservationsHeader() {
+  const { t } = useTranslation();
   return (
     <header className="hp-mres-head">
       <div className="hp-mres-head__text">
-        <h1 className="hp-mres-head__title">Gestionar Reservas</h1>
-        <p className="hp-mres-head__subtitle">Administra todas las reservas de tu propiedad</p>
+        <h1 className="hp-mres-head__title">{t("hotelManage.pageTitle")}</h1>
+        <p className="hp-mres-head__subtitle">{t("hotelManage.pageSubtitle")}</p>
       </div>
     </header>
   );
