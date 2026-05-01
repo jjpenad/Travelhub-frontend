@@ -34,7 +34,8 @@ function formatDateRangeForConfirmToast(checkIn, checkOut) {
 
 /**
  * Texto de cuerpo del toast.
- * @param {{ hotelName: string, checkIn: string, checkOut: string, reservationId?: string, reservationRef?: string }} p
+ * Solo muestra el número/referencia de reserva ante el usuario, nunca el ID interno del API.
+ * @param {{ hotelName: string, checkIn: string, checkOut: string, reservationRef?: string }} p
  * @returns {string}
  */
 export function buildTravelerConfirmToastBody(p) {
@@ -42,21 +43,13 @@ export function buildTravelerConfirmToastBody(p) {
     (p.hotelName && String(p.hotelName).trim()) ||
     i18n.t("toast.bodyHotelFallback");
   const range = formatDateRangeForConfirmToast(p.checkIn, p.checkOut);
-  const id =
-    p.reservationId != null && String(p.reservationId).trim() !== ""
-      ? String(p.reservationId).trim()
-      : "";
   const refRaw =
     p.reservationRef != null && String(p.reservationRef).trim() !== ""
       ? String(p.reservationRef).trim()
       : "";
   const ref = refRaw ? (refRaw.startsWith("#") ? refRaw : `#${refRaw}`) : "";
 
-  const suffixParts = [];
-  if (ref) suffixParts.push(i18n.t("toast.refPart", { ref }));
-  if (id && (!refRaw || refRaw !== id))
-    suffixParts.push(i18n.t("toast.idPart", { id }));
-  const suffix = suffixParts.length ? ` (${suffixParts.join(" · ")})` : "";
+  const suffix = ref ? ` (${i18n.t("toast.refPart", { ref })})` : "";
 
   if (range) {
     return i18n.t("toast.bodyWithRange", { hotel, range, suffix });
@@ -65,8 +58,8 @@ export function buildTravelerConfirmToastBody(p) {
 }
 
 /**
- * Cuerpo del email alineado con el toast in-app.
- * @param {{ toastBody: string, confirmationCode?: string, reservationId?: string }} p
+ * Cuerpo enviado a `send-email` (service-soport). Sin ID interno; solo texto del toast + línea explícita con el número visible para el huésped.
+ * @param {{ toastBody: string, confirmationCode?: string }} p
  * @returns {string}
  */
 export function buildTravelerConfirmEmailMessage(p) {
@@ -80,9 +73,6 @@ export function buildTravelerConfirmEmailMessage(p) {
   const code = p.confirmationCode && String(p.confirmationCode).trim();
   if (code) {
     lines.push("", i18n.t("toast.emailRef", { code }));
-  }
-  if (p.reservationId && String(p.reservationId).trim() !== "") {
-    lines.push(i18n.t("toast.emailId", { id: String(p.reservationId).trim() }));
   }
   lines.push("", i18n.t("toast.emailFooter"));
   return lines.join("\n");

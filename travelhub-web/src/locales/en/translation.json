@@ -513,12 +513,10 @@
     "bodyWithRange": "Your stay at {{hotel}} from {{range}} is confirmed.{{suffix}}",
     "bodyNoRange": "Your stay at {{hotel}} is confirmed.{{suffix}}",
     "bodyHotelFallback": "your accommodation",
-    "refPart": "Booking ref: {{ref}}",
-    "idPart": "Id: {{id}}",
+    "refPart": "Reservation number: {{ref}}",
     "emailHeader": "TravelHub",
     "emailTitle": "Booking confirmed!",
-    "emailRef": "Reference: {{code}}",
-    "emailId": "Booking id: {{id}}",
+    "emailRef": "Reservation number: {{code}}",
     "emailFooter": "Open the details in TravelHub in your browser (My trips)."
   },
   "hotelPortal": {

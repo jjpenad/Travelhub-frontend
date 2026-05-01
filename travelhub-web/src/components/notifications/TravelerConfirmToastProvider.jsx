@@ -73,7 +73,7 @@ function emailParaNotificacionCheckout(p) {
 }
 
 /**
- * @param {{ dedupKey: string, email: string, body: string, confirmationCode?: string, reservationId?: string }} p
+ * @param {{ dedupKey: string, email: string, body: string, confirmationCode?: string }} p
  */
 function enviarEmailConfirmacionSiCorresponde(p) {
   if (!p.email) return;
@@ -84,7 +84,6 @@ function enviarEmailConfirmacionSiCorresponde(p) {
   const message = buildTravelerConfirmEmailMessage({
     toastBody: p.body,
     confirmationCode: p.confirmationCode,
-    reservationId: p.reservationId,
   });
   sendEmailNotification({ email: p.email, message })
     .then((ok) => {
@@ -189,7 +188,6 @@ export default function TravelerConfirmToastProvider({ children }) {
         hotelName: it.hotelName,
         checkIn: it.checkIn,
         checkOut: it.checkOut,
-        reservationId: it.id,
         reservationRef: confirmationCode || undefined,
       });
       clearToastTimeout();
@@ -213,7 +211,6 @@ export default function TravelerConfirmToastProvider({ children }) {
           email: String(userEmail).trim(),
           body,
           confirmationCode: confirmationCode || undefined,
-          reservationId: it.id,
         });
       }
     }
@@ -264,10 +261,6 @@ export default function TravelerConfirmToastProvider({ children }) {
       hotelName: name,
       checkIn: src.checkIn,
       checkOut: src.checkOut,
-      reservationId:
-        src.apiReservationId != null && String(src.apiReservationId).trim() !== ""
-          ? String(src.apiReservationId).trim()
-          : undefined,
       reservationRef:
         src.reference != null && String(src.reference).trim() !== ""
           ? String(src.reference).trim()
@@ -357,7 +350,6 @@ export default function TravelerConfirmToastProvider({ children }) {
         hotelName: item.hotelName,
         checkIn: item.checkIn,
         checkOut: item.checkOut,
-        reservationId: item.id,
         reservationRef: ref || undefined,
       });
 
@@ -388,7 +380,6 @@ export default function TravelerConfirmToastProvider({ children }) {
           email: String(userEmail).trim(),
           body,
           confirmationCode: ref || undefined,
-          reservationId: item.id,
         });
       }
     }
@@ -427,13 +418,11 @@ export default function TravelerConfirmToastProvider({ children }) {
       guestEmail: toast.nav.guestEmail,
     });
     if (!email) return;
-    const reservationId = apiId || undefined;
     enviarEmailConfirmacionSiCorresponde({
       dedupKey,
       email,
       body: toast.body,
       confirmationCode: ref,
-      reservationId,
     });
   }, [toast]);
 
