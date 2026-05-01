@@ -8,14 +8,12 @@ function AuthSplitLayout({ children }) {
   const { t } = useTranslation();
   return (
     <div className="auth-split">
+      <div className="auth-split__toolbar">
+        <LanguageSwitcher />
+      </div>
       <div className="auth-split__grid">
         <AuthMarketingAside />
-        <div className="auth-split__main">
-          <div className="auth-split__lang-row">
-            <LanguageSwitcher />
-          </div>
-          <div className="auth-split__center-wrap">{children}</div>
-        </div>
+        <div className="auth-split__main">{children}</div>
       </div>
       <footer className="auth-split__footer">
         <div className="auth-split__footer-inner">

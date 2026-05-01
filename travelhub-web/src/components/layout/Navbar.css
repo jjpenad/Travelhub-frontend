@@ -222,6 +222,16 @@
   align-items: center;
 }
 
+/* Siempre visible: texto oscuro sobre control claro aunque el header herede color claro */
+.navbar .language-switcher__select {
+  color: var(--text-h);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.navbar .language-switcher__select:focus {
+  outline-color: var(--accent-focus-ring);
+}
+
 /* Sesión iniciada: derecha del header (misma zona que login/registro) */
 .navbar__actions--logged {
   flex-wrap: nowrap;

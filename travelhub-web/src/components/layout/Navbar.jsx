@@ -155,40 +155,45 @@ function Navbar() {
           </form>
         ) : null}
 
-        {loggedIn ? (
-          <div className="navbar__actions navbar__actions--logged">
-            <LanguageSwitcher />
-            <button
-              type="button"
-              className="navbar__btn navbar__btn--logout"
-              onClick={handleLogout}
-            >
-              {t("nav.logout")}
-            </button>
-            {!isHotelPortalRoute ? (
-              <span
-                className="navbar__user-badge"
-                role="img"
-                aria-label={t("nav.sessionStarted")}
+        <div
+          className={
+            loggedIn ? "navbar__actions navbar__actions--logged" : "navbar__actions"
+          }
+        >
+          <LanguageSwitcher />
+          {loggedIn ? (
+            <>
+              <button
+                type="button"
+                className="navbar__btn navbar__btn--logout"
+                onClick={handleLogout}
               >
-                <NavbarUserIcon className="navbar__user-badge-icon" />
-              </span>
-            ) : null}
-          </div>
-        ) : showAuthButtons ? (
-          <div className="navbar__actions">
-            <LanguageSwitcher />
-            <Link
-              className="navbar__btn navbar__btn--primary navbar__sign-in"
-              to="/login"
-            >
-              {t("nav.login")}
-            </Link>
-            <Link className="navbar__btn navbar__btn--register" to="/signup">
-              {t("nav.signup")}
-            </Link>
-          </div>
-        ) : null}
+                {t("nav.logout")}
+              </button>
+              {!isHotelPortalRoute ? (
+                <span
+                  className="navbar__user-badge"
+                  role="img"
+                  aria-label={t("nav.sessionStarted")}
+                >
+                  <NavbarUserIcon className="navbar__user-badge-icon" />
+                </span>
+              ) : null}
+            </>
+          ) : showAuthButtons ? (
+            <>
+              <Link
+                className="navbar__btn navbar__btn--primary navbar__sign-in"
+                to="/login"
+              >
+                {t("nav.login")}
+              </Link>
+              <Link className="navbar__btn navbar__btn--register" to="/signup">
+                {t("nav.signup")}
+              </Link>
+            </>
+          ) : null}
+        </div>
       </div>
     </header>
   );
