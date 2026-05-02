@@ -10,9 +10,10 @@ describe("normalizeHotelCurrencyCode", () => {
   it("admite COP", () => {
     expect(normalizeHotelCurrencyCode("cop")).toBe("COP");
   });
-  it("cualquier otro valor cae en USD", () => {
-    expect(normalizeHotelCurrencyCode("MXN")).toBe("USD");
-    expect(normalizeHotelCurrencyCode(null)).toBe("USD");
+  it("admite USD explícito; cualquier otro valor cae en COP", () => {
+    expect(normalizeHotelCurrencyCode("usd")).toBe("USD");
+    expect(normalizeHotelCurrencyCode("MXN")).toBe("COP");
+    expect(normalizeHotelCurrencyCode(null)).toBe("COP");
   });
 });
 

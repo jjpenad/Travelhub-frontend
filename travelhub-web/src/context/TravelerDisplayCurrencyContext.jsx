@@ -16,6 +16,26 @@ import { formatFlexibleMoneyWithIsoSuffix } from "../utils/formatHotelPortalMone
 import { extractRateFromFxResponse } from "../utils/fxConversion";
 import { getFxRatePayloadCached } from "../utils/fxRateCache";
 
+/**
+ * Tasa USD→COP para **sólo presentación** cuando el GET rates aún no devolvió dato.
+ * - `VITE_DISPLAY_USD_COP_FALLBACK` (opcional) en prod/staging.
+ * - En `import.meta.env.DEV`, ~4000 si no hay env (evita listados en USD con selector COP).
+ */
+function getDisplayUsdToCopFallbackRate() {
+  const v = Number(import.meta.env.VITE_DISPLAY_USD_COP_FALLBACK);
+  if (Number.isFinite(v) && v > 0) return v;
+  if (import.meta.env.DEV) return 4000;
+  return null;
+}
+
+const DISPLAY_USD_TO_COP_FALLBACK = getDisplayUsdToCopFallbackRate();
+
+/** @param {number | null} live */
+function effectiveUsdToCop(live) {
+  if (live != null && Number.isFinite(live) && live > 0) return live;
+  return DISPLAY_USD_TO_COP_FALLBACK;
+}
+
 /** @type {import("react").Context<TravelerDisplayCurrencyContextValue | null>} */
 const TravelerDisplayCurrencyContext = createContext(null);
 
@@ -35,13 +55,27 @@ const FALLBACK_VALUE = {
   formatUsdBaseAmount: (amount) => {
     const n = Number(amount);
     if (!Number.isFinite(n)) return "—";
-    return formatFlexibleMoneyWithIsoSuffix(n, "USD", { variant: "detail" });
+    const r = effectiveUsdToCop(null);
+    if (r == null) {
+      return formatFlexibleMoneyWithIsoSuffix(n, "USD", { variant: "detail" });
+    }
+    return formatFlexibleMoneyWithIsoSuffix(n * r, "COP", { variant: "detail" });
   },
   formatPaymentInDisplayCurrency: (amount, paymentCurrencyCode) => {
     const n = Number(amount);
     if (!Number.isFinite(n)) return "—";
     const pay = normalizeFxCurrencyCode(paymentCurrencyCode);
-    return formatFlexibleMoneyWithIsoSuffix(n, pay, { variant: "detail" });
+    const r = effectiveUsdToCop(null);
+    if (pay !== "USD" && pay !== "COP") {
+      return formatFlexibleMoneyWithIsoSuffix(n, pay, { variant: "detail" });
+    }
+    if (pay === "COP") {
+      return formatFlexibleMoneyWithIsoSuffix(n, "COP", { variant: "detail" });
+    }
+    if (r == null) {
+      return formatFlexibleMoneyWithIsoSuffix(n, "USD", { variant: "detail" });
+    }
+    return formatFlexibleMoneyWithIsoSuffix(n * r, "COP", { variant: "detail" });
   },
   copRateReady: true,
 };
@@ -62,27 +96,44 @@ export function TravelerDisplayCurrencyProvider({ children }) {
     return () => window.removeEventListener(TRAVELER_DISPLAY_CURRENCY_EVENT, onChanged);
   }, [syncFromStorage]);
 
-  /** Tasa USD→COP siempre cargada: sirve listados (montos en USD) y confirmación (pago en USD o COP vs selector). */
+  /** Tasa USD→COP: reintentos + `forceRefresh` tras fallo para no quedar con `usdToCop` null (selector sin efecto). */
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const { data } = await getFxRatePayloadCached("USD", "COP");
-        const r = extractRateFromFxResponse(data);
-        if (!cancelled) {
-          setUsdToCop(Number.isFinite(r) && r > 0 ? r : null);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        if (cancelled) return;
+        try {
+          const { data } = await getFxRatePayloadCached("USD", "COP", {
+            forceRefresh: attempt > 0,
+          });
+          const r = extractRateFromFxResponse(data);
+          if (Number.isFinite(r) && r > 0) {
+            if (!cancelled) setUsdToCop(r);
+            return;
+          }
+        } catch {
+          /* siguiente intento */
         }
-      } catch {
-        if (!cancelled) setUsdToCop(null);
+        await new Promise((resolve) => {
+          setTimeout(resolve, 350 * (attempt + 1));
+        });
+      }
+      if (!cancelled) {
+        setUsdToCop((prev) =>
+          Number.isFinite(prev) && prev > 0 ? prev : null,
+        );
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currencyCode]);
 
   const setCurrencyCode = useCallback((code) => {
     setTravelerDisplayCurrencyCode(code);
+    // Misma lectura que el listener del evento: garantiza re-render aunque el
+    // CustomEvent falle o llegue desordenado en algún entorno.
+    setCurrencyCodeState(getTravelerDisplayCurrencyCode());
   }, []);
 
   const formatUsdBaseAmount = useCallback(
@@ -92,10 +143,11 @@ export function TravelerDisplayCurrencyProvider({ children }) {
       if (currencyCode === "USD") {
         return formatFlexibleMoneyWithIsoSuffix(n, "USD", { variant: "detail" });
       }
-      if (usdToCop == null) {
+      const r = effectiveUsdToCop(usdToCop);
+      if (r == null) {
         return formatFlexibleMoneyWithIsoSuffix(n, "USD", { variant: "detail" });
       }
-      return formatFlexibleMoneyWithIsoSuffix(n * usdToCop, "COP", { variant: "detail" });
+      return formatFlexibleMoneyWithIsoSuffix(n * r, "COP", { variant: "detail" });
     },
     [currencyCode, usdToCop],
   );
@@ -116,13 +168,14 @@ export function TravelerDisplayCurrencyProvider({ children }) {
       if (pay === disp) {
         return formatFlexibleMoneyWithIsoSuffix(n, pay, { variant: "detail" });
       }
-      if (usdToCop == null || !Number.isFinite(usdToCop) || usdToCop <= 0) {
+      const r = effectiveUsdToCop(usdToCop);
+      if (r == null || !Number.isFinite(r) || r <= 0) {
         return formatFlexibleMoneyWithIsoSuffix(n, pay, { variant: "detail" });
       }
       if (pay === "USD" && disp === "COP") {
-        return formatFlexibleMoneyWithIsoSuffix(n * usdToCop, "COP", { variant: "detail" });
+        return formatFlexibleMoneyWithIsoSuffix(n * r, "COP", { variant: "detail" });
       }
-      return formatFlexibleMoneyWithIsoSuffix(n / usdToCop, "USD", { variant: "detail" });
+      return formatFlexibleMoneyWithIsoSuffix(n / r, "USD", { variant: "detail" });
     },
     [currencyCode, usdToCop],
   );

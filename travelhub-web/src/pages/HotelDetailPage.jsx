@@ -18,7 +18,7 @@ const showGuestReviewsSection = false;
 
 function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
   const { t } = useTranslation();
-  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
   const roomObjects = hotel.availableRoomObjects || [];
   const roomNames = roomObjects.length > 0
     ? roomObjects.map((r) => r.name)
@@ -83,7 +83,10 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                             <strong>{room.name}</strong>
                             <span style={{ color: "#6c63ff", fontWeight: 700 }}>
                               {t("hotelDetail.perNightShort", {
-                                price: formatUsdBaseAmount(room.pricePerNight),
+                                price: formatPaymentInDisplayCurrency(
+                                  room.pricePerNight,
+                                  room.currencyCode ?? "COP",
+                                ),
                               })}
                             </span>
                           </div>
@@ -101,7 +104,10 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                           {room.totalPrice > 0 && (
                             <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.25rem" }}>
                               {t("hotelDetail.totalLabel", {
-                                amount: formatUsdBaseAmount(room.totalPrice),
+                                amount: formatPaymentInDisplayCurrency(
+                                  room.totalPrice,
+                                  room.currencyCode ?? "COP",
+                                ),
                               })}
                             </p>
                           )}

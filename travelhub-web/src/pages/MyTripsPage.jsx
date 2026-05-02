@@ -133,7 +133,12 @@ function StarRow({ value }) {
 function TripCard({ r, index }) {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
-  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
+  const payCurrency =
+    r.totalCurrencyCode === "USD" || r.totalCurrencyCode === "COP"
+      ? r.totalCurrencyCode
+      : "COP";
+  const fmtMoney = (amount) => formatPaymentInDisplayCurrency(amount, payCurrency);
   const past = isReservationPast(r);
   const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
   const name = hotel?.name ?? t("trips.accommodation");
@@ -218,7 +223,7 @@ function TripCard({ r, index }) {
         <p className="my-trips-card__row my-trips-card__row--payment">
           <IconWallet className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
-            {t("trips.paid", { amount: formatUsdBaseAmount(r.total), method: paymentLabel })}
+            {t("trips.paid", { amount: fmtMoney(r.total), method: paymentLabel })}
           </span>
         </p>
 
@@ -240,7 +245,7 @@ function TripCard({ r, index }) {
       </div>
 
       <aside className="my-trips-card__aside" aria-label={t("trips.paymentSummaryAria")}>
-        <p className="my-trips-card__price">{formatUsdBaseAmount(r.total)}</p>
+        <p className="my-trips-card__price">{fmtMoney(r.total)}</p>
         <p className="my-trips-card__price-label">{t("trips.totalPaidLabel")}</p>
         {rating != null ? (
           <div className="my-trips-card__rating-block">

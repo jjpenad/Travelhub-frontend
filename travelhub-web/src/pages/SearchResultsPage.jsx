@@ -54,7 +54,7 @@ function amenitiesRecordFromParams(searchParams, knownKeys) {
 
 function SearchResultsPage() {
   const { t } = useTranslation();
-  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
 
   const toolbarCopyBase = useMemo(
     () => ({
@@ -107,7 +107,8 @@ function SearchResultsPage() {
         t(count === 1 ? "hotelCard.reviews_one" : "hotelCard.reviews_other", {
           count,
         }),
-      priceLabel: (amount) => formatUsdBaseAmount(amount),
+      priceLabel: (amount, currencyCode) =>
+        formatPaymentInDisplayCurrency(amount, currencyCode ?? "COP"),
       perNight: t("hotelCard.perNight"),
       priceTaxNote: t("hotelCard.taxNote"),
       bookNow: t("hotelCard.bookNow"),
@@ -115,7 +116,7 @@ function SearchResultsPage() {
       notRefundable: t("hotelCard.notRefundable"),
       amenitiesMore: (n) => t("hotelCard.amenitiesMore", { n }),
     }),
-    [t, formatUsdBaseAmount],
+    [t, formatPaymentInDisplayCurrency],
   );
 
   const knownAmenityKeys = useMemo(

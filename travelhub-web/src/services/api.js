@@ -1,6 +1,9 @@
 /**
  * TravelHub API service layer.
  * VITE_API_URL debe ser la raíz del API (incluye `/service-core` si el backend lo usa así).
+ * FX (`/currency/v1/*`) vive en **service-external**: sin `VITE_FX_API_URL`, se deriva sustituyendo
+ * `service-core` → `service-external` en la misma raíz de host.
+ * Si el backend FX falla, `getFxRateFromApi` / `postFxConvertToApi` reintentan con **Frankfurter** (véase `utils/fxFrankfurterFallback.js`).
  * VITE_ANALYTICS_API_URL: raíz del microservicio de analytics (ej. …/service-soport).
  *
  * Errores: muchas rutas lanzan `Error` con `message` generada aquí (suele estar en español) o propagada del backend.
@@ -9,7 +12,13 @@
 
 import { getAuthToken, isAuthenticated } from "../auth/sessionAuth";
 import i18n from "../i18n";
+import { normalizeFxCurrencyCode } from "../constants/fxCurrency";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
+import {
+  fetchFrankfurterRatePayload,
+  frankfurterConvertPayload,
+  isFrankfurterFxFallbackEnabled,
+} from "../utils/fxFrankfurterFallback";
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
@@ -19,8 +28,25 @@ const ANALYTICS_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL ||
   "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
 
-/** Divisas: misma base que el resto de endpoints. */
-const FX_API_BASE_URL = String(import.meta.env.VITE_FX_API_URL || BASE_URL || "").replace(
+/**
+ * Raíz para GET/POST FX. `VITE_FX_API_URL` gana si está definido; si no, y `baseUrl`
+ * contiene `/service-core`, se usa el mismo host con `/service-external` (contrato K8s dev).
+ * @param {string} baseUrl
+ * @returns {string}
+ */
+function inferFxApiBaseUrlFromCore(baseUrl) {
+  const raw = String(baseUrl || "").replace(/\/+$/, "");
+  const marker = "/service-core";
+  const i = raw.indexOf(marker);
+  if (i !== -1) {
+    return `${raw.slice(0, i)}/service-external`.replace(/\/+$/, "");
+  }
+  return raw;
+}
+
+const FX_ENV = String(import.meta.env.VITE_FX_API_URL ?? "").trim();
+/** Base del microservicio de divisas (service-external por defecto cuando el core es service-core). */
+const FX_API_BASE_URL = (FX_ENV !== "" ? FX_ENV : inferFxApiBaseUrlFromCore(BASE_URL)).replace(
   /\/+$/,
   "",
 );
@@ -169,7 +195,18 @@ export async function getFxRateFromApi(baseCurrency, quoteCurrency) {
   const qs = new URLSearchParams({ base, quote });
   const sep = FX_RATES_PATH.includes("?") ? "&" : "?";
   const url = `${joinFxUrl(FX_RATES_PATH)}${sep}${qs.toString()}`;
-  return authFetchAbsolute(url, { method: "GET" });
+  try {
+    return await authFetchAbsolute(url, { method: "GET" });
+  } catch (primaryErr) {
+    if (!isFrankfurterFxFallbackEnabled()) {
+      throw primaryErr;
+    }
+    try {
+      return await fetchFrankfurterRatePayload(base, quote);
+    } catch {
+      throw primaryErr;
+    }
+  }
 }
 
 /**
@@ -202,14 +239,27 @@ function extractRateFromRatesPayloadForApi(data) {
  */
 export async function postFxConvertToApi(body) {
   const url = joinFxUrl(FX_CONVERT_PATH);
-  return authFetchAbsolute(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  try {
+    return await authFetchAbsolute(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (primaryErr) {
+    if (!isFrankfurterFxFallbackEnabled()) {
+      throw primaryErr;
+    }
+    try {
+      return await frankfurterConvertPayload(
+        body && typeof body === "object" ? body : {},
+      );
+    } catch {
+      throw primaryErr;
+    }
+  }
 }
 
 /** Headers para endpoints públicos (sin Authorization). */
@@ -519,6 +569,13 @@ export function mapUserReservationDto(dto, hotelsById) {
   const hotel = hotelId && hotelsById?.get?.(hotelId);
   const totalRaw = dto?.total_price ?? dto?.totalPrice ?? 0;
   const totalNum = Number(totalRaw);
+  const curRaw =
+    dto?.currency_code ?? dto?.currencyCode ?? dto?.payment?.currency_code ?? null;
+  let totalCurrencyCode = "COP";
+  if (typeof curRaw === "string" && curRaw.trim() !== "") {
+    const n = normalizeFxCurrencyCode(curRaw);
+    if (n === "USD" || n === "COP") totalCurrencyCode = n;
+  }
   const guestsRaw = dto?.guests;
   const guests = Number.isFinite(Number(guestsRaw)) ? Number(guestsRaw) : 1;
   const checkIn = String(dto?.check_in ?? dto?.checkIn ?? "");
@@ -546,6 +603,7 @@ export function mapUserReservationDto(dto, hotelsById) {
     nights,
     guests,
     total: Number.isFinite(totalNum) ? totalNum : 0,
+    totalCurrencyCode,
     roomType: typeof dto?.room_type_name === "string" ? dto.room_type_name : null,
     paymentLabel: "Tarjeta",
     status: typeof dto?.status === "string" ? dto.status : null,
@@ -1056,12 +1114,20 @@ function mapHotelDto(dto) {
   };
 }
 
+/** @param {ReturnType<typeof mapRoomType>[]} rooms */
+function pickCheapestRoomForDisplay(rooms) {
+  if (!Array.isArray(rooms) || rooms.length === 0) return null;
+  return rooms.reduce((best, r) =>
+    Number(r.pricePerNight) < Number(best.pricePerNight) ? r : best,
+  rooms[0]);
+}
+
 /** Map GET /search response item → app hotel shape */
 function mapSearchResultDto(dto) {
   const rooms = (dto.available_room_types || []).map(mapRoomType);
-  const minPrice = rooms.length > 0
-    ? Math.min(...rooms.map((r) => r.pricePerNight))
-    : 0;
+  const cheapest = pickCheapestRoomForDisplay(rooms);
+  const minPrice = cheapest ? Number(cheapest.pricePerNight) || 0 : 0;
+  const priceCurrencyCode = cheapest?.currencyCode === "USD" ? "USD" : "COP";
   const amenities = [
     ...new Set(rooms.flatMap((r) => r.amenities)),
   ];
@@ -1077,6 +1143,7 @@ function mapSearchResultDto(dto) {
     rating: parseFloat(dto.rating) || 0,
     reviewsCount: 0,
     price: minPrice,
+    priceCurrencyCode,
     image: null,
     amenities,
     availableRooms: rooms.map((r) => r.name),
@@ -1093,9 +1160,9 @@ function mapSearchResultDto(dto) {
 /** Map GET /availability response → app hotel shape */
 function mapAvailabilityDto(dto) {
   const rooms = (dto.available_room_types || []).map(mapRoomType);
-  const minPrice = rooms.length > 0
-    ? Math.min(...rooms.map((r) => r.pricePerNight))
-    : 0;
+  const cheapest = pickCheapestRoomForDisplay(rooms);
+  const minPrice = cheapest ? Number(cheapest.pricePerNight) || 0 : 0;
+  const priceCurrencyCode = cheapest?.currencyCode === "USD" ? "USD" : "COP";
   const amenities = [
     ...new Set(rooms.flatMap((r) => r.amenities)),
   ];
@@ -1111,6 +1178,7 @@ function mapAvailabilityDto(dto) {
     rating: parseFloat(dto.rating) || 0,
     reviewsCount: 0,
     price: minPrice,
+    priceCurrencyCode,
     image: null,
     amenities,
     availableRooms: rooms.map((r) => r.name),
@@ -1142,7 +1210,7 @@ function mapRoomType(dto) {
     sizeSqm: parseFloat(dto.size_sqm) || 0,
     pricePerNight: parseFloat(dto.price_per_night) || 0,
     totalPrice: parseFloat(dto.total_price) || 0,
-    currencyCode: dto.currency_code || "USD",
+    currencyCode: dto.currency_code || "COP",
     minimumStay: dto.minimum_stay || 1,
     amenities: (dto.amenities || []).map(mapRoomAmenityName).filter(Boolean),
   };

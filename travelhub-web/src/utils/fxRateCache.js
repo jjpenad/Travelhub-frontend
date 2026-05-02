@@ -17,6 +17,26 @@ function cacheKey(base, quote) {
   return `${String(base).toUpperCase().trim()}:${String(quote).toUpperCase().trim()}`;
 }
 
+/**
+ * ¿El JSON de tasas trae un factor usable (1 base → quote)? Sin importar
+ * `fxConversion` (evita ciclo con este módulo).
+ * @param {unknown} payload
+ * @returns {boolean}
+ */
+function payloadHasPositiveFxRate(payload) {
+  if (!payload || typeof payload !== "object") return false;
+  const d = /** @type {Record<string, unknown>} */ (payload);
+  const raw = d.rate ?? d.fx_rate ?? d.exchange_rate ?? d.spot_rate;
+  const direct =
+    typeof raw === "number" && Number.isFinite(raw)
+      ? raw
+      : Number(String(raw ?? "").trim().replace(/,/g, ""));
+  if (Number.isFinite(direct) && direct > 0) return true;
+  const nb = Number(d.base_amount);
+  const nq = Number(d.quote_amount);
+  return Number.isFinite(nb) && nb !== 0 && Number.isFinite(nq) && nq > 0;
+}
+
 export function invalidateFxRateCache(base, quote) {
   cache.delete(cacheKey(base, quote));
 }
@@ -48,10 +68,15 @@ export async function getFxRatePayloadCached(baseCurrency, quoteCurrency, option
   const data = await getFxRateFromApi(baseCurrency, quoteCurrency);
   const payload =
     data && typeof data === "object" ? /** @type {Record<string, unknown>} */ (data) : {};
-  cache.set(k, {
-    expiresAt: now + ttlMs,
-    payload,
-  });
+
+  // No cachear fallos o cuerpos sin tasa: si no, el cliente guarda `{}` 10 min
+  // y `formatPaymentInDisplayCurrency` cree que no hay tasa → el selector COP|USD no cambia montos.
+  if (payloadHasPositiveFxRate(payload)) {
+    cache.set(k, {
+      expiresAt: now + ttlMs,
+      payload,
+    });
+  }
 
   return { data: payload, fromCache: false };
 }

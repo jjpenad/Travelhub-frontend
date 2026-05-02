@@ -424,6 +424,7 @@ describe("mapUserReservationDto", () => {
       nights: 4,
       guests: 3,
       total: 750,
+      totalCurrencyCode: "COP",
       status: "confirmed",
       source: "backend",
     });
@@ -461,6 +462,23 @@ describe("mapUserReservationDto", () => {
     expect(r.hotel.name).toBe("Casa Sol");
     expect(r.hotel.location).toBe("Lima, Perú");
     expect(r.hotel.rating).toBe(4.5);
+  });
+
+  it("expone totalCurrencyCode desde currency_code o payment", () => {
+    expect(
+      mapUserReservationDto({
+        id: "a",
+        currency_code: "USD",
+        total_price: 100,
+      }).totalCurrencyCode,
+    ).toBe("USD");
+    expect(
+      mapUserReservationDto({
+        id: "b",
+        payment: { currency_code: "COP" },
+        total_price: 200,
+      }).totalCurrencyCode,
+    ).toBe("COP");
   });
 
   it("returns null nights when dates are missing or invalid", () => {

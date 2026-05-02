@@ -285,7 +285,7 @@ function mergeHotelMeta(hotel, localizedMockHotels) {
 function TripDetailPage() {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
-  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
   const navigate = useNavigate();
   const { bookingSlug } = useParams();
   const parsedSlug = useMemo(
@@ -433,6 +433,12 @@ function TripDetailPage() {
   }
 
   const past = isReservationPast(reservation);
+  const payCurrency =
+    reservation.totalCurrencyCode === "USD" || reservation.totalCurrencyCode === "COP"
+      ? reservation.totalCurrencyCode
+      : "COP";
+  const fmtReservationMoney = (amount) =>
+    formatPaymentInDisplayCurrency(amount, payCurrency);
   const rawHotel =
     reservation.hotel && typeof reservation.hotel === "object"
       ? reservation.hotel
@@ -624,7 +630,7 @@ function TripDetailPage() {
                 />
                 <span>
                   {t("tripDetail.paidRow", {
-                    total: formatUsdBaseAmount(reservation.total),
+                    total: fmtReservationMoney(reservation.total),
                     method: paymentLabel,
                   })}
                 </span>
@@ -633,7 +639,7 @@ function TripDetailPage() {
               <div className="trip-detail-payment__total">
                 <p className="trip-detail-payment__total-label">{t("tripDetail.totalReservation")}</p>
                 <p className="trip-detail-payment__total-amount">
-                  {formatUsdBaseAmount(reservation.total)}
+                  {fmtReservationMoney(reservation.total)}
                 </p>
               </div>
 
@@ -653,11 +659,11 @@ function TripDetailPage() {
                             ? "tripDetail.nights_one"
                             : "tripDetail.nights_other",
                           {
-                            price: formatUsdBaseAmount(reservation.pricePerNight),
+                            price: fmtReservationMoney(reservation.pricePerNight),
                             count: nights,
                           },
                         )
-                      : `${formatUsdBaseAmount(reservation.pricePerNight)} × —`,
+                      : `${fmtReservationMoney(reservation.pricePerNight)} × —`,
                   )}
                 </div>
               ) : null}

@@ -1,4 +1,5 @@
 import i18n from "../i18n";
+import { normalizeFxCurrencyCode } from "../constants/fxCurrency";
 import { nightsBetween } from "./mapAnalyticsReservationsToManageRows";
 
 /**
@@ -14,6 +15,13 @@ export function mapApiReservationToTripDetail(r) {
   const reference = code || id || dash;
   const h = r.hotel && typeof r.hotel === "object" ? r.hotel : {};
   const total = Number.parseFloat(r.total_price) || 0;
+  const payRaw =
+    r.currency_code ?? r.currencyCode ?? r.payment?.currency_code ?? null;
+  let totalCurrencyCode = "COP";
+  if (typeof payRaw === "string" && payRaw.trim() !== "") {
+    const n = normalizeFxCurrencyCode(payRaw);
+    if (n === "USD" || n === "COP") totalCurrencyCode = n;
+  }
   const checkIn = String(r.check_in || r.checkIn || "").slice(0, 10);
   const checkOut = String(r.check_out || r.checkOut || "").slice(0, 10);
   const n = nightsBetween(
@@ -25,6 +33,7 @@ export function mapApiReservationToTripDetail(r) {
     apiReservationId: id || null,
     reference,
     total,
+    totalCurrencyCode,
     hotel: {
       id: h.id,
       name:
