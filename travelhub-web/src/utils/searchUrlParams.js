@@ -3,6 +3,9 @@
  * (destino, fechas ISO, huéspedes) — mismo criterio que Hero y SearchSummary.
  */
 
+import i18n from "../i18n";
+import { localeTagForI18n } from "./locale";
+
 export function safeDecode(s) {
   try {
     return decodeURIComponent(s);
@@ -78,11 +81,11 @@ export function parseIsoToLocalDate(iso) {
   return dt;
 }
 
-/** ISO YYYY-MM-DD → texto legible (ej. "24 abr 2026") */
+/** ISO YYYY-MM-DD → texto legible según idioma actual de i18n */
 export function formatFriendlyDate(iso) {
   const dt = parseIsoToLocalDate(iso);
   if (!dt) return "—";
-  return new Intl.DateTimeFormat("es", {
+  return new Intl.DateTimeFormat(localeTagForI18n(i18n.language), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -92,13 +95,17 @@ export function formatFriendlyDate(iso) {
 export function formatGuestsLabel(n) {
   const num = parseInt(String(n), 10);
   if (!Number.isFinite(num) || num < 1) return "—";
-  return num === 1 ? "1 huésped" : `${num} huéspedes`;
+  return i18n.t(num === 1 ? "formats.guests_one" : "formats.guests_other", {
+    count: num,
+  });
 }
 
 export function formatRoomsLabel(n) {
   const num = parseInt(String(n), 10);
   if (!Number.isFinite(num) || num < 1) return "—";
-  return num === 1 ? "1 habitación" : `${num} habitaciones`;
+  return i18n.t(num === 1 ? "formats.rooms_one" : "formats.rooms_other", {
+    count: num,
+  });
 }
 
 export function diffNightsBetween(checkInIso, checkOutIso) {

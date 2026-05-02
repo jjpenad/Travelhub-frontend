@@ -1,29 +1,37 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./HotelPortalUpcomingArrivals.css";
+
+function badgeClass(status) {
+  if (status === "confirmed") return "hp-arrivals__badge hp-arrivals__badge--confirmed";
+  if (status === "cancelled") return "hp-arrivals__badge hp-arrivals__badge--cancelled";
+  return "hp-arrivals__badge hp-arrivals__badge--pending";
+}
 
 /**
  * Tabla de próximas llegadas (check-in).
  */
 function HotelPortalUpcomingArrivals({
-  title = "Próximas llegadas",
   rows = [],
   viewAllTo,
   viewAllHref = "#",
   viewAllState,
 }) {
+  const { t } = useTranslation();
+
   return (
     <section className="hp-arrivals" aria-labelledby="hp-arrivals-title">
       <div className="hp-arrivals__head">
         <h2 id="hp-arrivals-title" className="hp-arrivals__title">
-          {title}
+          {t("hotelPortal.upcomingTitle")}
         </h2>
         {viewAllTo ? (
           <Link className="hp-arrivals__link-all" to={viewAllTo} state={viewAllState}>
-            Ver todas →
+            {t("hotelPortal.viewAllBookingsLink")}
           </Link>
         ) : (
           <a className="hp-arrivals__link-all" href={viewAllHref}>
-            Ver todas →
+            {t("hotelPortal.viewAllBookingsLink")}
           </a>
         )}
       </div>
@@ -31,11 +39,11 @@ function HotelPortalUpcomingArrivals({
         <table className="hp-arrivals__table">
           <thead>
             <tr>
-              <th scope="col">Huésped</th>
-              <th scope="col">Habitación</th>
-              <th scope="col">Llegada</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Acción</th>
+              <th scope="col">{t("hotelPortal.arrivalColGuest")}</th>
+              <th scope="col">{t("hotelPortal.arrivalColRoom")}</th>
+              <th scope="col">{t("hotelPortal.arrivalColArrival")}</th>
+              <th scope="col">{t("hotelPortal.arrivalColStatus")}</th>
+              <th scope="col">{t("hotelPortal.arrivalColAction")}</th>
             </tr>
           </thead>
           <tbody>
@@ -59,20 +67,13 @@ function HotelPortalUpcomingArrivals({
                 <td className="hp-arrivals__cell-muted">{r.room}</td>
                 <td className="hp-arrivals__cell-strong">{r.arrival}</td>
                 <td>
-                  <span
-                    className={
-                      "hp-arrivals__badge" +
-                      (r.status === "confirmed"
-                        ? " hp-arrivals__badge--confirmed"
-                        : " hp-arrivals__badge--pending")
-                    }
-                  >
+                  <span className={badgeClass(r.status)}>
                     {r.statusLabel}
                   </span>
                 </td>
                 <td>
                   <button type="button" className="hp-arrivals__btn hp-arrivals__btn--primary">
-                    Ver más
+                    {t("hotelPortal.arrivalViewMore")}
                   </button>
                 </td>
               </tr>

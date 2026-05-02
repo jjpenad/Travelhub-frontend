@@ -130,6 +130,11 @@
   color: #854d0e;
 }
 
+.hp-arrivals__badge--cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .hp-arrivals__btn {
   font: inherit;
   font-size: 0.78rem;

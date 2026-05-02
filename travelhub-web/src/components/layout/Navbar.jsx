@@ -11,14 +11,18 @@ import {
   SESSION_CHANGED_EVENT,
 } from "../../auth/sessionAuth";
 import {
+  PATH_HOTEL_MANAGE_RESERVATIONS,
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
   PATH_MY_TRIPS,
   PATH_TRAVELERS_HOME,
 } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
+import CurrencySwitcher from "../currency/CurrencySwitcher";
+import LanguageSwitcher from "../language/LanguageSwitcher";
 import NavbarUserIcon from "./NavbarUserIcon";
 import "./Navbar.css";
+import { useTranslation } from "react-i18next";
 
 /** MVP: desactiva la entrada Mis viajes (solo viajeros logueados la ven si está en true) */
 const showMyTripsNav = true;
@@ -30,6 +34,7 @@ const showSearchBar = false;
 const showAuthButtons = true;
 
 function Navbar() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === PATH_TRAVELERS_HOME;
@@ -39,6 +44,8 @@ function Navbar() {
     pathname === PATH_HOTEL_PORTAL_LEGACY ||
     pathname === PATH_HOTEL_PORTAL_HOME ||
     pathname.startsWith("/hoteles/");
+  const hideTravelerCurrency =
+    isHotelPortalRoute || pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
@@ -101,7 +108,7 @@ function Navbar() {
             </span>
           </Link>
 
-          <nav className="navbar__menu" aria-label="Principal">
+          <nav className="navbar__menu" aria-label={t("nav.mainAria")}>
             <ul className="navbar__menu-list">
               <li>
                 <Link
@@ -111,7 +118,7 @@ function Navbar() {
                   to={`${PATH_TRAVELERS_HOME}#explore`}
                   aria-current={isHome ? "page" : undefined}
                 >
-                  Explorar
+                  {t("nav.explore")}
                 </Link>
               </li>
               {showMyTripsLink ? (
@@ -124,7 +131,7 @@ function Navbar() {
                     to={PATH_MY_TRIPS}
                     aria-current={isMyTrips ? "page" : undefined}
                   >
-                    Mis viajes
+                    {t("nav.myTrips")}
                   </Link>
                 </li>
               ) : null}
@@ -139,51 +146,59 @@ function Navbar() {
             onSubmit={(e) => e.preventDefault()}
           >
             <label htmlFor="nav-search" className="visually-hidden">
-              Buscar destinos
+              {t("nav.searchDestinations")}
             </label>
             <input
               id="nav-search"
               type="search"
               name="q"
-              placeholder="Buscar destinos..."
+              placeholder={t("nav.searchPlaceholder")}
               className="navbar__search-input"
               autoComplete="off"
             />
           </form>
         ) : null}
 
-        {loggedIn ? (
-          <div className="navbar__actions navbar__actions--logged">
-            <button
-              type="button"
-              className="navbar__btn navbar__btn--logout"
-              onClick={handleLogout}
-            >
-              Cerrar sesión
-            </button>
-            {!isHotelPortalRoute ? (
-              <span
-                className="navbar__user-badge"
-                role="img"
-                aria-label="Sesión iniciada"
+        <div
+          className={
+            loggedIn ? "navbar__actions navbar__actions--logged" : "navbar__actions"
+          }
+        >
+          {!hideTravelerCurrency ? <CurrencySwitcher /> : null}
+          <LanguageSwitcher />
+          {loggedIn ? (
+            <>
+              <button
+                type="button"
+                className="navbar__btn navbar__btn--logout"
+                onClick={handleLogout}
               >
-                <NavbarUserIcon className="navbar__user-badge-icon" />
-              </span>
-            ) : null}
-          </div>
-        ) : showAuthButtons ? (
-          <div className="navbar__actions">
-            <Link
-              className="navbar__btn navbar__btn--primary navbar__sign-in"
-              to="/login"
-            >
-              Iniciar sesión
-            </Link>
-            <Link className="navbar__btn navbar__btn--register" to="/signup">
-              Registrarse
-            </Link>
-          </div>
-        ) : null}
+                {t("nav.logout")}
+              </button>
+              {!isHotelPortalRoute ? (
+                <span
+                  className="navbar__user-badge"
+                  role="img"
+                  aria-label={t("nav.sessionStarted")}
+                >
+                  <NavbarUserIcon className="navbar__user-badge-icon" />
+                </span>
+              ) : null}
+            </>
+          ) : showAuthButtons ? (
+            <>
+              <Link
+                className="navbar__btn navbar__btn--primary navbar__sign-in"
+                to="/login"
+              >
+                {t("nav.login")}
+              </Link>
+              <Link className="navbar__btn navbar__btn--register" to="/signup">
+                {t("nav.signup")}
+              </Link>
+            </>
+          ) : null}
+        </div>
       </div>
     </header>
   );

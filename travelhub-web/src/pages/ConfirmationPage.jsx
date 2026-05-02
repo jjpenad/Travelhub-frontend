@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
 import { getAuthToken } from "../auth/sessionAuth";
 import CheckoutStepper from "../components/checkout/CheckoutStepper";
@@ -6,6 +7,7 @@ import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import { getTravelerReservationByIdForPoll } from "../services/api";
 import "./ConfirmationPage.css";
 
@@ -63,39 +65,42 @@ function IconQrSmall({ className }) {
   );
 }
 
-function buildReceiptText({
-  reference,
-  hotel,
-  total,
-  checkIn,
-  checkOut,
-  roomType,
-  guestEmail,
-}) {
+function buildReceiptText(
+  tr,
+  {
+    reference,
+    hotel,
+    totalFmt,
+    checkIn,
+    checkOut,
+    roomType,
+    guestEmail,
+  },
+) {
   const lines = [
-    "TravelHub — Recibo de reserva",
-    `Referencia: #${reference}`,
-    hotel?.name ? `Hotel: ${hotel.name}` : null,
-    hotel?.location ? `Ubicación: ${hotel.location}` : null,
-    checkIn ? `Entrada: ${checkIn}` : null,
-    checkOut ? `Salida: ${checkOut}` : null,
-    roomType ? `Habitación: ${roomType}` : null,
-    typeof total === "number" && Number.isFinite(total)
-      ? `Total pagado: ${total.toFixed(2)}`
-      : null,
-    guestEmail ? `Correo del huésped: ${guestEmail}` : null,
+    tr("confirmation.receiptLines.header"),
+    tr("confirmation.receiptLines.reference", { reference }),
+    hotel?.name ? tr("confirmation.receiptLines.hotel", { name: hotel.name }) : null,
+    hotel?.location ? tr("confirmation.receiptLines.location", { location: hotel.location }) : null,
+    checkIn ? tr("confirmation.receiptLines.checkIn", { value: checkIn }) : null,
+    checkOut ? tr("confirmation.receiptLines.checkOut", { value: checkOut }) : null,
+    roomType ? tr("confirmation.receiptLines.room", { room: roomType }) : null,
+    totalFmt ? tr("confirmation.receiptLines.total", { amount: totalFmt }) : null,
+    guestEmail ? tr("confirmation.receiptLines.guestEmail", { email: guestEmail }) : null,
   ].filter(Boolean);
   return `${lines.join("\n")}\n`;
 }
 
-function labelForReservationStatusNorm(norm) {
-  if (norm === "confirmed") return "Confirmada";
-  if (norm === "pending") return "Pendiente";
-  if (norm === "cancelled") return "Cancelada";
-  return "En proceso";
+function labelForReservationStatusNorm(tr, norm) {
+  if (norm === "confirmed") return tr("confirmation.statusConfirmed");
+  if (norm === "pending") return tr("confirmation.statusPending");
+  if (norm === "cancelled") return tr("confirmation.statusCancelled");
+  return tr("confirmation.statusProcessing");
 }
 
 function ConfirmationPage() {
+  const { t } = useTranslation();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
   const location = useLocation();
   const data = location.state;
   const [reservationStatusQuery, setReservationStatusQuery] = useState("idle");
@@ -134,18 +139,20 @@ function ConfirmationPage() {
       ).trim();
       schedule({
         ok: true,
-        label: labelForReservationStatusNorm(item.statusNorm),
+        label: labelForReservationStatusNorm(t, item.statusNorm),
         raw: raw || "—",
       });
     })();
     return () => {
       cancel = true;
     };
-  }, [apiReservationId]);
+  }, [apiReservationId, t]);
 
   const hotel = data?.hotel;
   const reference = data?.reference;
   const total = data?.total;
+  const totalCurrencyCode =
+    typeof data?.totalCurrencyCode === "string" ? data.totalCurrencyCode : "COP";
   const checkIn = data?.checkIn;
   const checkOut = data?.checkOut;
   const roomType = data?.roomType;
@@ -156,7 +163,7 @@ function ConfirmationPage() {
   const guestEmail =
     typeof data?.guestEmail === "string" && data.guestEmail.trim() !== ""
       ? data.guestEmail.trim()
-      : "tu correo electrónico";
+      : t("confirmation.guestEmailFallback");
 
   const hasBooking = Boolean(hotel && reference);
   const canQueryReservationApi =
@@ -165,10 +172,14 @@ function ConfirmationPage() {
 
   function handleDownloadReceipt() {
     if (!reference) return;
-    const body = buildReceiptText({
+    const totalFmt =
+      typeof total === "number" && Number.isFinite(total)
+        ? formatPaymentInDisplayCurrency(total, totalCurrencyCode)
+        : null;
+    const body = buildReceiptText(t, {
       reference,
       hotel,
-      total,
+      totalFmt,
       checkIn,
       checkOut,
       roomType,
@@ -222,18 +233,17 @@ function ConfirmationPage() {
                       id="confirmation-header-title"
                       className="confirmation-header__title"
                     >
-                      ¡Reserva confirmada! 🥳
+                      {t("confirmation.titleCelebration")}
                     </h1>
                     <p className="confirmation-header__text">
-                      Tu reserva está confirmada. Hemos enviado un correo de
-                      confirmación a{" "}
+                      {t("confirmation.leadBefore")}
                       <strong className="confirmation-header__email">
                         {guestEmail}
                       </strong>
-                      .
+                      {t("confirmation.leadAfter")}
                     </p>
                     <p className="confirmation-header__ref">
-                      Ref. de reserva: #{reference}
+                      {t("confirmation.refLine", { ref: reference })}
                     </p>
                     {apiReservationId && String(apiReservationId).trim() !== "" ? (
                       <p
@@ -242,20 +252,17 @@ function ConfirmationPage() {
                         aria-live="polite"
                       >
                         {!canQueryReservationApi ? (
-                          <>
-                            Inicia sesión con tu cuenta de viajero para ver el
-                            estado actual de la reserva en el sistema.
-                          </>
+                          <>{t("confirmation.loginPrompt")}</>
                         ) : null}
                         {canQueryReservationApi && reservationStatusQuery === "loading" ? (
-                          <>Consultando estado de la reserva en el sistema…</>
+                          <>{t("confirmation.polling")}</>
                         ) : null}
                         {canQueryReservationApi &&
                         typeof reservationStatusQuery === "object" &&
                         reservationStatusQuery.ok === true ? (
                           <>
                             <span className="confirmation-header__api-status-label">
-                              Estado en el sistema:{" "}
+                              {t("confirmation.statusSystemShort")}{" "}
                             </span>
                             <strong>{reservationStatusQuery.label}</strong>
                             {reservationStatusQuery.raw &&
@@ -270,10 +277,7 @@ function ConfirmationPage() {
                         {canQueryReservationApi &&
                         typeof reservationStatusQuery === "object" &&
                         reservationStatusQuery.ok === false ? (
-                          <>
-                            No se pudo consultar el estado. Revisa la sesión o
-                            inténtalo de nuevo.
-                          </>
+                          <>{t("confirmation.pollingFail")}</>
                         ) : null}
                       </p>
                     ) : null}
@@ -287,13 +291,14 @@ function ConfirmationPage() {
                   checkInTime={checkInTime}
                   checkOutTime={checkOutTime}
                   total={total}
+                  totalCurrencyCode={totalCurrencyCode}
                   paymentLabel={paymentLabel}
-                  paymentStatus="Pagado"
+                  paymentStatus={t("confirmation.paymentPaid")}
                 />
 
                 {roomType ? (
                   <p className="confirmation-card__room-type-note">
-                    <strong>Tipo de habitación:</strong> {roomType}
+                    <strong>{t("confirmation.roomTypeStrong")}</strong> {roomType}
                   </p>
                 ) : null}
 
@@ -304,7 +309,7 @@ function ConfirmationPage() {
                         className="confirmation-actions__btn confirmation-actions__btn--primary"
                         to={tripDetailsTo}
                       >
-                        Ver detalles del viaje
+                        {t("confirmation.tripDetailsOpen")}
                         <IconArrowRight className="confirmation-actions__btn-icon" />
                       </Link>
                       <button
@@ -312,29 +317,28 @@ function ConfirmationPage() {
                         className="confirmation-actions__btn confirmation-actions__btn--secondary"
                         onClick={handleDownloadReceipt}
                       >
-                        Descargar recibo
+                        {t("confirmation.downloadReceipt")}
                       </button>
                     </div>
                     <p className="confirmation-actions__qr-note">
                       <IconQrSmall className="confirmation-actions__qr-icon" />
-                      El código QR de check-in está disponible en Detalles del viaje
+                      {t("confirmation.qrNote")}
                     </p>
                   </div>
                 ) : null}
 
                 <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
-                  Volver al inicio
+                  {t("confirmation.backHome")}
                 </Link>
               </div>
             ) : (
               <div className="confirmation-card__body confirmation-card__body--empty">
-                <h1 className="confirmation-card__title">Confirmación</h1>
+                <h1 className="confirmation-card__title">{t("confirmation.emptyTitle")}</h1>
                 <p className="confirmation-card__lead">
-                  No hay datos de reserva. Si acabas de completar el pago, vuelve
-                  desde el checkout.
+                  {t("confirmation.emptyLead")}
                 </p>
                 <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
-                  Ir al inicio
+                  {t("confirmation.goHome")}
                 </Link>
               </div>
             )}

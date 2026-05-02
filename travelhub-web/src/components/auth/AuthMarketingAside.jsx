@@ -1,27 +1,22 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 
-const features = [
-  {
-    title: "50.000+ alojamientos",
-    text: "Destinos en todo el mundo",
-  },
-  {
-    title: "Mejor precio",
-    text: "Sin cargos ocultos",
-  },
-  {
-    title: "Cancelación flexible",
-    text: "En la mayoría de estancias",
-  },
-  {
-    title: "Soporte 24/7",
-    text: "Siempre a tu lado",
-  },
-];
-
 function AuthMarketingAside() {
+  const { t } = useTranslation();
+
+  const features = useMemo(
+    () => [
+      { title: t("authMarketing.f50k"), text: t("authMarketing.t50k") },
+      { title: t("authMarketing.fPrice"), text: t("authMarketing.tPrice") },
+      { title: t("authMarketing.fCancel"), text: t("authMarketing.tCancel") },
+      { title: t("authMarketing.f247"), text: t("authMarketing.t247") },
+    ],
+    [t],
+  );
+
   return (
     <aside className="auth-marketing" aria-label="TravelHub">
       <div className="auth-marketing__bg" aria-hidden="true" />
@@ -48,10 +43,10 @@ function AuthMarketingAside() {
         </div>
 
         <h1 className="auth-marketing__headline">
-          Explora el mundo, una estancia a la vez.
+          {t("authMarketing.headline")}
         </h1>
         <p className="auth-marketing__lead">
-          Miles de propiedades, precios transparentes y experiencias que recordarás.
+          {t("authMarketing.lead")}
         </p>
 
         <ul className="auth-marketing__features">
@@ -78,14 +73,14 @@ function AuthMarketingAside() {
         </ul>
 
         <blockquote className="auth-marketing__quote">
-          <p className="auth-marketing__stars" aria-label="5 de 5 estrellas">
+          <p className="auth-marketing__stars" aria-label={t("authMarketing.starsAria")}>
             ★★★★★
           </p>
           <p className="auth-marketing__quote-text">
-            «La mejor app de viajes que he usado.»
+            {t("authMarketing.quote")}
           </p>
           <footer className="auth-marketing__quote-by">
-            — Ana M., viajera verificada · 47 viajes
+            {t("authMarketing.quoteBy")}
           </footer>
         </blockquote>
       </div>

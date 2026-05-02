@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { normalizeFxCurrencyCode } from "../../constants/fxCurrency";
 import {
   isAuthenticated,
   isLoggedIn,
   persistSessionFromLogin,
 } from "../../auth/sessionAuth";
 import { processPayment, registerUser } from "../../services/api";
+import { invalidateFxRateCache } from "../../utils/fxRateCache";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
+import { convertAmountAuthoritative, estimateConvertWithCachedRate } from "../../utils/fxConversion";
+import { localeTagForI18n } from "../../utils/locale";
 import "./BookingSummaryCard.css";
 
 function buildPaymentLabel(
@@ -53,16 +59,11 @@ function IconShieldSsl({ className }) {
   );
 }
 
-function fmtMoney(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString("es-ES")}`;
-}
-
-function formatDateLabel(iso) {
+function formatDateLabel(iso, localeTag) {
   if (!iso || typeof iso !== "string") return "—";
   const d = new Date(iso + "T12:00:00");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("es-ES", {
+  return d.toLocaleDateString(localeTag, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -84,6 +85,8 @@ function BookingSummaryCard({
   serviceFee = 45,
   taxes = 62,
   total = 0,
+  pricingCurrencyCode: pricingCurrencyProp = "COP",
+  settlementCurrencyCode: settlementCurrencyProp,
   guestEmail = "",
   guestFormValid = false,
   paymentFormValid = false,
@@ -93,7 +96,15 @@ function BookingSummaryCard({
   guestLastName = "",
   onConfirm,
 }) {
+  const { t, i18n } = useTranslation();
+  const loc = localeTagForI18n(i18n.language);
   const navigate = useNavigate();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
+  const pricingCc = normalizeFxCurrencyCode(pricingCurrencyProp);
+  const settlementCc = normalizeFxCurrencyCode(
+    settlementCurrencyProp ?? pricingCc,
+  );
+  const dualCurrencySettlement = pricingCc !== settlementCc;
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [errorModal, setErrorModal] = useState({ show: false, message: "" });
@@ -104,7 +115,44 @@ function BookingSummaryCard({
 
   const hasAuthSession = isAuthenticated() || isLoggedIn();
 
-  const name = hotel?.name ?? "Hotel";
+  /** Importes en moneda del selector (origen numérico: divisa de precios `pricingCc`). */
+  const fmtPricingLine = (n) => formatPaymentInDisplayCurrency(n, pricingCc);
+
+  /** Estimación con GET `/currency/v1/rates` cacheada (solo informativa). */
+  const [fxApproximateLine, setFxApproximateLine] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (!dualCurrencySettlement) {
+        setFxApproximateLine("");
+        return;
+      }
+      (async () => {
+        try {
+          const est = await estimateConvertWithCachedRate(
+            Number(total),
+            pricingCc,
+            settlementCc,
+          );
+          if (cancelled || est == null || !Number.isFinite(est.amount)) return;
+          setFxApproximateLine(
+            t("bookingSummary.fxEstimateApprox", {
+              amount: formatPaymentInDisplayCurrency(est.amount, settlementCc),
+            }),
+          );
+        } catch {
+          if (!cancelled) setFxApproximateLine("");
+        }
+      })();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dualCurrencySettlement, pricingCc, settlementCc, total, t, formatPaymentInDisplayCurrency]);
+
+  const name = hotel?.name ?? t("bookingSummary.hotelFallback");
   const locationText = hotel?.location ?? "—";
   const imageSrc = hotel?.image;
   const rating =
@@ -122,10 +170,49 @@ function BookingSummaryCard({
     setApiError(null);
 
     try {
+      let payableAmountNumeric = Number(total);
+      let paymentCurrencyIso = pricingCc;
+
+      if (dualCurrencySettlement) {
+        try {
+          const conv = await convertAmountAuthoritative(total, pricingCc, settlementCc);
+          payableAmountNumeric = conv.numeric;
+          paymentCurrencyIso = conv.currencyCode;
+        } catch (err) {
+          const st = /** @type {{ status?: number }} */ (err)?.status;
+          const msg =
+            st === 503
+              ? t("bookingSummary.fxServiceUnavailable")
+              : t("bookingSummary.fxConvertFail");
+          setApiError(msg);
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      /*
+       * Backend: siempre COP (importe canónico). `paymentCurrencyIso` refleja la divisa del cobro
+       * tras FX; si no es COP, convertimos con el servicio oficial. El selector del navbar es sólo visual.
+       */
+      let copAmountForApi = payableAmountNumeric;
+      if (paymentCurrencyIso !== "COP") {
+        const copConv = await convertAmountAuthoritative(
+          payableAmountNumeric,
+          paymentCurrencyIso,
+          "COP",
+        );
+        copAmountForApi = copConv.numeric;
+      }
+      const amountStr = String(Math.round(copAmountForApi));
+
+      if (dualCurrencySettlement) {
+        invalidateFxRateCache(pricingCc, settlementCc);
+      }
+
       const paymentPayload = {
         reservation_id: reservationId,
         primary_guest: {
-          first_name: guestFirstName || "Huésped",
+          first_name: guestFirstName || t("bookingSummary.guestDefault"),
           last_name: guestLastName || "",
           document_type: "CC",
           document_number: "1234567890", // Debería capturarse en el form si es real
@@ -133,8 +220,8 @@ function BookingSummaryCard({
           email: guestEmail || "guest@example.com",
         },
         payment: {
-          amount: Number(total).toFixed(2),
-          currency_code: "USD",
+          amount: amountStr,
+          currency_code: "COP",
           payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
         },
       };
@@ -149,7 +236,7 @@ function BookingSummaryCard({
         setSubmitting(false);
         setErrorModal({
           show: true,
-          message: result.error || "No se pudo procesar el pago",
+          message: result.error || t("bookingSummary.processFailed"),
         });
         return;
       }
@@ -184,7 +271,7 @@ function BookingSummaryCard({
             const reg = await registerUser({
               email: email.toLowerCase(),
               password: Math.random().toString(36).slice(-10),
-              first_name: guestFirstName || "Huésped",
+              first_name: guestFirstName || t("bookingSummary.guestDefault"),
               last_name: guestLastName || "",
             });
             if (reg.token) {
@@ -220,7 +307,10 @@ function BookingSummaryCard({
           reservationIdFromPayment != null && String(reservationIdFromPayment).trim() !== ""
             ? String(reservationIdFromPayment)
             : null,
-        total: Number(total),
+        total: copAmountForApi,
+        totalCurrencyCode: "COP",
+        pricingCurrencyCode: pricingCc,
+        settlementCurrencyCode: settlementCc,
         hotel: hotelPayload,
         roomType: roomType || null,
         checkIn,
@@ -250,7 +340,7 @@ function BookingSummaryCard({
       );
     } catch (err) {
       console.error("Reservation failed:", err);
-      setApiError(err.message || "Error al crear la reserva");
+      setApiError(err.message || t("bookingSummary.reservationFail"));
       setSubmitting(false);
     }
   }
@@ -294,22 +384,23 @@ function BookingSummaryCard({
 
       <ul className="booking-summary-card__trip-meta">
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Fechas</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.dates")}</span>
           <span className="booking-summary-card__trip-value">
             {checkIn && checkOut
-              ? `${formatDateLabel(checkIn)} – ${formatDateLabel(checkOut)}`
+              ? `${formatDateLabel(checkIn, loc)} – ${formatDateLabel(checkOut, loc)}`
               : "—"}
           </span>
         </li>
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Huéspedes</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.guests")}</span>
           <span className="booking-summary-card__trip-value">
-            {guestCount}{" "}
-            {guestCount === 1 ? "huésped" : "huéspedes"}
+            {t(guestCount === 1 ? "bookingSummary.guest_one" : "bookingSummary.guest_other", {
+              count: guestCount,
+            })}
           </span>
         </li>
         <li className="booking-summary-card__trip-item">
-          <span className="booking-summary-card__trip-label">Noches</span>
+          <span className="booking-summary-card__trip-label">{t("bookingSummary.nights")}</span>
           <span className="booking-summary-card__trip-value">{nights}</span>
         </li>
       </ul>
@@ -317,34 +408,45 @@ function BookingSummaryCard({
       <div className="booking-summary-card__breakdown">
         <div className="booking-summary-card__row">
           <span>
-            {fmtMoney(pricePerNight)} × {nights} noches
+            {t(
+              nights === 1
+                ? "bookingSummary.nightsFormula_one"
+                : "bookingSummary.nightsFormula_other",
+              {
+                price: fmtPricingLine(pricePerNight),
+                count: nights,
+              },
+            )}
           </span>
-          <span>{fmtMoney(roomSubtotal)}</span>
+          <span>{fmtPricingLine(roomSubtotal)}</span>
         </div>
         {cleaningFee > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Tarifa de limpieza</span>
-            <span>{fmtMoney(cleaningFee)}</span>
+            <span>{t("bookingSummary.feeCleaning")}</span>
+            <span>{fmtPricingLine(cleaningFee)}</span>
           </div>
         ) : null}
         {serviceFee > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Tarifa de servicio</span>
-            <span>{fmtMoney(serviceFee)}</span>
+            <span>{t("bookingSummary.feeService")}</span>
+            <span>{fmtPricingLine(serviceFee)}</span>
           </div>
         ) : null}
         {taxes > 0 ? (
           <div className="booking-summary-card__row">
-            <span>Impuestos</span>
-            <span>{fmtMoney(taxes)}</span>
+            <span>{t("bookingSummary.taxes")}</span>
+            <span>{fmtPricingLine(taxes)}</span>
           </div>
         ) : null}
         <div className="booking-summary-card__row booking-summary-card__row--total">
-          <span>Total</span>
+          <span>{t("bookingSummary.total")}</span>
           <span className="booking-summary-card__total-amount">
-            {fmtMoney(total)}
+            {fmtPricingLine(total)}
           </span>
         </div>
+        {fxApproximateLine ? (
+          <p className="booking-summary-card__fx-approx">{fxApproximateLine}</p>
+        ) : null}
       </div>
 
       {apiError && (
@@ -360,12 +462,12 @@ function BookingSummaryCard({
         onClick={handleConfirm}
       >
         <IconLock className="booking-summary-card__confirm-icon" />
-        {submitting ? "Procesando..." : "Confirmar y Pagar"}
+        {submitting ? t("bookingSummary.processing") : t("bookingSummary.confirmPay")}
       </button>
 
       {hasAuthSession ? (
         <p className="booking-summary-card__account-check booking-summary-card__check-note">
-          Ya tienes sesión activa; el pago quedará asociado a tu cuenta.
+          {t("bookingSummary.hasSessionNote")}
         </p>
       ) : (
         <div className="booking-summary-card__account-check">
@@ -377,9 +479,9 @@ function BookingSummaryCard({
               className="booking-summary-card__checkbox"
             />
             <span className="booking-summary-card__check-text">
-              Autorizo la creación de una cuenta para gestionar mis reservas.
+              {t("bookingSummary.createAccount")}
               <small className="booking-summary-card__check-note">
-                De lo contrario, solo podrás consultar tus viajes con tu código de reserva.
+                {t("bookingSummary.createNote")}
               </small>
             </span>
           </label>
@@ -387,10 +489,10 @@ function BookingSummaryCard({
       )}
 
       <footer className="booking-summary-card__footer">
-        <p className="booking-summary-card__cancellation">Cancelación gratuita</p>
+        <p className="booking-summary-card__cancellation">{t("bookingSummary.freeCancellation")}</p>
         <p className="booking-summary-card__ssl">
           <IconShieldSsl className="booking-summary-card__ssl-icon" />
-          <span>Pago seguro con SSL</span>
+          <span>{t("bookingSummary.ssl")}</span>
         </p>
       </footer>
 
@@ -402,7 +504,7 @@ function BookingSummaryCard({
                 <path fill="#ef4444" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
               </svg>
             </div>
-            <h3 className="booking-modal__title">No se pudo completar el pago</h3>
+            <h3 className="booking-modal__title">{t("bookingSummary.modalTitle")}</h3>
             <p className="booking-modal__text">{errorModal.message}</p>
             <button
               type="button"
@@ -412,7 +514,7 @@ function BookingSummaryCard({
                 navigate("/");
               }}
             >
-              Volver a buscar
+              {t("bookingSummary.backSearch")}
             </button>
           </div>
         </div>

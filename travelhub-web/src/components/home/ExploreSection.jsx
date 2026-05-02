@@ -1,30 +1,42 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import "./ExploreSection.css";
 
-const CATEGORIES = ["Vuelos", "Hoteles", "Estancias", "Villas", "Resorts"];
-
 function ExploreSection() {
-  const [active, setActive] = useState("Estancias");
+  const { t } = useTranslation();
+  const categories = useMemo(
+    () => [
+      { id: "flights", labelKey: "homeExplore.catFlights" },
+      { id: "hotels", labelKey: "homeExplore.catHotels" },
+      { id: "stays", labelKey: "homeExplore.catStays" },
+      { id: "villas", labelKey: "homeExplore.catVillas" },
+      { id: "resorts", labelKey: "homeExplore.catResorts" },
+    ],
+    [],
+  );
+
+  const [activeId, setActiveId] = useState("stays");
 
   return (
     <section className="explore-section" id="explore" aria-labelledby="explore-heading">
       <div className="explore-section__header">
-        <p className="explore-section__eyebrow">Explora por tipo</p>
+        <p className="explore-section__eyebrow">{t("homeExplore.eyebrow")}</p>
         <h2 id="explore-heading" className="explore-section__title">
-          Explorar
+          {t("homeExplore.title")}
         </h2>
       </div>
-      <nav className="explore-section__nav" aria-label="Explorar por categoría">
+      <nav className="explore-section__nav" aria-label={t("homeExplore.navAria")}>
         <div className="explore-section__nav-inner" role="group">
-          {CATEGORIES.map((label) => {
-            const isActive = active === label;
+          {categories.map((c) => {
+            const label = t(c.labelKey);
+            const isActive = activeId === c.id;
             return (
               <button
-                key={label}
+                key={c.id}
                 type="button"
                 className={`explore-chip${isActive ? " explore-chip--active" : ""}`}
                 aria-pressed={isActive}
-                onClick={() => setActive(label)}
+                onClick={() => setActiveId(c.id)}
               >
                 {label}
               </button>
