@@ -605,7 +605,13 @@ describe("getHotelAvailability", () => {
             max_capacity: 2,
             price_per_night: "100",
             total_price: "400",
-            amenities: ["wifi"],
+            amenities: [
+              "wifi",
+              null,
+              { name: "  spa  " },
+              {},
+              { foo: 1 },
+            ],
           },
         ],
       }),
@@ -624,6 +630,11 @@ describe("getHotelAvailability", () => {
       price: 100,
       availableRooms: ["Suite"],
     });
+    const room = out.availableRoomObjects[0];
+    expect(room.amenities).toEqual(
+      expect.arrayContaining(["wifi", "spa"]),
+    );
+    expect(room.amenities).toHaveLength(2);
   });
 });
 
@@ -699,6 +710,30 @@ describe("createBooking / processPayment / createReservation", () => {
         payment_token: expect.stringContaining("tok_visa_"),
       }),
     });
+  });
+
+  it("createReservation throws 503 when the FX payload has no usable USD/COP rate", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({}));
+
+    await expect(
+      createReservation({
+        hotelId: "h1",
+        roomTypeId: "rt1",
+        checkIn: "2026-05-01",
+        checkOut: "2026-05-05",
+        guests: 2,
+        totalPrice: 400,
+        pricePerNight: 100,
+        nights: 4,
+        guestFirstName: "Ana",
+        guestLastName: "Lopez",
+      }),
+    ).rejects.toMatchObject({
+      status: 503,
+      message: expect.stringMatching(/tasa USD\/COP/i),
+    });
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });
 

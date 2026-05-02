@@ -13,4 +13,8 @@ describe("normalizeFxCurrencyCode", () => {
     expect(normalizeFxCurrencyCode("NOTACODE")).toBe("USD");
     expect(normalizeFxCurrencyCode("")).toBe("USD");
   });
+  it("null y undefined se tratan como vacío → USD", () => {
+    expect(normalizeFxCurrencyCode(null)).toBe("USD");
+    expect(normalizeFxCurrencyCode(undefined)).toBe("USD");
+  });
 });

@@ -150,6 +150,18 @@ describe("persistSessionFromLogin", () => {
     expect(localStorage.getItem(AUTH_ROLE_KEY)).toBeNull();
   });
 
+  it("persists hotel portal currency when hotel role logs in with hotelCurrencyCode", () => {
+    persistSessionFromLogin({
+      email: "hotel@example.com",
+      accessToken: "jwt-h",
+      userType: "hotel",
+      hotelCurrencyCode: " USD ",
+    });
+    expect(localStorage.getItem("travelhub-hotel-portal-currency")).toBe(
+      "USD",
+    );
+  });
+
   it("emits the SESSION_CHANGED_EVENT so listeners (e.g. headers) can refresh", () => {
     const listener = vi.fn();
     window.addEventListener(SESSION_CHANGED_EVENT, listener);
