@@ -7,6 +7,7 @@ import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import { getTravelerReservationByIdForPoll } from "../services/api";
 import "./ConfirmationPage.css";
 
@@ -69,7 +70,7 @@ function buildReceiptText(
   {
     reference,
     hotel,
-    total,
+    totalFmt,
     checkIn,
     checkOut,
     roomType,
@@ -84,9 +85,7 @@ function buildReceiptText(
     checkIn ? tr("confirmation.receiptLines.checkIn", { value: checkIn }) : null,
     checkOut ? tr("confirmation.receiptLines.checkOut", { value: checkOut }) : null,
     roomType ? tr("confirmation.receiptLines.room", { room: roomType }) : null,
-    typeof total === "number" && Number.isFinite(total)
-      ? tr("confirmation.receiptLines.total", { amount: total.toFixed(2) })
-      : null,
+    totalFmt ? tr("confirmation.receiptLines.total", { amount: totalFmt }) : null,
     guestEmail ? tr("confirmation.receiptLines.guestEmail", { email: guestEmail }) : null,
   ].filter(Boolean);
   return `${lines.join("\n")}\n`;
@@ -101,6 +100,7 @@ function labelForReservationStatusNorm(tr, norm) {
 
 function ConfirmationPage() {
   const { t } = useTranslation();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
   const location = useLocation();
   const data = location.state;
   const [reservationStatusQuery, setReservationStatusQuery] = useState("idle");
@@ -151,6 +151,8 @@ function ConfirmationPage() {
   const hotel = data?.hotel;
   const reference = data?.reference;
   const total = data?.total;
+  const totalCurrencyCode =
+    typeof data?.totalCurrencyCode === "string" ? data.totalCurrencyCode : "COP";
   const checkIn = data?.checkIn;
   const checkOut = data?.checkOut;
   const roomType = data?.roomType;
@@ -170,10 +172,14 @@ function ConfirmationPage() {
 
   function handleDownloadReceipt() {
     if (!reference) return;
+    const totalFmt =
+      typeof total === "number" && Number.isFinite(total)
+        ? formatPaymentInDisplayCurrency(total, totalCurrencyCode)
+        : null;
     const body = buildReceiptText(t, {
       reference,
       hotel,
-      total,
+      totalFmt,
       checkIn,
       checkOut,
       roomType,
@@ -285,6 +291,7 @@ function ConfirmationPage() {
                   checkInTime={checkInTime}
                   checkOutTime={checkOutTime}
                   total={total}
+                  totalCurrencyCode={totalCurrencyCode}
                   paymentLabel={paymentLabel}
                   paymentStatus={t("confirmation.paymentPaid")}
                 />

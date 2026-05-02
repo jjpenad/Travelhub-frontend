@@ -33,8 +33,7 @@ function formatDateRangeForConfirmToast(checkIn, checkOut) {
 }
 
 /**
- * Texto de cuerpo del toast.
- * Solo muestra el número/referencia de reserva ante el usuario, nunca el ID interno del API.
+ * Texto de cuerpo del toast in-app (sin número de reserva: va en el correo y en Mis viajes).
  * @param {{ hotelName: string, checkIn: string, checkOut: string, reservationRef?: string }} p
  * @returns {string}
  */
@@ -43,18 +42,11 @@ export function buildTravelerConfirmToastBody(p) {
     (p.hotelName && String(p.hotelName).trim()) ||
     i18n.t("toast.bodyHotelFallback");
   const range = formatDateRangeForConfirmToast(p.checkIn, p.checkOut);
-  const refRaw =
-    p.reservationRef != null && String(p.reservationRef).trim() !== ""
-      ? String(p.reservationRef).trim()
-      : "";
-  const ref = refRaw ? (refRaw.startsWith("#") ? refRaw : `#${refRaw}`) : "";
-
-  const suffix = ref ? ` (${i18n.t("toast.refPart", { ref })})` : "";
 
   if (range) {
-    return i18n.t("toast.bodyWithRange", { hotel, range, suffix });
+    return i18n.t("toast.bodyWithRange", { hotel, range });
   }
-  return i18n.t("toast.bodyNoRange", { hotel, suffix });
+  return i18n.t("toast.bodyNoRange", { hotel });
 }
 
 /**

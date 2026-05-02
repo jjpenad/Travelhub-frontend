@@ -5,6 +5,11 @@
     "switchAria": "Change language",
     "current": "Current language"
   },
+  "currency": {
+    "usd": "USD",
+    "cop": "COP",
+    "switchAria": "Display currency"
+  },
   "formats": {
     "guests_one": "1 guest",
     "guests_other": "{{count}} guests",
@@ -389,7 +394,10 @@
     "modalTitle": "Payment could not be completed",
     "backSearch": "Back to search",
     "processFailed": "Payment could not be processed",
-    "reservationFail": "Could not complete the reservation"
+    "reservationFail": "Could not complete the reservation",
+    "fxEstimateApprox": "≈ {{amount}} (estimate; we use the server’s official conversion when you pay)",
+    "fxConvertFail": "We couldn’t prepare the charge in the settlement currency. Try again.",
+    "fxServiceUnavailable": "The FX service is temporarily unavailable."
   },
   "bookingWidget": {
     "perNight": "/ night",
@@ -510,10 +518,9 @@
     "title": "Booking confirmed!",
     "close": "Close notification",
     "aria": "Booking notification",
-    "bodyWithRange": "Your stay at {{hotel}} from {{range}} is confirmed.{{suffix}}",
-    "bodyNoRange": "Your stay at {{hotel}} is confirmed.{{suffix}}",
+    "bodyWithRange": "Your stay at {{hotel}} from {{range}} is confirmed.",
+    "bodyNoRange": "Your stay at {{hotel}} is confirmed.",
     "bodyHotelFallback": "your accommodation",
-    "refPart": "Reservation number: {{ref}}",
     "emailHeader": "TravelHub",
     "emailTitle": "Booking confirmed!",
     "emailRef": "Reservation number: {{code}}",
@@ -680,12 +687,8 @@
     "title": "Featured destinations",
     "subtitle": "Hand-picked spots with great value and outstanding guest ratings.",
     "santoriniCountry": "Greece",
-    "santoriniPrice": "$112/night",
     "kyotoCountry": "Japan",
-    "kyotoPrice": "$95/night",
     "marrakechCountry": "Morocco",
-    "marrakechPrice": "$78/night",
-    "reykjavikCountry": "Iceland",
-    "reykjavikPrice": "$134/night"
+    "reykjavikCountry": "Iceland"
   }
 }

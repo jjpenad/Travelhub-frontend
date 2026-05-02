@@ -5,6 +5,7 @@ import Navbar from "../components/layout/Navbar";
 import HotelPortalSidebar from "../components/hotel-portal/HotelPortalSidebar";
 import "../components/hotel-portal/HotelManageReservations.css";
 import "../components/hotel-portal/HotelReservationDetail.css";
+import { getHotelPortalCurrencyCode } from "../auth/hotelPortalCurrency";
 import { clearSessionUser, getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
 import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
@@ -60,7 +61,7 @@ function HotelReservationDetailPage() {
   const detailFromState = useMemo(() => {
     void i18nHook.resolvedLanguage;
     if (!stateMatches) return null;
-    return mapApiReservationToDetailView(stateReservation);
+    return mapApiReservationToDetailView(stateReservation, getHotelPortalCurrencyCode());
   }, [stateMatches, stateReservation, i18nHook.resolvedLanguage]);
 
   const [remotePayload, setRemotePayload] = useState(null);
@@ -108,7 +109,7 @@ function HotelReservationDetailPage() {
     if (stateMatches) return null;
     if (!remotePayload || remotePayload.id !== idDecoded) return null;
     if (remotePayload.error || !remotePayload.raw) return null;
-    return mapApiReservationToDetailView(remotePayload.raw);
+    return mapApiReservationToDetailView(remotePayload.raw, getHotelPortalCurrencyCode());
   }, [remotePayload, idDecoded, stateMatches, i18nHook.resolvedLanguage]);
 
   const detail = detailFromState ?? detailFromRemote;

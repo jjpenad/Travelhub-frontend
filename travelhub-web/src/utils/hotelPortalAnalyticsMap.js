@@ -1,5 +1,10 @@
 import i18n from "../i18n";
+import {
+  getHotelPortalCurrencyCode,
+  pickHotelCurrencyFromApiPayload,
+} from "../auth/hotelPortalCurrency";
 import { currentLocaleTag } from "./currentLocaleTag";
+import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
 
 const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed"];
 
@@ -148,11 +153,11 @@ export function buildDashboardViewModel(dto, options = {}) {
   const totalGuests = Number(dto?.total_personas ?? 0);
   const totalRev = Number(dto?.total_ganancias ?? 0);
 
+  const currencyCode =
+    pickHotelCurrencyFromApiPayload(dto) ?? getHotelPortalCurrencyCode();
+
   const fmtMoney = (n) =>
-    `$${Number(n).toLocaleString(currentLocaleTag(), {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })}`;
+    formatHotelPortalMoney(n, currencyCode, { variant: "compact" });
 
   const metrics = [
     {
@@ -183,5 +188,6 @@ export function buildDashboardViewModel(dto, options = {}) {
     segments: mapPercentStatusToSegments(dto?.percent_status, reservations),
     arrivalRows: mapReservationsToArrivalRows(reservations),
     bookingRingCount: totalRes,
+    currencyCode,
   };
 }

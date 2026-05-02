@@ -5,6 +5,11 @@
     "switchAria": "Cambiar idioma",
     "current": "Idioma actual"
   },
+  "currency": {
+    "usd": "USD",
+    "cop": "COP",
+    "switchAria": "Moneda de visualización"
+  },
   "formats": {
     "guests_one": "1 huésped",
     "guests_other": "{{count}} huéspedes",
@@ -419,7 +424,10 @@
     "modalTitle": "No se pudo completar el pago",
     "backSearch": "Volver a buscar",
     "processFailed": "No se pudo procesar el pago",
-    "reservationFail": "Error al crear la reserva"
+    "reservationFail": "Error al crear la reserva",
+    "fxEstimateApprox": "≈ {{amount}} (orientativo; al confirmar aplicamos la conversión oficial del servidor)",
+    "fxConvertFail": "No se pudo preparar el importe en la moneda del cobro. Inténtalo de nuevo.",
+    "fxServiceUnavailable": "El servicio de divisas no está disponible en este momento."
   },
   "bookingWidget": {
     "perNight": "/ noche",
@@ -542,10 +550,9 @@
     "title": "¡Reserva confirmada!",
     "close": "Cerrar notificación",
     "aria": "Notificación de reserva",
-    "bodyWithRange": "Tu reserva en {{hotel}} del {{range}} está confirmada.{{suffix}}",
-    "bodyNoRange": "Tu reserva en {{hotel}} está confirmada.{{suffix}}",
+    "bodyWithRange": "Tu reserva en {{hotel}} del {{range}} está confirmada.",
+    "bodyNoRange": "Tu reserva en {{hotel}} está confirmada.",
     "bodyHotelFallback": "tu alojamiento",
-    "refPart": "Número de reserva: {{ref}}",
     "emailHeader": "TravelHub",
     "emailTitle": "¡Reserva confirmada!",
     "emailRef": "Número de reserva: {{code}}",
@@ -712,12 +719,8 @@
     "title": "Destinos destacados",
     "subtitle": "Lugares seleccionados con excelente relación calidad-precio y valoraciones de huéspedes.",
     "santoriniCountry": "Grecia",
-    "santoriniPrice": "$112/noche",
     "kyotoCountry": "Japón",
-    "kyotoPrice": "$95/noche",
     "marrakechCountry": "Marruecos",
-    "marrakechPrice": "$78/noche",
-    "reykjavikCountry": "Islandia",
-    "reykjavikPrice": "$134/noche"
+    "reykjavikCountry": "Islandia"
   }
 }

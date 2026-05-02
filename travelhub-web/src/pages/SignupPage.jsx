@@ -76,6 +76,7 @@ function SignupPage() {
         firstName: loginResult.first_name || nombre.trim(),
         lastName: loginResult.last_name || apellidos.trim(),
         remember: true,
+        hotelCurrencyCode: loginResult.currency_code,
       });
 
       setSuccessMsg(t("auth.errors.successRedirect"));

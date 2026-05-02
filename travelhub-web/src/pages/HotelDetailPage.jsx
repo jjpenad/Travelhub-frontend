@@ -10,6 +10,7 @@ import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getHotelAvailability } from "../services/api";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import { parseBookingFromSearchParams } from "../utils/searchUrlParams";
 import "./HotelDetailPage.css";
 
@@ -17,6 +18,7 @@ const showGuestReviewsSection = false;
 
 function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
   const { t } = useTranslation();
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
   const roomObjects = hotel.availableRoomObjects || [];
   const roomNames = roomObjects.length > 0
     ? roomObjects.map((r) => r.name)
@@ -80,7 +82,9 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <strong>{room.name}</strong>
                             <span style={{ color: "#6c63ff", fontWeight: 700 }}>
-                              {t("hotelDetail.perNightShort", { price: `$${room.pricePerNight}` })}
+                              {t("hotelDetail.perNightShort", {
+                                price: formatUsdBaseAmount(room.pricePerNight),
+                              })}
                             </span>
                           </div>
                           <p style={{ color: "#6b7280", fontSize: "0.875rem", margin: "0.25rem 0" }}>{room.description}</p>
@@ -96,7 +100,9 @@ function HotelDetailContent({ hotel, bookingFromSearch, searchSuffix }) {
                           )}
                           {room.totalPrice > 0 && (
                             <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.25rem" }}>
-                              {t("hotelDetail.totalLabel", { amount: `$${room.totalPrice}` })}
+                              {t("hotelDetail.totalLabel", {
+                                amount: formatUsdBaseAmount(room.totalPrice),
+                              })}
                             </p>
                           )}
                         </div>

@@ -19,6 +19,15 @@ const ANALYTICS_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL ||
   "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
 
+/** Divisas: misma base que el resto de endpoints. */
+const FX_API_BASE_URL = String(import.meta.env.VITE_FX_API_URL || BASE_URL || "").replace(
+  /\/+$/,
+  "",
+);
+/** Rutas por defecto alineadas con `service-external` (`currency.py`): router bajo prefijo `/currency`. */
+const FX_RATES_PATH = import.meta.env.VITE_FX_RATES_PATH || "/currency/v1/rates";
+const FX_CONVERT_PATH = import.meta.env.VITE_FX_CONVERT_PATH || "/currency/v1/convert";
+
 /** Registro de usuario. Sobrescribir con VITE_REGISTER_PATH en .env si el backend usa otra ruta. */
 const REGISTER_PATH = import.meta.env.VITE_REGISTER_PATH || "/auth/register";
 
@@ -131,6 +140,76 @@ function joinAnalyticsUrl(path) {
   const base = ANALYTICS_BASE_URL.replace(/\/+$/, "");
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${base}${p}`;
+}
+
+function joinFxUrl(pathFragment) {
+  const base = FX_API_BASE_URL.replace(/\/+$/, "");
+  const p = String(pathFragment || "").startsWith("/")
+    ? String(pathFragment)
+    : `/${pathFragment}`;
+  return `${base}${p}`;
+}
+
+/**
+ * GET cotización FX (p. ej. `GET …/currency/v1/rates?base=USD&quote=COP`).
+ * Respuesta esperada flexible: ver `extractRateFromFxResponse` en `utils/fxConversion.js`.
+ *
+ * @param {string} baseCurrency
+ * @param {string} quoteCurrency
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function getFxRateFromApi(baseCurrency, quoteCurrency) {
+  const base = String(baseCurrency ?? "").trim().toUpperCase();
+  const quote = String(quoteCurrency ?? "").trim().toUpperCase();
+  if (!base || !quote) {
+    const err = new Error("base y quote son obligatorios para tasas FX");
+    err.status = 400;
+    throw err;
+  }
+  const qs = new URLSearchParams({ base, quote });
+  const sep = FX_RATES_PATH.includes("?") ? "&" : "?";
+  const url = `${joinFxUrl(FX_RATES_PATH)}${sep}${qs.toString()}`;
+  return authFetchAbsolute(url, { method: "GET" });
+}
+
+/**
+ * Parsea GET rates sin importar `fxConversion` (evita dependencia circular api ↔ fxConversion).
+ * @param {unknown} data
+ * @returns {number | null}
+ */
+function extractRateFromRatesPayloadForApi(data) {
+  if (!data || typeof data !== "object") return null;
+  const d = /** @type {Record<string, unknown>} */ (data);
+  const raw = d.rate ?? d.fx_rate ?? d.exchange_rate ?? d.spot_rate;
+  const direct =
+    typeof raw === "number" && Number.isFinite(raw)
+      ? raw
+      : Number(String(raw ?? "").trim().replace(/,/g, ""));
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  const nb = Number(d.base_amount);
+  const nq = Number(d.quote_amount);
+  if (Number.isFinite(nb) && nb !== 0 && Number.isFinite(nq) && nq > 0) return nq / nb;
+  return null;
+}
+
+/**
+ * POST conversión servidor (`/currency/v1/convert`): monto oficial para cobro (reglas backend).
+ *
+ * Body snake_case habitual: `{ amount, from_currency, to_currency }`.
+ *
+ * @param {Record<string, unknown>} body
+ * @returns {Promise<Record<string, unknown>>}
+ */
+export async function postFxConvertToApi(body) {
+  const url = joinFxUrl(FX_CONVERT_PATH);
+  return authFetchAbsolute(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 /** Headers para endpoints públicos (sin Authorization). */
@@ -559,6 +638,7 @@ export async function registerUser(payload) {
  *   first_name: string | null,
  *   last_name: string | null,
  *   email: string | null,
+ *   currency_code: string | null,
  * }>}
  */
 export async function loginUser({ email, password }) {
@@ -587,6 +667,16 @@ export async function loginUser({ email, password }) {
     const access_token = normalizeBearerValue(
       data.access_token ?? data.token ?? data.accessToken,
     );
+    const currencyRaw =
+      data.currency_code ??
+      data.hotel_currency_code ??
+      data.currency ??
+      data.hotel_currency;
+    const currency_code =
+      currencyRaw != null && String(currencyRaw).trim() !== ""
+        ? String(currencyRaw).trim()
+        : null;
+
     return {
       access_token,
       token_type: data.token_type,
@@ -594,6 +684,7 @@ export async function loginUser({ email, password }) {
       first_name: typeof data.first_name === "string" ? data.first_name : null,
       last_name: typeof data.last_name === "string" ? data.last_name : null,
       email: typeof data.email === "string" ? data.email : emailNorm,
+      currency_code,
     };
   } catch (err) {
     if (err && typeof err.status === "number") {
@@ -610,6 +701,7 @@ export async function loginUser({ email, password }) {
  * GET …/analitycs/dahsboard?start_date=&end_date= (Bearer token).
  * @param {{ startDate: string, endDate: string }} range - Fechas inclusivas YYYY-MM-DD (primer y último día del mes).
  * @returns {Promise<object>} Cuerpo JSON del panel (reservas, ingresos, reservas detalle, etc.).
+ *   El cliente usa `currency_code` (u homónimos) cuando el backend indica la divisa del establecimiento (`USD` | `COP`).
  */
 export async function getDashboardAnalytics({ startDate, endDate }) {
   if (!isAuthenticated()) {
@@ -878,6 +970,8 @@ export async function sendEmailNotification({ email, message }) {
 /**
  * POST …/reservation-flow/create
  * Create a new reservation.
+ * Los montos de entrada se interpretan como USD (mock / compat); el backend recibe siempre COP
+ * (misma regla que el flujo UI: el selector COP/USD del viajero es sólo visual).
  */
 export async function createReservation({
   hotelId,
@@ -893,17 +987,30 @@ export async function createReservation({
   // guestEmail — not sent to API, only used in confirmation UI
   cardNumber,
 }) {
+  const ratePayload = await getFxRateFromApi("USD", "COP");
+  const usdToCop = extractRateFromRatesPayloadForApi(ratePayload);
+  if (usdToCop == null || !Number.isFinite(usdToCop) || usdToCop <= 0) {
+    const err = new Error("No se pudo obtener la tasa USD/COP para la reserva.");
+    err.status = 503;
+    throw err;
+  }
+  const toCopStr = (usd) => String(Math.round(Number(usd) * usdToCop));
+  const baseUsd = pricePerNight * nights;
+  const totalUsd = Number(totalPrice);
+  const baseCopStr = toCopStr(baseUsd);
+  const totalCopStr = toCopStr(totalUsd);
+
   const body = {
     hotel_id: hotelId,
     room_type_id: roomTypeId,
     check_in: checkIn,
     check_out: checkOut,
     guests,
-    base_price: (pricePerNight * nights).toFixed(2),
-    taxes: "0.00",
-    discounts: "0.00",
-    total_price: Number(totalPrice).toFixed(2),
-    currency_code: "USD",
+    base_price: baseCopStr,
+    taxes: "0",
+    discounts: "0",
+    total_price: totalCopStr,
+    currency_code: "COP",
     primary_guest: {
       first_name: guestFirstName || "Guest",
       last_name: guestLastName || "",
@@ -912,8 +1019,8 @@ export async function createReservation({
       nationality: "COL",
     },
     payment: {
-      amount: Number(totalPrice).toFixed(2),
-      currency_code: "USD",
+      amount: totalCopStr,
+      currency_code: "COP",
       payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
     },
     special_requests: "",

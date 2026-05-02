@@ -12,6 +12,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  gap: 0.5rem;
   width: 100%;
   box-sizing: border-box;
   padding: 0.65rem var(--page-padding-x) 0.35rem;

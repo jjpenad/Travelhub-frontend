@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PATH_TRAVELERS_HOME } from "../../constants/routes";
+import CurrencySwitcher from "../currency/CurrencySwitcher";
 import LanguageSwitcher from "../language/LanguageSwitcher";
 import AuthMarketingAside from "./AuthMarketingAside";
 
@@ -9,6 +10,7 @@ function AuthSplitLayout({ children }) {
   return (
     <div className="auth-split">
       <div className="auth-split__toolbar">
+        <CurrencySwitcher />
         <LanguageSwitcher />
       </div>
       <div className="auth-split__grid">

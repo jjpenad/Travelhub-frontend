@@ -11,12 +11,14 @@ import {
   SESSION_CHANGED_EVENT,
 } from "../../auth/sessionAuth";
 import {
+  PATH_HOTEL_MANAGE_RESERVATIONS,
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
   PATH_MY_TRIPS,
   PATH_TRAVELERS_HOME,
 } from "../../constants/routes";
 import logoTravelhub from "../../assets/logo_travelhub.png";
+import CurrencySwitcher from "../currency/CurrencySwitcher";
 import LanguageSwitcher from "../language/LanguageSwitcher";
 import NavbarUserIcon from "./NavbarUserIcon";
 import "./Navbar.css";
@@ -42,6 +44,8 @@ function Navbar() {
     pathname === PATH_HOTEL_PORTAL_LEGACY ||
     pathname === PATH_HOTEL_PORTAL_HOME ||
     pathname.startsWith("/hoteles/");
+  const hideTravelerCurrency =
+    isHotelPortalRoute || pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
@@ -160,6 +164,7 @@ function Navbar() {
             loggedIn ? "navbar__actions navbar__actions--logged" : "navbar__actions"
           }
         >
+          {!hideTravelerCurrency ? <CurrencySwitcher /> : null}
           <LanguageSwitcher />
           {loggedIn ? (
             <>

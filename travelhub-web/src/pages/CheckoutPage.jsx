@@ -7,6 +7,7 @@ import GuestForm from "../components/checkout/GuestForm";
 import PaymentForm from "../components/checkout/PaymentForm";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { normalizeFxCurrencyCode } from "../constants/fxCurrency";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 // TODO(backend): datos de hotel desde `location.state`/API; mocks localizados vía `getLocalizedMockHotels` si aplica
 import "./CheckoutPage.css";
@@ -25,6 +26,24 @@ function buildBookingSummaryData(locationState, hotelFromMock) {
   const nav = locationState || {};
   const bookingRes = nav.bookingResponse?.result || {};
   const pricing = bookingRes.pricing || {};
+
+  const pricingCurrencyRaw =
+    pricing.currency_code ??
+    nav.pricingCurrencyCode ??
+    bookingRes.currency_code ??
+    null;
+  const settlementCurrencyRaw =
+    bookingRes.settlement_currency_code ??
+    bookingRes.hotel?.currency_code ??
+    bookingRes.hotel?.hotel_currency ??
+    nav.settlementCurrencyCode ??
+    pricingCurrencyRaw ??
+    null;
+
+  const pricingCurrencyCode = normalizeFxCurrencyCode(pricingCurrencyRaw || "COP");
+  const settlementCurrencyCode = normalizeFxCurrencyCode(
+    settlementCurrencyRaw ?? pricingCurrencyCode,
+  );
 
   // Priorizamos la información del backend (bookingResponse)
   const nights = Number(pricing.nights || nav.nights || DEFAULT_NIGHTS);
@@ -56,6 +75,8 @@ function buildBookingSummaryData(locationState, hotelFromMock) {
     serviceFee,
     taxes,
     total,
+    pricingCurrencyCode,
+    settlementCurrencyCode,
   };
 }
 
@@ -183,6 +204,8 @@ function CheckoutPage() {
                 serviceFee={summary.serviceFee}
                 taxes={summary.taxes}
                 total={summary.total}
+                pricingCurrencyCode={summary.pricingCurrencyCode}
+                settlementCurrencyCode={summary.settlementCurrencyCode}
                 guestEmail={guestEmail}
                 guestFormValid={guestFormValid}
                 paymentFormValid={paymentFormValid}

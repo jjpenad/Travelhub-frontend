@@ -66,6 +66,7 @@ function LoginPage() {
         firstName: result.first_name,
         lastName: result.last_name,
         remember,
+        hotelCurrencyCode: result.currency_code,
       });
       navigate(getPostAuthDestination(result.user_type, from), { replace: true });
     } catch (err) {

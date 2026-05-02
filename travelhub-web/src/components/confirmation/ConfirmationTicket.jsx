@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
 import { localeTagForI18n } from "../../utils/locale";
 import "./ConfirmationTicket.css";
 
@@ -9,15 +10,17 @@ function ConfirmationTicket({
   checkInTime = "15:00",
   checkOutTime = "11:00",
   total = 0,
+  totalCurrencyCode = "COP",
   paymentLabel = "",
   paymentStatus = "",
 }) {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
 
-  function fmtMoney(n) {
+  function fmtTotal(n) {
     if (n == null || Number.isNaN(Number(n))) return "—";
-    return `$${Number(n).toLocaleString(loc)}`;
+    return formatPaymentInDisplayCurrency(n, totalCurrencyCode);
   }
 
   function formatTicketDate(iso) {
@@ -98,7 +101,7 @@ function ConfirmationTicket({
         </div>
         <div className="confirmation-ticket__cell confirmation-ticket__cell--payment">
           <h3 className="confirmation-ticket__cell-title">{t("confirmation.ticketTotalPaid")}</h3>
-          <p className="confirmation-ticket__cell-amount">{fmtMoney(total)}</p>
+          <p className="confirmation-ticket__cell-amount">{fmtTotal(total)}</p>
           <p className="confirmation-ticket__cell-method">{paymentLabel}</p>
           <p className="confirmation-ticket__cell-status">{paymentStatus}</p>
         </div>

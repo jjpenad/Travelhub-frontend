@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { formatFriendlyDate, formatGuestsLabel } from "../../utils/searchUrlParams";
-import { localeTagForI18n } from "../../utils/locale";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
 import { createBooking } from "../../services/api";
+import { extractRateFromFxResponse } from "../../utils/fxConversion";
+import { getFxRatePayloadCached } from "../../utils/fxRateCache";
 import "./BookingWidget.css";
 
 /** En `false` se ocultan tarifa de limpieza, tarifa de servicio e impuestos del desglose (y no se suman al total). */
@@ -61,10 +63,10 @@ function BookingWidget({
   defaultGuests = "2",
   roomTypeId = "",
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const loc = localeTagForI18n(i18n.language);
-  const fmtMoney = (n) => `$${Number(n).toLocaleString(loc)}`;
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const fmtMoney = (n) => formatUsdBaseAmount(n);
 
   const [, setUserState] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -122,22 +124,35 @@ function BookingWidget({
       return;
     }
 
-    const bookingPayload = {
-      hotel_id: hotelId,
-      room_type_id: roomTypeId,
-      check_in: checkIn,
-      check_out: checkOut,
-      guests,
-      base_price: roomSubtotal.toFixed(2),
-      taxes: taxesApplied.toFixed(2),
-      discounts: "0.00",
-      total_price: total.toFixed(2),
-      currency_code: "USD",
-      special_requests: "",
-    };
-
     setIsBooking(true);
     try {
+      /** Mock en USD: el backend espera montos en COP; el selector de moneda del sitio es sólo visual. */
+      const { data: ratePayload } = await getFxRatePayloadCached("USD", "COP");
+      const usdToCop = extractRateFromFxResponse(ratePayload);
+      if (usdToCop == null || !Number.isFinite(usdToCop) || usdToCop <= 0) {
+        setErrorModal({
+          show: true,
+          message: t("bookingSummary.fxServiceUnavailable"),
+        });
+        setIsBooking(false);
+        return;
+      }
+      const toCopStr = (v) => String(Math.round(Number(v) * usdToCop));
+
+      const bookingPayload = {
+        hotel_id: hotelId,
+        room_type_id: roomTypeId,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests,
+        base_price: toCopStr(roomSubtotal),
+        taxes: toCopStr(taxesApplied),
+        discounts: "0",
+        total_price: toCopStr(total),
+        currency_code: "COP",
+        special_requests: "",
+      };
+
       const response = await createBooking(bookingPayload);
 
       if (response.result?.proceed === false) {

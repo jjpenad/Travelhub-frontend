@@ -11,7 +11,7 @@ import HotelCard from "../components/search/HotelCard";
 import ResultsToolbar from "../components/search/ResultsToolbar";
 import SearchSummary from "../components/search/SearchSummary";
 import { searchAccommodations, SEARCH_AMENITY_QUERY_TO_UI } from "../services/api";
-import { localeTagForI18n } from "../utils/locale";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import "./SearchResults.css";
 
 /** MVP: oculta la columna de filtros; pon en true para mostrar el sidebar */
@@ -53,7 +53,8 @@ function amenitiesRecordFromParams(searchParams, knownKeys) {
 }
 
 function SearchResultsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
 
   const toolbarCopyBase = useMemo(
     () => ({
@@ -106,8 +107,7 @@ function SearchResultsPage() {
         t(count === 1 ? "hotelCard.reviews_one" : "hotelCard.reviews_other", {
           count,
         }),
-      priceLabel: (amount) =>
-        `$${amount.toLocaleString(localeTagForI18n(i18n.language))}`,
+      priceLabel: (amount) => formatUsdBaseAmount(amount),
       perNight: t("hotelCard.perNight"),
       priceTaxNote: t("hotelCard.taxNote"),
       bookNow: t("hotelCard.bookNow"),
@@ -115,7 +115,7 @@ function SearchResultsPage() {
       notRefundable: t("hotelCard.notRefundable"),
       amenitiesMore: (n) => t("hotelCard.amenitiesMore", { n }),
     }),
-    [t, i18n.language],
+    [t, formatUsdBaseAmount],
   );
 
   const knownAmenityKeys = useMemo(

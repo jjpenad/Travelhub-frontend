@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { currentLocaleTag } from "../../utils/currentLocaleTag";
+import { getHotelPortalCurrencyCode } from "../../auth/hotelPortalCurrency";
+import { formatHotelPortalMoney } from "../../utils/formatHotelPortalMoney";
 import "./HotelPortalRevenueChart.css";
 
 /**
  * Gráfico de barras de ingresos por día del mes.
+ * @param {{ title: string, bars?: { day: number, value: number }[], currencyCode?: string }} props
  */
-function HotelPortalRevenueChart({ title, bars = [] }) {
+function HotelPortalRevenueChart({ title, bars = [], currencyCode }) {
   const { t } = useTranslation();
-  const fmtMoney = (n) =>
-    `$${Number(n).toLocaleString(currentLocaleTag(), { maximumFractionDigits: 0 })}`;
+  const ccy = currencyCode ?? getHotelPortalCurrencyCode();
+  const fmtMoney = (n) => formatHotelPortalMoney(n, ccy, { variant: "compact" });
 
   const max = useMemo(() => Math.max(1, ...bars.map((b) => b.value)), [bars]);
   const [hover, setHover] = useState(null);

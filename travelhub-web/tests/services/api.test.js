@@ -634,9 +634,11 @@ describe("createBooking / processPayment / createReservation", () => {
     expect(JSON.parse(init.body)).toEqual({ token: "x" });
   });
 
-  it("createReservation builds the canonical body shape and posts it", async () => {
+  it("createReservation fetches USD/COP, converts amounts, and POSTs COP to /reservation-flow/create", async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, "tok");
-    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ id: "r-1" }));
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse({ rate: 4000 }))
+      .mockResolvedValueOnce(jsonResponse({ id: "r-1" }));
 
     await createReservation({
       hotelId: "h1",
@@ -652,7 +654,13 @@ describe("createBooking / processPayment / createReservation", () => {
       cardNumber: "4111-1111-1111-1111",
     });
 
-    const [, init] = lastFetchCall();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    const [ratesUrl] = globalThis.fetch.mock.calls[0];
+    expect(String(ratesUrl)).toMatch(/currency\/v1\/rates/);
+    expect(String(ratesUrl)).toContain("base=USD");
+    expect(String(ratesUrl)).toContain("quote=COP");
+
+    const [, init] = globalThis.fetch.mock.calls[1];
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({
       hotel_id: "h1",
@@ -660,14 +668,16 @@ describe("createBooking / processPayment / createReservation", () => {
       check_in: "2026-05-01",
       check_out: "2026-05-05",
       guests: 2,
-      total_price: "400.00",
-      currency_code: "USD",
+      base_price: "1600000",
+      total_price: "1600000",
+      currency_code: "COP",
       primary_guest: expect.objectContaining({
         first_name: "Ana",
         last_name: "Lopez",
       }),
       payment: expect.objectContaining({
-        amount: "400.00",
+        amount: "1600000",
+        currency_code: "COP",
         payment_token: expect.stringContaining("tok_visa_"),
       }),
     });

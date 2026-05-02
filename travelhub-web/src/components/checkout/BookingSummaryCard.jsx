@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { normalizeFxCurrencyCode } from "../../constants/fxCurrency";
 import {
   isAuthenticated,
   isLoggedIn,
   persistSessionFromLogin,
 } from "../../auth/sessionAuth";
 import { processPayment, registerUser } from "../../services/api";
+import { invalidateFxRateCache } from "../../utils/fxRateCache";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
+import { convertAmountAuthoritative, estimateConvertWithCachedRate } from "../../utils/fxConversion";
 import { localeTagForI18n } from "../../utils/locale";
 import "./BookingSummaryCard.css";
 
@@ -55,11 +59,6 @@ function IconShieldSsl({ className }) {
   );
 }
 
-function fmtMoney(n, localeTag) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString(localeTag)}`;
-}
-
 function formatDateLabel(iso, localeTag) {
   if (!iso || typeof iso !== "string") return "—";
   const d = new Date(iso + "T12:00:00");
@@ -86,6 +85,8 @@ function BookingSummaryCard({
   serviceFee = 45,
   taxes = 62,
   total = 0,
+  pricingCurrencyCode: pricingCurrencyProp = "COP",
+  settlementCurrencyCode: settlementCurrencyProp,
   guestEmail = "",
   guestFormValid = false,
   paymentFormValid = false,
@@ -98,6 +99,12 @@ function BookingSummaryCard({
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
   const navigate = useNavigate();
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
+  const pricingCc = normalizeFxCurrencyCode(pricingCurrencyProp);
+  const settlementCc = normalizeFxCurrencyCode(
+    settlementCurrencyProp ?? pricingCc,
+  );
+  const dualCurrencySettlement = pricingCc !== settlementCc;
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [errorModal, setErrorModal] = useState({ show: false, message: "" });
@@ -107,6 +114,43 @@ function BookingSummaryCard({
   );
 
   const hasAuthSession = isAuthenticated() || isLoggedIn();
+
+  /** Importes en moneda del selector (origen numérico: divisa de precios `pricingCc`). */
+  const fmtPricingLine = (n) => formatPaymentInDisplayCurrency(n, pricingCc);
+
+  /** Estimación con GET `/currency/v1/rates` cacheada (solo informativa). */
+  const [fxApproximateLine, setFxApproximateLine] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      if (!dualCurrencySettlement) {
+        setFxApproximateLine("");
+        return;
+      }
+      (async () => {
+        try {
+          const est = await estimateConvertWithCachedRate(
+            Number(total),
+            pricingCc,
+            settlementCc,
+          );
+          if (cancelled || est == null || !Number.isFinite(est.amount)) return;
+          setFxApproximateLine(
+            t("bookingSummary.fxEstimateApprox", {
+              amount: formatPaymentInDisplayCurrency(est.amount, settlementCc),
+            }),
+          );
+        } catch {
+          if (!cancelled) setFxApproximateLine("");
+        }
+      })();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dualCurrencySettlement, pricingCc, settlementCc, total, t, formatPaymentInDisplayCurrency]);
 
   const name = hotel?.name ?? t("bookingSummary.hotelFallback");
   const locationText = hotel?.location ?? "—";
@@ -126,6 +170,45 @@ function BookingSummaryCard({
     setApiError(null);
 
     try {
+      let payableAmountNumeric = Number(total);
+      let paymentCurrencyIso = pricingCc;
+
+      if (dualCurrencySettlement) {
+        try {
+          const conv = await convertAmountAuthoritative(total, pricingCc, settlementCc);
+          payableAmountNumeric = conv.numeric;
+          paymentCurrencyIso = conv.currencyCode;
+        } catch (err) {
+          const st = /** @type {{ status?: number }} */ (err)?.status;
+          const msg =
+            st === 503
+              ? t("bookingSummary.fxServiceUnavailable")
+              : t("bookingSummary.fxConvertFail");
+          setApiError(msg);
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      /*
+       * Backend: siempre COP (importe canónico). `paymentCurrencyIso` refleja la divisa del cobro
+       * tras FX; si no es COP, convertimos con el servicio oficial. El selector del navbar es sólo visual.
+       */
+      let copAmountForApi = payableAmountNumeric;
+      if (paymentCurrencyIso !== "COP") {
+        const copConv = await convertAmountAuthoritative(
+          payableAmountNumeric,
+          paymentCurrencyIso,
+          "COP",
+        );
+        copAmountForApi = copConv.numeric;
+      }
+      const amountStr = String(Math.round(copAmountForApi));
+
+      if (dualCurrencySettlement) {
+        invalidateFxRateCache(pricingCc, settlementCc);
+      }
+
       const paymentPayload = {
         reservation_id: reservationId,
         primary_guest: {
@@ -137,8 +220,8 @@ function BookingSummaryCard({
           email: guestEmail || "guest@example.com",
         },
         payment: {
-          amount: Number(total).toFixed(2),
-          currency_code: "USD",
+          amount: amountStr,
+          currency_code: "COP",
           payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
         },
       };
@@ -224,7 +307,10 @@ function BookingSummaryCard({
           reservationIdFromPayment != null && String(reservationIdFromPayment).trim() !== ""
             ? String(reservationIdFromPayment)
             : null,
-        total: Number(total),
+        total: copAmountForApi,
+        totalCurrencyCode: "COP",
+        pricingCurrencyCode: pricingCc,
+        settlementCurrencyCode: settlementCc,
         hotel: hotelPayload,
         roomType: roomType || null,
         checkIn,
@@ -327,37 +413,40 @@ function BookingSummaryCard({
                 ? "bookingSummary.nightsFormula_one"
                 : "bookingSummary.nightsFormula_other",
               {
-                price: fmtMoney(pricePerNight, loc),
+                price: fmtPricingLine(pricePerNight),
                 count: nights,
               },
             )}
           </span>
-          <span>{fmtMoney(roomSubtotal, loc)}</span>
+          <span>{fmtPricingLine(roomSubtotal)}</span>
         </div>
         {cleaningFee > 0 ? (
           <div className="booking-summary-card__row">
             <span>{t("bookingSummary.feeCleaning")}</span>
-            <span>{fmtMoney(cleaningFee, loc)}</span>
+            <span>{fmtPricingLine(cleaningFee)}</span>
           </div>
         ) : null}
         {serviceFee > 0 ? (
           <div className="booking-summary-card__row">
             <span>{t("bookingSummary.feeService")}</span>
-            <span>{fmtMoney(serviceFee, loc)}</span>
+            <span>{fmtPricingLine(serviceFee)}</span>
           </div>
         ) : null}
         {taxes > 0 ? (
           <div className="booking-summary-card__row">
             <span>{t("bookingSummary.taxes")}</span>
-            <span>{fmtMoney(taxes, loc)}</span>
+            <span>{fmtPricingLine(taxes)}</span>
           </div>
         ) : null}
         <div className="booking-summary-card__row booking-summary-card__row--total">
           <span>{t("bookingSummary.total")}</span>
           <span className="booking-summary-card__total-amount">
-            {fmtMoney(total, loc)}
+            {fmtPricingLine(total)}
           </span>
         </div>
+        {fxApproximateLine ? (
+          <p className="booking-summary-card__fx-approx">{fxApproximateLine}</p>
+        ) : null}
       </div>
 
       {apiError && (

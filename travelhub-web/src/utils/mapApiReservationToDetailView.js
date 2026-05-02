@@ -1,5 +1,10 @@
 import i18n from "../i18n";
+import {
+  getHotelPortalCurrencyCode,
+  pickHotelCurrencyFromApiPayload,
+} from "../auth/hotelPortalCurrency";
 import { currentLocaleTag } from "./currentLocaleTag";
+import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
 import {
   AVATAR_TONES,
   formatShortDate,
@@ -40,9 +45,10 @@ function paymentMethodFromStatus(status) {
 /**
  * Objeto de detalle compatible con {@link HotelReservationDetailPage} (misma forma que el demo).
  * @param {object} r - Reserva tal como viene en analytics o en GET por id.
+ * @param {string | null | undefined} [hotelCurrencyCode] - moneda del establecimiento cuando el documento no la trae
  * @returns {object | null}
  */
-export function mapApiReservationToDetailView(r) {
+export function mapApiReservationToDetailView(r, hotelCurrencyCode) {
   if (!r || typeof r !== "object") return null;
 
   const statusRaw = String(r.status || "pending").toLowerCase();
@@ -57,6 +63,11 @@ export function mapApiReservationToDetailView(r) {
     (r.user_name && String(r.user_name).trim()) || i18n.t("reservationData.guestFallback");
   const id = String(r.id ?? "");
   const amountValue = Number.parseFloat(r.total_price) || 0;
+  const ccy =
+    pickHotelCurrencyFromApiPayload(r) ??
+    (hotelCurrencyCode != null && String(hotelCurrencyCode).trim() !== ""
+      ? String(hotelCurrencyCode).trim()
+      : getHotelPortalCurrencyCode());
   const code = r.confirmation_code ? String(r.confirmation_code) : "";
   const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : dash;
   const roomLabel = r.room_type?.name ? String(r.room_type.name) : dash;
@@ -78,7 +89,7 @@ export function mapApiReservationToDetailView(r) {
     dateTo: formatShortDate(r.check_out),
     nights: nightsBetween(r.check_in, r.check_out),
     guestCount: Number(r.guests) || 0,
-    amount: `$${amountValue.toLocaleString(currentLocaleTag(), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
+    amount: formatHotelPortalMoney(amountValue, ccy, { variant: "detail" }),
     amountValue,
     paymentLabel,
     status,

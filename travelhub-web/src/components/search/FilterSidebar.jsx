@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { localeTagForI18n } from "../../utils/locale";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
 import { IconStar } from "../home/HeroIcons";
 import "./FilterSidebar.css";
 
@@ -33,9 +33,9 @@ function FilterSidebar({
   onApply,
   onResetFilters,
 }) {
-  const { t, i18n } = useTranslation();
-  const formatPrice = (value) =>
-    `$${value.toLocaleString(localeTagForI18n(i18n.language))}`;
+  const { t } = useTranslation();
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const formatPrice = (value) => formatUsdBaseAmount(value);
 
   const headingId = useId();
   const priceMinId = useId();

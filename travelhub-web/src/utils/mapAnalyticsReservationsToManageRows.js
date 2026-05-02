@@ -1,5 +1,10 @@
 import i18n from "../i18n";
+import {
+  getHotelPortalCurrencyCode,
+  pickHotelCurrencyFromApiPayload,
+} from "../auth/hotelPortalCurrency";
 import { currentLocaleTag } from "./currentLocaleTag";
+import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
 
 export const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed", "#dc2626"];
 
@@ -52,10 +57,16 @@ export function paymentLabelForStatus(st) {
 /**
  * Convierte reservas del JSON de analytics a filas de {@link HotelManageReservationsTable}.
  * @param {unknown} reservations
+ * @param {string | null | undefined} [hotelCurrencyCode] - prioridad sobre storage; por reserva se usa `pickHotelCurrencyFromApiPayload(r)` si existe
  * @returns {object[]}
  */
-export function mapAnalyticsReservationsToManageRows(reservations) {
+export function mapAnalyticsReservationsToManageRows(reservations, hotelCurrencyCode) {
   if (!Array.isArray(reservations)) return [];
+
+  const defaultCcy =
+    hotelCurrencyCode != null && String(hotelCurrencyCode).trim() !== ""
+      ? String(hotelCurrencyCode).trim()
+      : getHotelPortalCurrencyCode();
 
   const rows = reservations.map((r) => {
     const statusRaw = String(r.status || "pending").toLowerCase();
@@ -69,6 +80,7 @@ export function mapAnalyticsReservationsToManageRows(reservations) {
       (r.user_name && String(r.user_name).trim()) || i18n.t("reservationData.guestFallback");
     const id = String(r.id ?? "");
     const amountValue = Number.parseFloat(r.total_price) || 0;
+    const rowCcy = pickHotelCurrencyFromApiPayload(r) ?? defaultCcy;
     const dash = i18n.t("reservationData.dash");
     const code = r.confirmation_code ? String(r.confirmation_code) : "";
     const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : dash;
@@ -90,7 +102,7 @@ export function mapAnalyticsReservationsToManageRows(reservations) {
       dateTo: formatShortDate(r.check_out),
       nights: nightsBetween(r.check_in, r.check_out),
       guestCount: Number(r.guests) || 0,
-      amount: `$${amountValue.toLocaleString(currentLocaleTag(), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
+      amount: formatHotelPortalMoney(amountValue, rowCcy, { variant: "detail" }),
       amountValue,
       paymentLabel: paymentLabelForStatus(status),
       status,

@@ -38,6 +38,7 @@ import {
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
 } from "../constants/routes";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import { localeTagForI18n } from "../utils/locale";
 import "./MyTripsPage.css";
 
@@ -87,11 +88,6 @@ function getTripCaption(r, past, t) {
   return t("trips.inDays", { count: days });
 }
 
-function fmtMoney(n, localeTag) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString(localeTag)}`;
-}
-
 function useUpcomingPastCounts(reservations) {
   return useMemo(() => {
     let upcoming = 0;
@@ -137,6 +133,7 @@ function StarRow({ value }) {
 function TripCard({ r, index }) {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
   const past = isReservationPast(r);
   const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
   const name = hotel?.name ?? t("trips.accommodation");
@@ -221,7 +218,7 @@ function TripCard({ r, index }) {
         <p className="my-trips-card__row my-trips-card__row--payment">
           <IconWallet className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
-            {t("trips.paid", { amount: fmtMoney(r.total, loc), method: paymentLabel })}
+            {t("trips.paid", { amount: formatUsdBaseAmount(r.total), method: paymentLabel })}
           </span>
         </p>
 
@@ -243,7 +240,7 @@ function TripCard({ r, index }) {
       </div>
 
       <aside className="my-trips-card__aside" aria-label={t("trips.paymentSummaryAria")}>
-        <p className="my-trips-card__price">{fmtMoney(r.total, loc)}</p>
+        <p className="my-trips-card__price">{formatUsdBaseAmount(r.total)}</p>
         <p className="my-trips-card__price-label">{t("trips.totalPaidLabel")}</p>
         {rating != null ? (
           <div className="my-trips-card__rating-block">

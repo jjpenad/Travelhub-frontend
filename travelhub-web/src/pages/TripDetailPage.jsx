@@ -30,6 +30,7 @@ import { PATH_LOGIN, PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/rou
 import { getHotelReservationDetailFromApi } from "../services/api";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 import { formatApiUserError } from "../utils/formatApiUserError";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
 import { localeTagForI18n } from "../utils/locale";
 import "./TripDetailPage.css";
 
@@ -87,11 +88,6 @@ function getTripUrgencyLabel(r, past, tr) {
   if (days <= 0) return tr("tripDetail.checkInToday");
   if (days === 1) return tr("tripDetail.checkInTomorrow");
   return tr("tripDetail.checkInDays", { count: days });
-}
-
-function fmtMoney(n, localeTag) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString(localeTag)}`;
 }
 
 function StarRow({ value }) {
@@ -289,6 +285,7 @@ function mergeHotelMeta(hotel, localizedMockHotels) {
 function TripDetailPage() {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
   const navigate = useNavigate();
   const { bookingSlug } = useParams();
   const parsedSlug = useMemo(
@@ -627,7 +624,7 @@ function TripDetailPage() {
                 />
                 <span>
                   {t("tripDetail.paidRow", {
-                    total: fmtMoney(reservation.total, loc),
+                    total: formatUsdBaseAmount(reservation.total),
                     method: paymentLabel,
                   })}
                 </span>
@@ -636,7 +633,7 @@ function TripDetailPage() {
               <div className="trip-detail-payment__total">
                 <p className="trip-detail-payment__total-label">{t("tripDetail.totalReservation")}</p>
                 <p className="trip-detail-payment__total-amount">
-                  {fmtMoney(reservation.total, loc)}
+                  {formatUsdBaseAmount(reservation.total)}
                 </p>
               </div>
 
@@ -656,11 +653,11 @@ function TripDetailPage() {
                             ? "tripDetail.nights_one"
                             : "tripDetail.nights_other",
                           {
-                            price: fmtMoney(reservation.pricePerNight, loc),
+                            price: formatUsdBaseAmount(reservation.pricePerNight),
                             count: nights,
                           },
                         )
-                      : `${fmtMoney(reservation.pricePerNight, loc)} × —`,
+                      : `${formatUsdBaseAmount(reservation.pricePerNight)} × —`,
                   )}
                 </div>
               ) : null}

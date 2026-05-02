@@ -8,6 +8,10 @@ import HotelManageReservationsTable from "../components/hotel-portal/HotelManage
 import HotelManageReservationsToolbar from "../components/hotel-portal/HotelManageReservationsToolbar";
 import HotelPortalSidebar from "../components/hotel-portal/HotelPortalSidebar";
 import "../components/hotel-portal/HotelManageReservations.css";
+import {
+  pickHotelCurrencyFromApiPayload,
+  syncHotelPortalCurrencyFromAnalyticsDto,
+} from "../auth/hotelPortalCurrency";
 import { clearSessionUser, getSessionEmail, getSessionRole, ROLE_HOTEL } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getDashboardAnalytics } from "../services/api";
@@ -27,7 +31,7 @@ function HotelManageReservationsPage() {
   const [sort, setSort] = useState("recent");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
-  /** Reservas crudas de analytics vía analytics; `key` debe coincidir con `location.key` del momento del fetch. */
+  /** Reservas crudas de analytics; `currencyCode` alinea filas con el dashboard si el JSON trae moneda. */
   const [remotePayload, setRemotePayload] = useState(null);
   const { i18n } = useTranslation();
   const sidebarDisplayName = useMemo(() => {
@@ -47,7 +51,7 @@ function HotelManageReservationsPage() {
     if (rowsFromNavigate != null) return rowsFromNavigate;
     if (remotePayload && remotePayload.key === location.key) {
       const raw = remotePayload.reservations;
-      return mapAnalyticsReservationsToManageRows(Array.isArray(raw) ? raw : []);
+      return mapAnalyticsReservationsToManageRows(Array.isArray(raw) ? raw : [], remotePayload.currencyCode);
     }
     return [];
   }, [rowsFromNavigate, remotePayload, location.key, i18n.resolvedLanguage]);
@@ -74,9 +78,12 @@ function HotelManageReservationsPage() {
           endDate: bounds.endDate,
         });
         if (cancelled) return;
+        syncHotelPortalCurrencyFromAnalyticsDto(dto);
+        const currencyCode = pickHotelCurrencyFromApiPayload(dto);
         setRemotePayload({
           key: targetKey,
           reservations: Array.isArray(dto?.reservations) ? dto.reservations : [],
+          currencyCode: currencyCode ?? undefined,
         });
       } catch (e) {
         if (cancelled) return;

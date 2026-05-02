@@ -16,6 +16,7 @@ import {
   ROLE_HOTEL,
 } from "../auth/sessionAuth";
 import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_TRAVELERS_HOME } from "../constants/routes";
+import { syncHotelPortalCurrencyFromAnalyticsDto } from "../auth/hotelPortalCurrency";
 import { getDashboardAnalytics } from "../services/api";
 import { formatApiUserError } from "../utils/formatApiUserError";
 import { buildDashboardViewModel } from "../utils/hotelPortalAnalyticsMap";
@@ -93,6 +94,7 @@ function HotelPortalPage() {
       try {
         const dto = await getDashboardAnalytics({ startDate, endDate });
         if (!cancelled) {
+          syncHotelPortalCurrencyFromAnalyticsDto(dto);
           setAnalyticsDto(dto ?? null);
           setDashboardReservations(Array.isArray(dto?.reservations) ? dto.reservations : []);
         }
@@ -213,7 +215,11 @@ function HotelPortalPage() {
           </div>
           <HotelPortalMetricCards items={metrics} />
           <div className="hotel-portal-dashboard__mid">
-            <HotelPortalRevenueChart title={chartTitle} bars={bars} />
+            <HotelPortalRevenueChart
+              title={chartTitle}
+              bars={bars}
+              currencyCode={viewModel?.currencyCode}
+            />
             <HotelPortalReservationStatus
               title={t("hotelPortal.statusChartTitle")}
               bookingCount={viewModel != null ? Number(viewModel.bookingRingCount ?? 0) : null}
