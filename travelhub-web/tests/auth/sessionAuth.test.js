@@ -229,11 +229,11 @@ describe("getUser", () => {
 });
 
 describe("traveler-only access guards", () => {
-  it("canAccessTravelerAccountRoutes requires BOTH a token AND the traveler role", () => {
+  it("canAccessTravelerAccountRoutes requires JWT y bloquea rol hotel", () => {
     expect(canAccessTravelerAccountRoutes()).toBe(false);
 
     setAuthToken("jwt");
-    expect(canAccessTravelerAccountRoutes()).toBe(false); // token but no role
+    expect(canAccessTravelerAccountRoutes()).toBe(true); // token sin rol en storage: viajero por defecto
 
     setSessionUser({
       role: ROLE_HOTEL,
@@ -241,7 +241,7 @@ describe("traveler-only access guards", () => {
       remember: true,
       userType: "hotel",
     });
-    expect(canAccessTravelerAccountRoutes()).toBe(false); // wrong role
+    expect(canAccessTravelerAccountRoutes()).toBe(false);
 
     setSessionUser({
       role: ROLE_TRAVELER,
@@ -252,13 +252,16 @@ describe("traveler-only access guards", () => {
     expect(canAccessTravelerAccountRoutes()).toBe(true);
   });
 
-  it("isTravelerLoggedIn checks role only (no token requirement)", () => {
+  it("isTravelerLoggedIn requiere token y no ser hotel", () => {
     setSessionUser({
       role: ROLE_TRAVELER,
       email: "t@x.com",
       remember: true,
       userType: "traveler",
     });
+    expect(isTravelerLoggedIn()).toBe(false);
+
+    setAuthToken("jwt");
     expect(isTravelerLoggedIn()).toBe(true);
   });
 });

@@ -229,11 +229,19 @@ export function isLoggedIn() {
 }
 
 /** Sesión del portal de viajeros (no incluye rol hotel). */
+/**
+ * Sesión de viajero para UI y llamadas a `/reservations/user`: JWT presente y no es rol hotel.
+ * Si no hay `traveler`/`hotel` en storage (sesión antigua o solo token), se asume viajero: el API
+ * valida el usuario con el Bearer.
+ */
 export function isTravelerLoggedIn() {
-  return getSessionRole() === ROLE_TRAVELER;
+  if (!isAuthenticated()) return false;
+  const role = getSessionRole();
+  if (role === ROLE_HOTEL) return false;
+  return role === ROLE_TRAVELER || role == null || String(role).trim() === "";
 }
 
-/** Viajero con token: rutas como Mis viajes y detalle de reserva. */
+/** Igual que {@link isTravelerLoggedIn} (token + no portal hotelero). */
 export function canAccessTravelerAccountRoutes() {
-  return isAuthenticated() && isTravelerLoggedIn();
+  return isTravelerLoggedIn();
 }
