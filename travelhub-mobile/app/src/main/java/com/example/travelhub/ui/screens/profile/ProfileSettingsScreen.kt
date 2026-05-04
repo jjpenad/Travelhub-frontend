@@ -24,15 +24,16 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.res.stringResource
+import com.example.travelhub.R
+import com.example.travelhub.notifications.NotificationsViewModel
+import com.example.travelhub.notifications.PostNotificationsStatus
+import com.example.travelhub.notifications.TestResult
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,9 +65,9 @@ import com.example.travelhub.ui.theme.White
 @Composable
 fun ProfileSettingsScreen(
     onLogout: () -> Unit,
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    notificationsViewModel: NotificationsViewModel = hiltViewModel()
 ) {
-    var notificationsEnabled by remember { mutableStateOf(true) }
     val guestSessionId by profileViewModel.guestSessionId.collectAsStateWithLifecycle()
     val session by profileViewModel.session.collectAsStateWithLifecycle()
     val isAuthenticated = session?.token?.isNotBlank() == true
@@ -128,28 +129,10 @@ fun ProfileSettingsScreen(
         SettingsRow(icon = Icons.Filled.Language, title = "Currency", subtitle = "Prices displayed in this currency", value = "USD (\$)")
         SettingsRow(icon = Icons.Filled.Place, title = "Region", subtitle = "Affects dates, formats & local content", value = "Colombia")
 
-        // Preferences
+        // Preferences — Notifications uses real permission state from the
+        // NotificationsViewModel instead of a stale local switch.
         SectionTitle("PREFERENCES")
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Notifications, null, tint = Purple, modifier = Modifier.size(24.dp))
-            Text(
-                text = "Notifications",
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp),
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Switch(
-                checked = notificationsEnabled,
-                onCheckedChange = { notificationsEnabled = it },
-                colors = SwitchDefaults.colors(checkedTrackColor = GreenAccent)
-            )
-        }
+        NotificationsSection(notificationsViewModel)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -188,6 +171,85 @@ fun ProfileSettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+/**
+ * Bloque de notificaciones: muestra el estado del permiso y los CTAs
+ * "Enable" / "Send test notification" según corresponda. Lee el estado
+ * del ViewModel inyectado desde Hilt en el padre.
+ */
+@Composable
+private fun NotificationsSection(viewModel: NotificationsViewModel) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
+
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Notifications,
+                contentDescription = null,
+                tint = Purple,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = stringResource(R.string.notifications_section_title),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = 16.dp),
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = when (state.status) {
+                PostNotificationsStatus.Granted ->
+                    stringResource(R.string.notifications_status_granted)
+                PostNotificationsStatus.Denied ->
+                    stringResource(R.string.notifications_status_denied)
+                PostNotificationsStatus.NotRequested ->
+                    stringResource(R.string.notifications_status_not_requested)
+                PostNotificationsStatus.NotApplicable ->
+                    stringResource(R.string.notifications_status_not_applicable)
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+        )
+
+        when (state.lastTestResult) {
+            TestResult.Sent -> {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.notifications_test_sent_ok),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GreenAccent,
+                )
+            }
+            TestResult.PermissionMissing -> {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.notifications_test_sent_fail),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OrangeAccent,
+                )
+            }
+            TestResult.Idle -> Unit
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (state.status == PostNotificationsStatus.NotRequested) {
+            TravelHubOutlinedButton(
+                text = stringResource(R.string.notifications_enable_cta),
+                onClick = viewModel::requestPermission,
+            )
+        } else if (state.status == PostNotificationsStatus.Granted ||
+            state.status == PostNotificationsStatus.NotApplicable
+        ) {
+            TravelHubOutlinedButton(
+                text = stringResource(R.string.notifications_send_test_cta),
+                onClick = viewModel::sendTestNotification,
+            )
+        }
     }
 }
 
