@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">TravelHub</string>
+
+    <!-- Notifications: foundation HU. La copy refleja el contrato del
+         feature actual (permiso + notificación local de prueba). Cuando
+         se sume FCM se añadirán strings por categoría/payload. -->
+    <string name="notif_channel_general_name">General</string>
+    <string name="notif_channel_general_desc">Confirmaciones, recordatorios y avisos.</string>
+    <string name="notif_test_title">¡Funciona!</string>
+    <string name="notif_test_body">Las notificaciones de TravelHub están activas.</string>
+
+    <string name="notifications_section_title">Notifications</string>
+    <string name="notifications_status_granted">Enabled</string>
+    <string name="notifications_status_denied">Blocked — enable them from system settings</string>
+    <string name="notifications_status_not_requested">Not requested yet</string>
+    <string name="notifications_status_not_applicable">This Android version does not require permission</string>
+    <string name="notifications_enable_cta">Enable</string>
+    <string name="notifications_send_test_cta">Send test notification</string>
+    <string name="notifications_test_sent_ok">Test notification sent</string>
+    <string name="notifications_test_sent_fail">Could not send: permission missing</string>
 </resources>

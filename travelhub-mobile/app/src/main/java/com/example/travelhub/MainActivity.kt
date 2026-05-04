@@ -3,6 +3,7 @@ package com.example.travelhub
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -21,6 +22,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.travelhub.data.network.ConnectivityObserver
 import com.example.travelhub.data.network.NetworkErrorBus
+import com.example.travelhub.notifications.AndroidPostNotificationsPermissionGate
 import com.example.travelhub.ui.components.OfflineBanner
 import com.example.travelhub.ui.navigation.BottomNavBar
 import com.example.travelhub.ui.navigation.NavGraph
@@ -29,8 +31,6 @@ import com.example.travelhub.ui.theme.TravelHubTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-// TODO(permissions): Request POST_NOTIFICATIONS permission on Android 13+.
-//
 // TODO(ui): Add a splash screen using the SplashScreen API while checking session validity.
 
 @AndroidEntryPoint
@@ -38,6 +38,17 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var connectivityObserver: ConnectivityObserver
     @Inject lateinit var networkErrorBus: NetworkErrorBus
+    @Inject lateinit var notificationsGate: AndroidPostNotificationsPermissionGate
+
+    /**
+     * Launcher para `POST_NOTIFICATIONS` (Android 13+). Lo registramos
+     * temprano y lo bindeamos al gate; el ViewModel pide el permiso vía
+     * el gate y este re-emite el resultado al callback registrado.
+     */
+    private val notificationsPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            notificationsGate.onPermissionResult(granted)
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +58,7 @@ class MainActivity : ComponentActivity() {
         // is silently a no-op and scrollable forms can't reach fields hidden
         // behind the keyboard (E2E flows hit this on the SignUp screen).
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        notificationsGate.bind(notificationsPermissionLauncher)
         setContent {
             TravelHubTheme {
                 val navController = rememberNavController()

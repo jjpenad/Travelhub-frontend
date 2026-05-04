@@ -130,7 +130,12 @@ kover {
                     "com.example.travelhub.MainActivity",
                     "com.example.travelhub.MainActivity\$*",
                     "com.example.travelhub.TravelHubApp",
-                    "com.example.travelhub.ComposableSingletons*"
+                    "com.example.travelhub.ComposableSingletons*",
+                    // Notification dispatcher + permission gate: thin wrappers around
+                    // ContextCompat / NotificationManagerCompat / ActivityResultLauncher.
+                    // Validated on device; the testable logic lives in NotificationsViewModel.
+                    "com.example.travelhub.notifications.AndroidPostNotificationsPermissionGate*",
+                    "com.example.travelhub.notifications.AndroidNotificationDispatcher*"
                 )
             }
         }
