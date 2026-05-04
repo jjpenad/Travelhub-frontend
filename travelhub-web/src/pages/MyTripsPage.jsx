@@ -22,6 +22,7 @@ import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
   AUTH_TOKEN_KEY,
+  SESSION_CHANGED_EVENT,
   canAccessTravelerAccountRoutes,
 } from "../auth/sessionAuth";
 import {
@@ -326,34 +327,43 @@ function MyTripsPage() {
   // la sesión autenticada es la fuente de verdad. Si la red falla, los
   // datos locales siguen visibles vía `storedReservations`.
   useEffect(() => {
-    if (!canAccessTravelerAccountRoutes()) return;
     let cancelled = false;
 
     async function loadFromBackend() {
+      if (!canAccessTravelerAccountRoutes()) {
+        if (!cancelled) setRemoteReservations([]);
+        return;
+      }
       try {
         const [hotels, page] = await Promise.all([
           listHotels().catch(() => []),
-          listUserReservations({ limit: 50, offset: 0 }),
+          listUserReservations(),
         ]);
         if (cancelled) return;
-        const hotelsById = new Map(hotels.map((h) => [h.id, h]));
+        const hotelsById = new Map(
+          hotels.map((h) => [String(h.id), h]),
+        );
         const mapped = page.items.map((dto) =>
           mapUserReservationDto(dto, hotelsById),
         );
         setRemoteReservations(mapped);
       } catch {
-        // Silenciamos: si fallamos online, dejamos visible lo local.
         if (!cancelled) setRemoteReservations([]);
       }
     }
 
     loadFromBackend();
+    function onSessionChanged() {
+      loadFromBackend();
+    }
     function onFocus() {
       loadFromBackend();
     }
+    window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
     window.addEventListener("focus", onFocus);
     return () => {
       cancelled = true;
+      window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
       window.removeEventListener("focus", onFocus);
     };
   }, []);

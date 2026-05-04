@@ -22,13 +22,17 @@ import TripDetailPage from "./pages/TripDetailPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import SignupPage from "./pages/SignupPage";
 import TravelerConfirmToastProvider from "./components/notifications/TravelerConfirmToastProvider";
+import AppFooter from "./components/layout/AppFooter";
 import { TravelerDisplayCurrencyProvider } from "./context/TravelerDisplayCurrencyContext";
+import "./App.css";
 
 function App() {
   return (
     <BrowserRouter>
+      <div className="app-shell">
       <TravelerDisplayCurrencyProvider>
       <TravelerConfirmToastProvider>
+      <div className="app-shell__main">
       <Routes>
         <Route path="/" element={<Navigate to={PATH_TRAVELERS_HOME} replace />} />
         <Route path={PATH_TRAVELERS_HOME} element={<Home />} />
@@ -62,8 +66,11 @@ function App() {
         <Route path="/checkout/:hotelId" element={<CheckoutPage />} />
         <Route path="/confirmation" element={<ConfirmationPage />} />
       </Routes>
+      </div>
+      <AppFooter />
       </TravelerConfirmToastProvider>
       </TravelerDisplayCurrencyProvider>
+      </div>
     </BrowserRouter>
   );
 }

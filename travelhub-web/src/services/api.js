@@ -88,6 +88,13 @@ const USER_RESERVATIONS_PATH =
   import.meta.env.VITE_USER_RESERVATIONS_PATH || "/reservations/user";
 
 /**
+ * Paginación por defecto de `GET /reservations/user` (contrato backend: `limit` y `offset` en query).
+ * Para otra página, pasa `{ limit, offset }` en {@link listUserReservations}.
+ */
+export const USER_RESERVATIONS_DEFAULT_LIMIT = 10;
+export const USER_RESERVATIONS_DEFAULT_OFFSET = 0;
+
+/**
  * service-soport: `POST …/notification/send-email` exige el mismo Bearer que `API_BEARER_TOKEN` /
  * `settings.TOKEN_SOPORT_SERVICES` (HTTPBearer, no el JWT de login del viajero).
  * Ver `notification_router.py` → `verify_bearer_token`.
@@ -517,11 +524,42 @@ export async function processPayment(paymentInfo) {
 }
 
 /**
- * GET …/reservations/user?limit=&offset= (Bearer).
- *
- * Mismo endpoint que el cliente Android. El backend deriva el `user_id`
- * del JWT, así que la ruta NO recibe ningún id en el path. Lanza si no hay
- * sesión activa para evitar disparar 401 silenciosos desde la UI.
+ * Extrae el array de reservas del JSON de `GET …/reservations/user` (y variantes envueltas).
+ * @param {unknown} data
+ * @returns {{ items: object[], total: number }}
+ */
+function pickItemsFromUserReservationsBody(data) {
+  if (Array.isArray(data)) {
+    return { items: data, total: data.length };
+  }
+  if (!data || typeof data !== "object") {
+    return { items: [], total: 0 };
+  }
+  const d = /** @type {Record<string, unknown>} */ (data);
+  if (Array.isArray(d.items)) {
+    const total = Number.isFinite(Number(d.total)) ? Number(d.total) : d.items.length;
+    return { items: d.items, total };
+  }
+  const nested = d.data ?? d.result ?? d.payload;
+  if (nested && typeof nested === "object") {
+    const n = /** @type {Record<string, unknown>} */ (nested);
+    if (Array.isArray(n.items)) {
+      const total = Number.isFinite(Number(n.total)) ? Number(n.total) : n.items.length;
+      return { items: n.items, total };
+    }
+  }
+  if (Array.isArray(d.reservations)) {
+    return { items: d.reservations, total: d.reservations.length };
+  }
+  if (Array.isArray(d.data)) {
+    return { items: d.data, total: d.data.length };
+  }
+  return { items: [], total: 0 };
+}
+
+/**
+ * GET …/reservations/user?limit=&offset= (Bearer). El backend deriva el usuario del JWT.
+ * Por defecto `limit={@link USER_RESERVATIONS_DEFAULT_LIMIT}` y `offset={@link USER_RESERVATIONS_DEFAULT_OFFSET}`.
  *
  * @param {{ limit?: number, offset?: number }} [opts]
  * @returns {Promise<{ items: object[], total: number, limit: number, offset: number }>}
@@ -532,20 +570,22 @@ export async function listUserReservations(opts = {}) {
     err.status = 401;
     throw err;
   }
-  const limit = Number.isFinite(opts.limit) ? opts.limit : 20;
-  const offset = Number.isFinite(opts.offset) ? opts.offset : 0;
+  const limit = Number.isFinite(opts.limit) ? opts.limit : USER_RESERVATIONS_DEFAULT_LIMIT;
+  const offset = Number.isFinite(opts.offset)
+    ? opts.offset
+    : USER_RESERVATIONS_DEFAULT_OFFSET;
   const qs = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
   });
-  const path = `${USER_RESERVATIONS_PATH}?${qs.toString()}`;
+  const basePath = String(USER_RESERVATIONS_PATH || "/reservations/user").replace(/\/+$/, "");
+  const pathFragment = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  const path = `${pathFragment}?${qs.toString()}`;
   const data = await authFetch(path, { method: "GET" });
-  const items = Array.isArray(data?.items)
-    ? data.items
-    : Array.isArray(data)
-      ? data
-      : [];
-  const total = Number.isFinite(data?.total) ? data.total : items.length;
+  const { items, total: pickedTotal } = pickItemsFromUserReservationsBody(data);
+  const total = Number.isFinite(Number(data?.total))
+    ? Number(data.total)
+    : pickedTotal;
   return {
     items,
     total,
@@ -565,8 +605,12 @@ export async function listUserReservations(opts = {}) {
  * @param {Map<string, ReturnType<typeof mapHotelDto>>} [hotelsById]
  */
 export function mapUserReservationDto(dto, hotelsById) {
+  const reservationId = dto?.id ?? dto?.reservation_id ?? null;
   const hotelId = dto?.hotel_id ?? dto?.hotelId ?? null;
-  const hotel = hotelId && hotelsById?.get?.(hotelId);
+  const hotel =
+    hotelId != null && hotelsById?.get
+      ? hotelsById.get(String(hotelId))
+      : undefined;
   const totalRaw = dto?.total_price ?? dto?.totalPrice ?? 0;
   const totalNum = Number(totalRaw);
   const curRaw =
@@ -588,9 +632,22 @@ export function mapUserReservationDto(dto, hotelsById) {
     const ms = b.getTime() - a.getTime();
     return ms > 0 ? Math.round(ms / 86400000) : null;
   })();
+  const createdAt =
+    typeof dto?.created_at === "string"
+      ? dto.created_at
+      : typeof dto?.createdAt === "string"
+        ? dto.createdAt
+        : "";
+
   return {
-    id: dto?.id ?? dto?.reservation_id ?? null,
+    id: reservationId,
+    /** Obligatorio para enlaces a detalle (`encodeApiReservationDetailSlug`). */
+    apiReservationId:
+      reservationId != null && String(reservationId).trim() !== ""
+        ? String(reservationId).trim()
+        : null,
     reference: dto?.confirmation_code ?? dto?.confirmationCode ?? "",
+    savedAt: createdAt,
     hotel: {
       id: hotelId,
       name: hotel?.name ?? "Alojamiento",

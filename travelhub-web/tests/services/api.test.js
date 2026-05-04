@@ -351,16 +351,16 @@ describe("listUserReservations", () => {
           },
         ],
         total: 1,
-        limit: 50,
+        limit: 10,
         offset: 0,
       }),
     );
 
-    const out = await listUserReservations({ limit: 50, offset: 0 });
+    const out = await listUserReservations({ limit: 10, offset: 0 });
 
     const [url, init] = lastFetchCall();
     expect(url).toContain("/reservations/user?");
-    expect(url).toContain("limit=50");
+    expect(url).toContain("limit=10");
     expect(url).toContain("offset=0");
     expect(init.method).toBe("GET");
     expect(init.headers.Authorization).toBe("Bearer tok");
@@ -372,15 +372,26 @@ describe("listUserReservations", () => {
     expect(out.items[0].id).toBe("r1");
   });
 
-  it("defaults to limit=20, offset=0", async () => {
+  it("defaults to limit=10, offset=0", async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, "tok");
     globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
 
     await listUserReservations();
 
     const [url] = lastFetchCall();
-    expect(url).toContain("limit=20");
+    expect(url).toContain("limit=10");
     expect(url).toContain("offset=0");
+  });
+
+  it("allows overriding limit and offset", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
+
+    await listUserReservations({ limit: 25, offset: 10 });
+
+    const [url] = lastFetchCall();
+    expect(url).toContain("limit=25");
+    expect(url).toContain("offset=10");
   });
 
   it("falls back to total = items.length when the backend omits total", async () => {
@@ -401,6 +412,23 @@ describe("listUserReservations", () => {
     expect(out.items).toEqual([{ id: "r1" }]);
     expect(out.total).toBe(1);
   });
+
+  it("accepts items nested under data.result", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(
+      jsonResponse({
+        result: {
+          items: [{ id: "nested-1" }],
+          total: 5,
+        },
+      }),
+    );
+
+    const out = await listUserReservations();
+    expect(out.items).toHaveLength(1);
+    expect(out.items[0].id).toBe("nested-1");
+    expect(out.total).toBe(5);
+  });
 });
 
 describe("mapUserReservationDto", () => {
@@ -418,6 +446,7 @@ describe("mapUserReservationDto", () => {
 
     expect(r).toMatchObject({
       id: "r-1",
+      apiReservationId: "r-1",
       reference: "RES-XYZ",
       checkIn: "2026-05-01",
       checkOut: "2026-05-05",

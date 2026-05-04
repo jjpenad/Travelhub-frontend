@@ -27,7 +27,10 @@ import {
 } from "../data/mockReservations";
 import { getLocalizedMockHotels } from "../data/mockHotels";
 import { PATH_LOGIN, PATH_MY_TRIPS, PATH_TRAVELERS_HOME } from "../constants/routes";
-import { getHotelReservationDetailFromApi } from "../services/api";
+import {
+  getHotelReservationDetailFromApi,
+  listUserReservations,
+} from "../services/api";
 import { mapApiReservationToTripDetail } from "../utils/mapApiReservationToTripDetail";
 import { formatApiUserError } from "../utils/formatApiUserError";
 import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
@@ -317,7 +320,32 @@ function TripDetailPage() {
     });
     (async () => {
       try {
-        const raw = await getHotelReservationDetailFromApi(id);
+        let raw = null;
+        try {
+          raw = await getHotelReservationDetailFromApi(id);
+        } catch (detailErr) {
+          const st = detailErr?.status;
+          if (st === 401 || st === 403) {
+            if (cancelled) return;
+            setApiError(formatApiUserError(detailErr, "tripDetail.loadFailed"));
+            return;
+          }
+          raw = null;
+        }
+        if (!raw || typeof raw !== "object") {
+          try {
+            const page = await listUserReservations();
+            raw =
+              page.items.find(
+                (row) =>
+                  row &&
+                  typeof row === "object" &&
+                  String(row.id ?? row.reservation_id ?? "") === id,
+              ) ?? null;
+          } catch {
+            raw = null;
+          }
+        }
         if (cancelled) return;
         if (!raw || typeof raw !== "object") {
           setApiError(t("tripDetail.notAvailable"));
@@ -325,6 +353,7 @@ function TripDetailPage() {
           return;
         }
         setApiReservationRaw(raw);
+        setApiError(null);
       } catch (e) {
         if (cancelled) return;
         setApiError(formatApiUserError(e, "tripDetail.loadFailed"));

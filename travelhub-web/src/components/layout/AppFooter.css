@@ -1,0 +1,14 @@
+.app-footer {
+  margin-top: auto;
+  padding: 0.75rem var(--page-padding-x, 1.5rem);
+  border-top: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #f4f7fb);
+}
+
+.app-footer__version {
+  margin: 0;
+  text-align: center;
+  font-size: var(--type-body-muted, 0.875rem);
+  color: var(--text, #64748b);
+  letter-spacing: 0.02em;
+}
