@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { pathHotelReservationDetail } from "../../constants/routes";
 
 function badgeClass(status) {
@@ -16,8 +17,8 @@ function rowStripeClass(status) {
 }
 
 /** Ej. "Hab. 112" → "112" */
-function roomNumberOnly(roomHab) {
-  if (!roomHab) return "—";
+function roomNumberOnly(roomHab, dash) {
+  if (!roomHab) return dash;
   const m = String(roomHab).match(/(\d+)/);
   return m ? m[1] : roomHab;
 }
@@ -26,26 +27,29 @@ function roomNumberOnly(roomHab) {
  * @param {{ rows: object[], selectedId: string | null, onSelectRow: (id: string) => void }} props
  */
 function HotelManageReservationsTable({ rows, selectedId, onSelectRow }) {
+  const { t } = useTranslation();
+  const dash = t("reservationData.dash");
+
   return (
     <div className="hp-mres-table-card">
       <div className="hp-mres-table-wrap">
         <table className="hp-mres-table">
           <thead>
             <tr>
-              <th scope="col">Nº reserva</th>
-              <th scope="col">Huésped</th>
-              <th scope="col">Habitación</th>
-              <th scope="col">Fechas</th>
-              <th scope="col">Monto</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Acción</th>
+              <th scope="col">{t("hotelManage.tableColRef")}</th>
+              <th scope="col">{t("hotelManage.tableColGuest")}</th>
+              <th scope="col">{t("hotelManage.tableColRoom")}</th>
+              <th scope="col">{t("hotelManage.tableColDates")}</th>
+              <th scope="col">{t("hotelManage.tableColAmount")}</th>
+              <th scope="col">{t("hotelManage.tableColStatus")}</th>
+              <th scope="col">{t("hotelManage.tableColAction")}</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="hp-mres-empty">
-                  No hay reservas que coincidan con tu búsqueda o filtro.
+                  {t("hotelManage.tableEmpty")}
                 </td>
               </tr>
             ) : null}
@@ -82,14 +86,14 @@ function HotelManageReservationsTable({ rows, selectedId, onSelectRow }) {
                       </span>
                     </div>
                   </td>
-                  <td className="hp-mres-room-number">{roomNumberOnly(r.roomHab)}</td>
+                  <td className="hp-mres-room-number">{roomNumberOnly(r.roomHab, dash)}</td>
                   <td>
                     <div className="hp-mres-dates">
                       <span className="hp-mres-dates-range">
                         {r.dateFrom} → {r.dateTo}
                       </span>
                       <span className="hp-mres-dates-nights">
-                        {r.nights} {r.nights === 1 ? "noche" : "noches"}
+                        {t("hotelManage.night", { count: r.nights })}
                       </span>
                     </div>
                   </td>
@@ -114,16 +118,16 @@ function HotelManageReservationsTable({ rows, selectedId, onSelectRow }) {
                         }
                         onClick={(e) => e.stopPropagation()}
                       >
-                        Ver detalle
+                        {t("hotelManage.actionDetail")}
                       </Link>
                       {r.secondaryAction === "checkin" ? (
                         <button type="button" className="hp-mres-actions__secondary">
-                          Check-in
+                          {t("hotelManage.actionCheckIn")}
                         </button>
                       ) : null}
                       {r.secondaryAction === "confirm" ? (
                         <button type="button" className="hp-mres-actions__secondary">
-                          Confirmar
+                          {t("hotelManage.actionConfirm")}
                         </button>
                       ) : null}
                     </div>

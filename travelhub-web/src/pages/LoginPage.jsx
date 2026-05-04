@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
 import { getPostAuthDestination, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser } from "../services/api";
+import { formatApiUserError } from "../utils/formatApiUserError";
 import "./AuthPage.css";
 
 function isValidEmail(email) {
@@ -30,6 +32,7 @@ function IconEye({ open }) {
 }
 
 function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
@@ -44,11 +47,11 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     if (!isValidEmail(email)) {
-      setError("Introduce un correo electrónico válido.");
+      setError(t("auth.errors.emailInvalid"));
       return;
     }
     if (!password) {
-      setError("Introduce tu contraseña.");
+      setError(t("auth.errors.passwordMissing"));
       return;
     }
 
@@ -63,10 +66,11 @@ function LoginPage() {
         firstName: result.first_name,
         lastName: result.last_name,
         remember,
+        hotelCurrencyCode: result.currency_code,
       });
       navigate(getPostAuthDestination(result.user_type, from), { replace: true });
     } catch (err) {
-      setError(err?.message || "No se pudo iniciar sesión.");
+      setError(formatApiUserError(err, "auth.errors.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -76,16 +80,16 @@ function LoginPage() {
     <AuthSplitLayout>
       <div className="auth-card">
         <h1 className="auth-card__title auth-card__title--center">
-          Bienvenido de nuevo 👋
+          {t("auth.loginWelcome")}
         </h1>
         <p className="auth-card__subtitle auth-card__subtitle--center">
-          Inicia sesión en tu cuenta de TravelHub.
+          {t("auth.loginSubtitle")}
         </p>
 
         <form className="auth-card__form" onSubmit={handleSubmit} noValidate>
           <div className="auth-card__field">
             <label className="auth-card__label" htmlFor="login-email">
-              Correo electrónico
+              {t("auth.email")}
             </label>
             <input
               id="login-email"
@@ -101,7 +105,7 @@ function LoginPage() {
           </div>
           <div className="auth-card__field">
             <label className="auth-card__label" htmlFor="login-password">
-              Contraseña
+              {t("auth.password")}
             </label>
             <div className="auth-card__input-wrap">
               <input
@@ -118,7 +122,7 @@ function LoginPage() {
                 type="button"
                 className="auth-card__toggle-pw"
                 onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
                 disabled={loading}
               >
                 <IconEye open={showPassword} />
@@ -134,29 +138,30 @@ function LoginPage() {
                 onChange={(e) => setRemember(e.target.checked)}
                 disabled={loading}
               />
-              Recordarme
+              {t("auth.remember")}
             </label>
             <Link className="auth-card__link-muted" to={PATH_TRAVELERS_HOME}>
-              ¿Olvidaste tu contraseña?
+              {t("auth.forgotPassword")}
             </Link>
           </div>
 
           {error ? <p className="auth-card__error">{error}</p> : null}
           <button type="submit" className="auth-card__submit" disabled={loading}>
-            Iniciar sesión →
+            {t("auth.submitLogin")}
           </button>
         </form>
 
         <p className="auth-card__footer">
-          ¿No tienes cuenta?{" "}
+          {t("auth.noAccount")}{" "}
           <Link to="/signup" state={from ? { from } : undefined}>
-            Crear cuenta gratis →
+            {t("auth.createFree")}
           </Link>
         </p>
         <p className="auth-card__legal">
-          Al continuar, aceptas los{" "}
-          <Link to={PATH_TRAVELERS_HOME}>Términos de uso</Link> y la{" "}
-          <Link to={PATH_TRAVELERS_HOME}>Política de privacidad</Link> de TravelHub.
+          {t("auth.legalContinue")}{" "}
+          <Link to={PATH_TRAVELERS_HOME}>{t("auth.terms")}</Link> {t("auth.privacyJoin")}{" "}
+          <Link to={PATH_TRAVELERS_HOME}>{t("auth.privacyPolicy")}</Link>{" "}
+          {t("auth.companySuffix")}
         </p>
       </div>
     </AuthSplitLayout>

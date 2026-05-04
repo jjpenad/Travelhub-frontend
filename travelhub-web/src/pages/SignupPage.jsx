@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AuthSplitLayout from "../components/auth/AuthSplitLayout";
 import { getPostAuthDestination, persistSessionFromLogin } from "../auth/sessionAuth";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
 import { loginUser, registerUser } from "../services/api";
+import { formatApiUserError } from "../utils/formatApiUserError";
 import "./AuthPage.css";
 
 function isValidEmail(email) {
@@ -22,6 +24,7 @@ function isSignupFormValid({ nombre, apellidos, email, password, confirm }) {
 }
 
 function SignupPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from;
@@ -41,13 +44,13 @@ function SignupPage() {
 
     if (!isSignupFormValid({ nombre, apellidos, email, password, confirm })) {
       if (!nombre.trim() || !apellidos.trim()) {
-        setError("Nombre y apellidos son obligatorios.");
+        setError(t("auth.errors.nameRequired"));
       } else if (!isValidEmail(email)) {
-        setError("Introduce un correo electrónico válido.");
+        setError(t("auth.errors.emailInvalid"));
       } else if (password.length < 8) {
-        setError("La contraseña debe tener al menos 8 caracteres.");
+        setError(t("auth.errors.passwordRules"));
       } else if (password !== confirm) {
-        setError("Las contraseñas no coinciden.");
+        setError(t("auth.errors.passwordMismatch"));
       }
       return;
     }
@@ -73,13 +76,14 @@ function SignupPage() {
         firstName: loginResult.first_name || nombre.trim(),
         lastName: loginResult.last_name || apellidos.trim(),
         remember: true,
+        hotelCurrencyCode: loginResult.currency_code,
       });
 
-      setSuccessMsg("Cuenta creada correctamente. Redirigiendo…");
+      setSuccessMsg(t("auth.errors.successRedirect"));
       await new Promise((r) => setTimeout(r, 500));
       navigate(getPostAuthDestination(loginResult.user_type, from), { replace: true });
     } catch (err) {
-      setError(err?.message || "No se pudo completar el registro.");
+      setError(formatApiUserError(err, "auth.errors.signupFailed"));
     } finally {
       setLoading(false);
     }
@@ -89,17 +93,17 @@ function SignupPage() {
     <AuthSplitLayout>
       <div className="auth-card">
         <h1 className="auth-card__title auth-card__title--center">
-          Crea tu cuenta ✨
+          {t("auth.signupTitle")}
         </h1>
         <p className="auth-card__subtitle">
-          Únete a miles de viajeros: crear una cuenta es gratis.
+          {t("auth.signupSubtitle")}
         </p>
 
         <form className="auth-card__form" onSubmit={handleSubmit} noValidate>
           <div className="auth-card__row">
             <div className="auth-card__field">
               <label className="auth-card__label" htmlFor="signup-nombre">
-                Nombre
+                {t("auth.firstName")}
               </label>
               <input
                 id="signup-nombre"
@@ -114,7 +118,7 @@ function SignupPage() {
             </div>
             <div className="auth-card__field">
               <label className="auth-card__label" htmlFor="signup-apellidos">
-                Apellidos
+                {t("auth.lastName")}
               </label>
               <input
                 id="signup-apellidos"
@@ -130,7 +134,7 @@ function SignupPage() {
           </div>
           <div className="auth-card__field">
             <label className="auth-card__label" htmlFor="signup-email">
-              Correo electrónico
+              {t("auth.email")}
             </label>
             <input
               id="signup-email"
@@ -146,7 +150,7 @@ function SignupPage() {
           </div>
           <div className="auth-card__field">
             <label className="auth-card__label" htmlFor="signup-password">
-              Crea una contraseña
+              {t("auth.createPassword")}
             </label>
             <input
               id="signup-password"
@@ -161,7 +165,7 @@ function SignupPage() {
           </div>
           <div className="auth-card__field">
             <label className="auth-card__label" htmlFor="signup-confirm">
-              Confirmar contraseña
+              {t("auth.confirmPassword")}
             </label>
             <input
               id="signup-confirm"
@@ -177,18 +181,18 @@ function SignupPage() {
           {error ? <p className="auth-card__error">{error}</p> : null}
           {successMsg ? <p className="auth-card__success">{successMsg}</p> : null}
           <button type="submit" className="auth-card__submit" disabled={loading}>
-            {loading ? "Creando cuenta…" : "Comenzar — es gratis 🚀"}
+            {loading ? t("auth.creating") : t("auth.ctaSignup")}
           </button>
-          <p className="auth-card__note">No se requiere tarjeta de crédito.</p>
+          <p className="auth-card__note">{t("auth.noCard")}</p>
         </form>
 
         <p className="auth-card__footer">
-          ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
+          {t("auth.haveAccount")} <Link to="/login">{t("nav.login")}</Link>
         </p>
         <p className="auth-card__legal">
-          Al registrarte, aceptas los{" "}
-          <Link to={PATH_TRAVELERS_HOME}>Términos de uso</Link> y la{" "}
-          <Link to={PATH_TRAVELERS_HOME}>Política de privacidad</Link>.
+          {t("auth.signupLegal")}{" "}
+          <Link to={PATH_TRAVELERS_HOME}>{t("auth.terms")}</Link> {t("auth.privacyJoin")}{" "}
+          <Link to={PATH_TRAVELERS_HOME}>{t("auth.privacyPolicy")}</Link>.
         </p>
       </div>
     </AuthSplitLayout>

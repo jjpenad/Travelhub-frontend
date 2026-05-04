@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
@@ -21,6 +22,7 @@ import {
   AUTH_EMAIL_KEY,
   AUTH_ROLE_KEY,
   AUTH_TOKEN_KEY,
+  SESSION_CHANGED_EVENT,
   canAccessTravelerAccountRoutes,
 } from "../auth/sessionAuth";
 import {
@@ -37,6 +39,8 @@ import {
   PATH_MY_TRIPS_RESERVATION,
   PATH_TRAVELERS_HOME,
 } from "../constants/routes";
+import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
+import { localeTagForI18n } from "../utils/locale";
 import "./MyTripsPage.css";
 
 function parseISODate(iso) {
@@ -60,15 +64,15 @@ function isReservationPast(r) {
   return stripCalendarDate(co) < startOfToday();
 }
 
-function formatDateRangeShort(checkIn, checkOut) {
+function formatDateRangeShort(checkIn, checkOut, localeTag) {
   const a = parseISODate(checkIn);
   const b = parseISODate(checkOut);
   if (!a || !b) return "—";
   const opts = { day: "numeric", month: "short", year: "numeric" };
-  return `${a.toLocaleDateString("es-ES", opts)} – ${b.toLocaleDateString("es-ES", opts)}`;
+  return `${a.toLocaleDateString(localeTag, opts)} – ${b.toLocaleDateString(localeTag, opts)}`;
 }
 
-function getTripCaption(r, past) {
+function getTripCaption(r, past, t) {
   if (past) return "";
   const ci = parseISODate(r.checkIn);
   const co = parseISODate(r.checkOut);
@@ -77,17 +81,12 @@ function getTripCaption(r, past) {
   const ciDay = stripCalendarDate(ci);
   const coDay = stripCalendarDate(co);
   if (today > coDay) return "";
-  if (today >= ciDay && today <= coDay) return "En curso";
+  if (today >= ciDay && today <= coDay) return t("trips.inProgress");
   const msPerDay = 86400000;
   const days = Math.round((ciDay - today) / msPerDay);
-  if (days <= 0) return "En curso";
-  if (days === 1) return "¡Mañana!";
-  return `En ${days} días`;
-}
-
-function fmtMoney(n) {
-  if (n == null || Number.isNaN(Number(n))) return "—";
-  return `$${Number(n).toLocaleString("es-ES")}`;
+  if (days <= 0) return t("trips.inProgress");
+  if (days === 1) return t("trips.tomorrow");
+  return t("trips.inDays", { count: days });
 }
 
 function useUpcomingPastCounts(reservations) {
@@ -133,9 +132,17 @@ function StarRow({ value }) {
 }
 
 function TripCard({ r, index }) {
+  const { t, i18n } = useTranslation();
+  const loc = localeTagForI18n(i18n.language);
+  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
+  const payCurrency =
+    r.totalCurrencyCode === "USD" || r.totalCurrencyCode === "COP"
+      ? r.totalCurrencyCode
+      : "COP";
+  const fmtMoney = (amount) => formatPaymentInDisplayCurrency(amount, payCurrency);
   const past = isReservationPast(r);
   const hotel = r.hotel && typeof r.hotel === "object" ? r.hotel : null;
-  const name = hotel?.name ?? "Alojamiento";
+  const name = hotel?.name ?? t("trips.accommodation");
   const locationText =
     typeof hotel?.location === "string" ? hotel.location : "—";
   const imageSrc = typeof hotel?.image === "string" ? hotel.image : null;
@@ -155,12 +162,12 @@ function TripCard({ r, index }) {
   const paymentLabel =
     typeof r.paymentLabel === "string" && r.paymentLabel.trim() !== ""
       ? r.paymentLabel
-      : "Tarjeta";
+      : t("trips.card");
   const rating =
     typeof hotel?.rating === "number" && !Number.isNaN(hotel.rating)
       ? hotel.rating
       : null;
-  const caption = getTripCaption(r, past);
+  const caption = getTripCaption(r, past, t);
   const toneClass = `my-trips-card__visual--tone-${(index % 3) + 1}`;
 
   return (
@@ -179,7 +186,7 @@ function TripCard({ r, index }) {
           <div className="my-trips-card__visual-decor" aria-hidden="true" />
         )}
         <span className="my-trips-card__badge my-trips-card__badge--ok">
-          ✓ Confirmada
+          {t("trips.confirmed")}
         </span>
         {caption ? (
           <span className="my-trips-card__visual-caption">{caption}</span>
@@ -198,13 +205,16 @@ function TripCard({ r, index }) {
         <p className="my-trips-card__row">
           <IconCalendar className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
-            {formatDateRangeShort(checkIn, checkOut)}
+            {formatDateRangeShort(checkIn, checkOut, loc)}
             {nights != null
-              ? ` · ${nights} ${nights === 1 ? "noche" : "noches"}`
+              ? ` · ${t(
+                  nights === 1 ? "trips.night_one" : "trips.night_other",
+                  { count: nights },
+                )}`
               : ""}
             {" · "}
             {guests}{" "}
-            {guests === 1 ? "huésped" : "huéspedes"}
+            {t(guests === 1 ? "trips.guest_one" : "trips.guest_other")}
           </span>
         </p>
         <p className="my-trips-card__row my-trips-card__row--ref">
@@ -214,7 +224,7 @@ function TripCard({ r, index }) {
         <p className="my-trips-card__row my-trips-card__row--payment">
           <IconWallet className="my-trips-card__row-icon" aria-hidden="true" />
           <span>
-            {fmtMoney(r.total)} pagado · {paymentLabel}
+            {t("trips.paid", { amount: fmtMoney(r.total), method: paymentLabel })}
           </span>
         </p>
 
@@ -227,7 +237,7 @@ function TripCard({ r, index }) {
                 : encodeBookingDetailSlug(r)
             }`}
           >
-            Ver detalles
+            {t("trips.viewDetails")}
             <span className="my-trips-card__btn-arrow" aria-hidden="true">
               →
             </span>
@@ -235,9 +245,9 @@ function TripCard({ r, index }) {
         </div>
       </div>
 
-      <aside className="my-trips-card__aside" aria-label="Resumen de pago">
+      <aside className="my-trips-card__aside" aria-label={t("trips.paymentSummaryAria")}>
         <p className="my-trips-card__price">{fmtMoney(r.total)}</p>
-        <p className="my-trips-card__price-label">Total pagado</p>
+        <p className="my-trips-card__price-label">{t("trips.totalPaidLabel")}</p>
         {rating != null ? (
           <div className="my-trips-card__rating-block">
             <span className="my-trips-card__rating-num">{rating.toFixed(1)}</span>
@@ -245,7 +255,7 @@ function TripCard({ r, index }) {
           </div>
         ) : null}
         <p className="my-trips-card__note my-trips-card__note--ok">
-          ✓ Cancelación gratuita
+          {t("trips.freeCancellation")}
         </p>
       </aside>
     </li>
@@ -253,6 +263,7 @@ function TripCard({ r, index }) {
 }
 
 function MyTripsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [storedReservations, setStoredReservations] = useState(() =>
     getLocalReservations(),
@@ -316,34 +327,43 @@ function MyTripsPage() {
   // la sesión autenticada es la fuente de verdad. Si la red falla, los
   // datos locales siguen visibles vía `storedReservations`.
   useEffect(() => {
-    if (!canAccessTravelerAccountRoutes()) return;
     let cancelled = false;
 
     async function loadFromBackend() {
+      if (!canAccessTravelerAccountRoutes()) {
+        if (!cancelled) setRemoteReservations([]);
+        return;
+      }
       try {
         const [hotels, page] = await Promise.all([
           listHotels().catch(() => []),
-          listUserReservations({ limit: 50, offset: 0 }),
+          listUserReservations(),
         ]);
         if (cancelled) return;
-        const hotelsById = new Map(hotels.map((h) => [h.id, h]));
+        const hotelsById = new Map(
+          hotels.map((h) => [String(h.id), h]),
+        );
         const mapped = page.items.map((dto) =>
           mapUserReservationDto(dto, hotelsById),
         );
         setRemoteReservations(mapped);
       } catch {
-        // Silenciamos: si fallamos online, dejamos visible lo local.
         if (!cancelled) setRemoteReservations([]);
       }
     }
 
     loadFromBackend();
+    function onSessionChanged() {
+      loadFromBackend();
+    }
     function onFocus() {
       loadFromBackend();
     }
+    window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
     window.addEventListener("focus", onFocus);
     return () => {
       cancelled = true;
+      window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
       window.removeEventListener("focus", onFocus);
     };
   }, []);
@@ -377,16 +397,16 @@ function MyTripsPage() {
       <PageContainer>
         <div className="my-trips">
           <header className="my-trips__header">
-            <h1 className="my-trips__title">Mis viajes</h1>
+            <h1 className="my-trips__title">{t("trips.title")}</h1>
             <p className="my-trips__lead">
-              Administra y consulta todas tus reservas en un solo lugar.
+              {t("trips.lead")}
             </p>
           </header>
 
           {hasAny ? (
             <>
               <div className="my-trips-toolbar">
-                <div className="my-trips-tabs" role="tablist" aria-label="Filtrar por estado">
+                <div className="my-trips-tabs" role="tablist" aria-label={t("trips.filterTabsAria")}>
                   <button
                     type="button"
                     role="tab"
@@ -400,7 +420,7 @@ function MyTripsPage() {
                       setSort("checkin-asc");
                     }}
                   >
-                    Próximos ({upcomingCount})
+                    {t("trips.upcoming", { count: upcomingCount })}
                   </button>
                   <button
                     type="button"
@@ -415,13 +435,13 @@ function MyTripsPage() {
                       setSort("checkin-desc");
                     }}
                   >
-                    Pasados ({pastCount})
+                    {t("trips.past", { count: pastCount })}
                   </button>
                 </div>
                 <div className="my-trips-toolbar__end">
                   <div className="my-trips-sort-wrap">
                     <label htmlFor="my-trips-sort" className="visually-hidden">
-                      Ordenar
+                      {t("trips.sortAria")}
                     </label>
                     <select
                       id="my-trips-sort"
@@ -429,8 +449,8 @@ function MyTripsPage() {
                       value={sort}
                       onChange={(e) => setSort(e.target.value)}
                     >
-                      <option value="checkin-asc">Entrada: más próxima</option>
-                      <option value="checkin-desc">Entrada: más reciente</option>
+                      <option value="checkin-asc">{t("search.tabs.sortAsc")}</option>
+                      <option value="checkin-desc">{t("search.tabs.sortDesc")}</option>
                     </select>
                   </div>
                 </div>
@@ -438,10 +458,10 @@ function MyTripsPage() {
 
               {sorted.length === 0 ? (
                 <p className="my-trips__empty-list">
-                  No hay reservas en esta pestaña.
+                  {t("trips.emptyTab")}
                 </p>
               ) : (
-                <ul className="my-trips__list" aria-label="Reservas">
+                <ul className="my-trips__list" aria-label={t("trips.reservationsAria")}>
                   {sorted.map((r, index) => {
                     const ref = r.reference != null ? String(r.reference) : "";
                     const key = `${ref}-${r.savedAt ?? index}`;
@@ -453,11 +473,10 @@ function MyTripsPage() {
           ) : (
             <div className="my-trips__empty">
               <p className="my-trips__empty-text">
-                Aún no tienes reservas. Cuando completes un pago con tu sesión
-                iniciada, aparecerá aquí al cargarlas desde el servidor.
+                {t("trips.empty")}
               </p>
               <Link className="my-trips__empty-cta" to={PATH_TRAVELERS_HOME}>
-                Explorar alojamientos
+                {t("trips.browseStays")}
               </Link>
             </div>
           )}
@@ -466,14 +485,14 @@ function MyTripsPage() {
             <IconPlane className="my-trips-cta__plane" aria-hidden="true" />
             <div className="my-trips-cta__text">
               <h2 id="my-trips-cta-title" className="my-trips-cta__title">
-                ¿Listo para tu próxima aventura?
+                {t("trips.ctaTitle")}
               </h2>
               <p className="my-trips-cta__lead">
-                Miles de alojamientos te esperan: encuentra tu estancia ideal.
+                {t("trips.ctaLead")}
               </p>
             </div>
             <Link className="my-trips-cta__btn" to={PATH_TRAVELERS_HOME}>
-              Explorar destinos
+              {t("trips.ctaBtn")}
               <span aria-hidden="true"> →</span>
             </Link>
           </section>

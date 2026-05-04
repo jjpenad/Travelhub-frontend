@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   IconBed,
@@ -17,6 +18,7 @@ import {
 import "./SearchSummary.css";
 
 function SearchSummary() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -39,10 +41,10 @@ function SearchSummary() {
   }, [navigate, searchParams]);
 
   return (
-    <section className="search-summary" aria-label="Resumen de búsqueda">
+    <section className="search-summary" aria-label={t("searchSummary.aria")}>
       <div className="search-summary__fields">
         <div className="search-summary__segment search-summary__destination">
-          <span className="search-summary__label">Destino</span>
+          <span className="search-summary__label">{t("searchSummary.destination")}</span>
           <span className="search-summary__value">
             <IconMapPin className="search-summary__icon" aria-hidden="true" />
             <span className="search-summary__text">{destination}</span>
@@ -52,7 +54,7 @@ function SearchSummary() {
         <span className="search-summary__sep" aria-hidden="true" />
 
         <div className="search-summary__segment search-summary__date">
-          <span className="search-summary__label">Fecha de entrada</span>
+          <span className="search-summary__label">{t("searchSummary.checkIn")}</span>
           <span className="search-summary__value">
             <IconCalendar className="search-summary__icon" aria-hidden="true" />
             <span className="search-summary__text">{checkInDisplay}</span>
@@ -62,7 +64,7 @@ function SearchSummary() {
         <span className="search-summary__sep" aria-hidden="true" />
 
         <div className="search-summary__segment search-summary__date">
-          <span className="search-summary__label">Fecha de salida</span>
+          <span className="search-summary__label">{t("searchSummary.checkOut")}</span>
           <span className="search-summary__value">
             <IconCalendar className="search-summary__icon" aria-hidden="true" />
             <span className="search-summary__text">{checkOutDisplay}</span>
@@ -72,7 +74,7 @@ function SearchSummary() {
         <span className="search-summary__sep search-summary__sep--before-guests" aria-hidden="true" />
 
         <div className="search-summary__segment search-summary__guests">
-          <span className="search-summary__label">Huéspedes</span>
+          <span className="search-summary__label">{t("searchSummary.guests")}</span>
           <span className="search-summary__value">
             <IconUsers className="search-summary__icon" aria-hidden="true" />
             <span className="search-summary__text">
@@ -84,7 +86,7 @@ function SearchSummary() {
         <span className="search-summary__sep" aria-hidden="true" />
 
         <div className="search-summary__segment search-summary__rooms">
-          <span className="search-summary__label">Habitaciones</span>
+          <span className="search-summary__label">{t("searchSummary.rooms")}</span>
           <span className="search-summary__value">
             <IconBed className="search-summary__icon" aria-hidden="true" />
             <span className="search-summary__text">
@@ -98,7 +100,7 @@ function SearchSummary() {
         type="button"
         className="search-summary__search-btn"
         onClick={handleEditSearch}
-        aria-label="Editar búsqueda"
+        aria-label={t("searchSummary.editSearch")}
       >
         <IconSearch className="search-summary__search-icon" />
       </button>

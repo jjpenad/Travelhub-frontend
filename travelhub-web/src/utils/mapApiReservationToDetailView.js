@@ -1,3 +1,10 @@
+import i18n from "../i18n";
+import {
+  getHotelPortalCurrencyCode,
+  pickHotelCurrencyFromApiPayload,
+} from "../auth/hotelPortalCurrency";
+import { currentLocaleTag } from "./currentLocaleTag";
+import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
 import {
   AVATAR_TONES,
   formatShortDate,
@@ -9,10 +16,11 @@ import {
 } from "./mapAnalyticsReservationsToManageRows";
 
 function formatBookedAt(iso) {
-  if (!iso) return "—";
+  const dash = i18n.t("reservationData.dash");
+  if (!iso) return dash;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
-  return d.toLocaleDateString("es-CO", {
+  return d.toLocaleDateString(currentLocaleTag(), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -22,23 +30,25 @@ function formatBookedAt(iso) {
 }
 
 function bedTypeLabel(bedType) {
+  const dash = i18n.t("reservationData.dash");
   const t = String(bedType || "").trim();
-  if (!t) return "—";
+  if (!t) return dash;
   return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
 }
 
-function paymentMethodFromLabel(paymentLabel) {
-  if (paymentLabel === "Pagado") return "Tarjeta / TravelHub";
-  if (paymentLabel === "Reembolsado") return "Reembolso a medio original";
-  return "Pendiente de cobro";
+function paymentMethodFromStatus(status) {
+  if (status === "cancelled") return i18n.t("reservationData.paymentMethod.refundToSource");
+  if (status === "pending") return i18n.t("reservationData.paymentMethod.pendingCollection");
+  return i18n.t("reservationData.paymentMethod.card");
 }
 
 /**
  * Objeto de detalle compatible con {@link HotelReservationDetailPage} (misma forma que el demo).
  * @param {object} r - Reserva tal como viene en analytics o en GET por id.
+ * @param {string | null | undefined} [hotelCurrencyCode] - moneda del establecimiento cuando el documento no la trae
  * @returns {object | null}
  */
-export function mapApiReservationToDetailView(r) {
+export function mapApiReservationToDetailView(r, hotelCurrencyCode) {
   if (!r || typeof r !== "object") return null;
 
   const statusRaw = String(r.status || "pending").toLowerCase();
@@ -48,12 +58,19 @@ export function mapApiReservationToDetailView(r) {
       : statusRaw === "cancelled"
         ? "cancelled"
         : "pending";
-  const guestName = (r.user_name && String(r.user_name).trim()) || "Huésped";
+  const dash = i18n.t("reservationData.dash");
+  const guestName =
+    (r.user_name && String(r.user_name).trim()) || i18n.t("reservationData.guestFallback");
   const id = String(r.id ?? "");
   const amountValue = Number.parseFloat(r.total_price) || 0;
+  const ccy =
+    pickHotelCurrencyFromApiPayload(r) ??
+    (hotelCurrencyCode != null && String(hotelCurrencyCode).trim() !== ""
+      ? String(hotelCurrencyCode).trim()
+      : getHotelPortalCurrencyCode());
   const code = r.confirmation_code ? String(r.confirmation_code) : "";
-  const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : "—";
-  const roomLabel = r.room_type?.name ? String(r.room_type.name) : "—";
+  const reference = code ? `#${code}` : id ? `#${id.slice(0, 8)}` : dash;
+  const roomLabel = r.room_type?.name ? String(r.room_type.name) : dash;
   const paymentLabel = paymentLabelForStatus(status);
 
   return {
@@ -61,8 +78,8 @@ export function mapApiReservationToDetailView(r) {
     reference,
     bookedAt: formatBookedAt(r.created_at),
     guestName,
-    guestEmail: "—",
-    guestPhone: "—",
+    guestEmail: dash,
+    guestPhone: dash,
     initials: initialsFromName(guestName),
     avatarTone: AVATAR_TONES[simpleHash(id || reference) % AVATAR_TONES.length],
     roomHab: roomLabel,
@@ -72,18 +89,18 @@ export function mapApiReservationToDetailView(r) {
     dateTo: formatShortDate(r.check_out),
     nights: nightsBetween(r.check_in, r.check_out),
     guestCount: Number(r.guests) || 0,
-    amount: `$${amountValue.toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`,
+    amount: formatHotelPortalMoney(amountValue, ccy, { variant: "detail" }),
     amountValue,
     paymentLabel,
     status,
     statusLabel: statusLabel(status),
     secondaryAction: null,
     bookedVia: "TravelHub",
-    paymentMethod: paymentMethodFromLabel(paymentLabel),
+    paymentMethod: paymentMethodFromStatus(status),
     specialRequests:
       r.special_requests != null && String(r.special_requests).trim()
         ? String(r.special_requests).trim()
-        : "Sin solicitudes especiales.",
-    documentId: "—",
+        : i18n.t("reservationData.noSpecialRequests"),
+    documentId: dash,
   };
 }

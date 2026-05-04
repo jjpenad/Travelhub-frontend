@@ -13,6 +13,7 @@ import {
   getTravelerReservationByIdForPoll,
   sendEmailNotification,
 } from "../../services/api";
+import { useTranslation } from "react-i18next";
 import {
   buildTravelerConfirmEmailMessage,
   buildTravelerConfirmToastBody,
@@ -22,7 +23,6 @@ import "./TravelerConfirmToast.css";
 
 const POLL_MS = 4000;
 const TOAST_MS = 4000;
-const TOAST_TITLE = "¡Reserva confirmada!";
 
 /** Evita dos POST en paralelo (p. ej. React StrictMode) antes de `markSent`. */
 const confirmEmailInFlight = new Set();
@@ -73,7 +73,7 @@ function emailParaNotificacionCheckout(p) {
 }
 
 /**
- * @param {{ dedupKey: string, email: string, body: string, confirmationCode?: string, reservationId?: string }} p
+ * @param {{ dedupKey: string, email: string, body: string, confirmationCode?: string }} p
  */
 function enviarEmailConfirmacionSiCorresponde(p) {
   if (!p.email) return;
@@ -84,7 +84,6 @@ function enviarEmailConfirmacionSiCorresponde(p) {
   const message = buildTravelerConfirmEmailMessage({
     toastBody: p.body,
     confirmationCode: p.confirmationCode,
-    reservationId: p.reservationId,
   });
   sendEmailNotification({ email: p.email, message })
     .then((ok) => {
@@ -97,6 +96,7 @@ function enviarEmailConfirmacionSiCorresponde(p) {
 }
 
 export default function TravelerConfirmToastProvider({ children }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -188,7 +188,6 @@ export default function TravelerConfirmToastProvider({ children }) {
         hotelName: it.hotelName,
         checkIn: it.checkIn,
         checkOut: it.checkOut,
-        reservationId: it.id,
         reservationRef: confirmationCode || undefined,
       });
       clearToastTimeout();
@@ -212,7 +211,6 @@ export default function TravelerConfirmToastProvider({ children }) {
           email: String(userEmail).trim(),
           body,
           confirmationCode: confirmationCode || undefined,
-          reservationId: it.id,
         });
       }
     }
@@ -258,15 +256,11 @@ export default function TravelerConfirmToastProvider({ children }) {
     const name =
       hotelObj && typeof hotelObj.name === "string" && hotelObj.name.trim() !== ""
         ? hotelObj.name
-        : "Alojamiento";
+        : t("tripDetail.accommodationFallback");
     const body = buildTravelerConfirmToastBody({
       hotelName: name,
       checkIn: src.checkIn,
       checkOut: src.checkOut,
-      reservationId:
-        src.apiReservationId != null && String(src.apiReservationId).trim() !== ""
-          ? String(src.apiReservationId).trim()
-          : undefined,
       reservationRef:
         src.reference != null && String(src.reference).trim() !== ""
           ? String(src.reference).trim()
@@ -300,7 +294,7 @@ export default function TravelerConfirmToastProvider({ children }) {
       toastTimeoutRef.current = null;
     }, TOAST_MS);
     return undefined;
-  }, [location.pathname, location.state, toast?.id, toast?.nav?.kind, clearToastTimeout]);
+  }, [location.pathname, location.state, toast?.id, toast?.nav?.kind, clearToastTimeout, t]);
 
   /**
    * Validación determinística post-pago: si tenemos `apiReservationId` en el state de /confirmation,
@@ -356,7 +350,6 @@ export default function TravelerConfirmToastProvider({ children }) {
         hotelName: item.hotelName,
         checkIn: item.checkIn,
         checkOut: item.checkOut,
-        reservationId: item.id,
         reservationRef: ref || undefined,
       });
 
@@ -387,7 +380,6 @@ export default function TravelerConfirmToastProvider({ children }) {
           email: String(userEmail).trim(),
           body,
           confirmationCode: ref || undefined,
-          reservationId: item.id,
         });
       }
     }
@@ -426,13 +418,11 @@ export default function TravelerConfirmToastProvider({ children }) {
       guestEmail: toast.nav.guestEmail,
     });
     if (!email) return;
-    const reservationId = apiId || undefined;
     enviarEmailConfirmacionSiCorresponde({
       dedupKey,
       email,
       body: toast.body,
       confirmationCode: ref,
-      reservationId,
     });
   }, [toast]);
 
@@ -492,7 +482,7 @@ export default function TravelerConfirmToastProvider({ children }) {
             aria-live="polite"
             aria-atomic="true"
           >
-            <div className="traveler-confirm-toast" role="group" aria-label="Notificación de reserva">
+            <div className="traveler-confirm-toast" role="group" aria-label={t("toast.aria")}>
               <button
                 type="button"
                 className="traveler-confirm-toast__main"
@@ -506,14 +496,14 @@ export default function TravelerConfirmToastProvider({ children }) {
                   />
                 </div>
                 <div className="traveler-confirm-toast__text">
-                  <h2 className="traveler-confirm-toast__title">{TOAST_TITLE}</h2>
+                  <h2 className="traveler-confirm-toast__title">{t("toast.title")}</h2>
                   <p className="traveler-confirm-toast__body">{toast.body}</p>
                 </div>
               </button>
               <button
                 type="button"
                 className="traveler-confirm-toast__close"
-                aria-label="Cerrar notificación"
+                aria-label={t("toast.close")}
                 onClick={dismissToast}
               >
                 ×

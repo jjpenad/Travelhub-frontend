@@ -277,6 +277,14 @@
   color: var(--accent);
 }
 
+.booking-summary-card__fx-approx {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: #64748b;
+  text-wrap: balance;
+}
+
 @media (prefers-color-scheme: dark) {
   .booking-summary-card__cancellation {
     color: #4ade80;

@@ -2,6 +2,11 @@
  * Claves de sesión mock hasta integrar API de autenticación
  */
 
+import { normalizeHotelCurrencyCode } from "../constants/hotelCurrency";
+import {
+  clearHotelPortalCurrency,
+  setHotelPortalCurrencyCode,
+} from "./hotelPortalCurrency";
 import { PATH_HOTEL_PORTAL_HOME, PATH_TRAVELERS_HOME } from "../constants/routes";
 
 export const AUTH_ROLE_KEY = "travelhub-role";
@@ -28,6 +33,7 @@ function dispatchSessionChanged() {
 }
 
 function clearSessionRoleEmail() {
+  clearHotelPortalCurrency();
   for (const key of [
     AUTH_ROLE_KEY,
     AUTH_EMAIL_KEY,
@@ -148,6 +154,8 @@ export function persistSessionFromLogin({
   firstName,
   lastName,
   remember = true,
+  /** Moneda operativa del establecimiento si el login la devuelve (portal hotelero). */
+  hotelCurrencyCode = null,
 }) {
   if (accessToken) {
     setAuthToken(accessToken);
@@ -165,6 +173,9 @@ export function persistSessionFromLogin({
   }
   if (typeof lastName === "string" && lastName.trim() !== "") {
     storage.setItem(AUTH_LAST_NAME_KEY, lastName);
+  }
+  if (role === ROLE_HOTEL && hotelCurrencyCode != null && String(hotelCurrencyCode).trim() !== "") {
+    setHotelPortalCurrencyCode(normalizeHotelCurrencyCode(hotelCurrencyCode));
   }
   dispatchSessionChanged();
 }
@@ -218,11 +229,19 @@ export function isLoggedIn() {
 }
 
 /** Sesión del portal de viajeros (no incluye rol hotel). */
+/**
+ * Sesión de viajero para UI y llamadas a `/reservations/user`: JWT presente y no es rol hotel.
+ * Si no hay `traveler`/`hotel` en storage (sesión antigua o solo token), se asume viajero: el API
+ * valida el usuario con el Bearer.
+ */
 export function isTravelerLoggedIn() {
-  return getSessionRole() === ROLE_TRAVELER;
+  if (!isAuthenticated()) return false;
+  const role = getSessionRole();
+  if (role === ROLE_HOTEL) return false;
+  return role === ROLE_TRAVELER || role == null || String(role).trim() === "";
 }
 
-/** Viajero con token: rutas como Mis viajes y detalle de reserva. */
+/** Igual que {@link isTravelerLoggedIn} (token + no portal hotelero). */
 export function canAccessTravelerAccountRoutes() {
-  return isAuthenticated() && isTravelerLoggedIn();
+  return isTravelerLoggedIn();
 }

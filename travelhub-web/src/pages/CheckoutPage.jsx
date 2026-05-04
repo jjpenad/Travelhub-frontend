@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router-dom";
 import BookingSummaryCard from "../components/checkout/BookingSummaryCard";
 import CheckoutStepper from "../components/checkout/CheckoutStepper";
@@ -6,8 +7,9 @@ import GuestForm from "../components/checkout/GuestForm";
 import PaymentForm from "../components/checkout/PaymentForm";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
+import { normalizeFxCurrencyCode } from "../constants/fxCurrency";
 import { PATH_TRAVELERS_HOME } from "../constants/routes";
-// TODO(backend): mockHotels removed — hotel data now comes from location.state via BookingWidget
+// TODO(backend): datos de hotel desde `location.state`/API; mocks localizados vía `getLocalizedMockHotels` si aplica
 import "./CheckoutPage.css";
 
 const DEFAULT_NIGHTS = 5;
@@ -18,12 +20,30 @@ const DEFAULT_TAXES = 62;
 
 /**
  * Combina lo enviado desde el detalle (useLocation().state) con el hotel del mock.
- * Si no hay state (p. ej. F5), los precios y el nombre salen de mockHotels[hotelId].
+ * Si no hay state tras F5, hace falta backend o revisar navegación hacia checkout.
  */
 function buildBookingSummaryData(locationState, hotelFromMock) {
   const nav = locationState || {};
   const bookingRes = nav.bookingResponse?.result || {};
   const pricing = bookingRes.pricing || {};
+
+  const pricingCurrencyRaw =
+    pricing.currency_code ??
+    nav.pricingCurrencyCode ??
+    bookingRes.currency_code ??
+    null;
+  const settlementCurrencyRaw =
+    bookingRes.settlement_currency_code ??
+    bookingRes.hotel?.currency_code ??
+    bookingRes.hotel?.hotel_currency ??
+    nav.settlementCurrencyCode ??
+    pricingCurrencyRaw ??
+    null;
+
+  const pricingCurrencyCode = normalizeFxCurrencyCode(pricingCurrencyRaw || "COP");
+  const settlementCurrencyCode = normalizeFxCurrencyCode(
+    settlementCurrencyRaw ?? pricingCurrencyCode,
+  );
 
   // Priorizamos la información del backend (bookingResponse)
   const nights = Number(pricing.nights || nav.nights || DEFAULT_NIGHTS);
@@ -55,10 +75,13 @@ function buildBookingSummaryData(locationState, hotelFromMock) {
     serviceFee,
     taxes,
     total,
+    pricingCurrencyCode,
+    settlementCurrencyCode,
   };
 }
 
 function CheckoutPage() {
+  const { t } = useTranslation();
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState({ firstName: "", lastName: "" });
   const [guestFormValid, setGuestFormValid] = useState(false);
@@ -100,9 +123,9 @@ function CheckoutPage() {
       <Navbar />
       <PageContainer>
         <div className="checkout">
-          <nav className="checkout__breadcrumb" aria-label="Migas de pan">
+          <nav className="checkout__breadcrumb" aria-label={t("checkout.breadcrumbAria")}>
             <Link className="checkout__breadcrumb-link" to={PATH_TRAVELERS_HOME}>
-              Inicio
+              {t("checkout.home")}
             </Link>
             <span className="checkout__breadcrumb-sep" aria-hidden="true">
               /
@@ -115,12 +138,12 @@ function CheckoutPage() {
                 {hotel.name}
               </Link>
             ) : (
-              <span className="checkout__breadcrumb-current">Hotel</span>
+              <span className="checkout__breadcrumb-current">{t("checkout.hotelFallback")}</span>
             )}
             <span className="checkout__breadcrumb-sep" aria-hidden="true">
               /
             </span>
-            <span className="checkout__breadcrumb-current">Pago</span>
+            <span className="checkout__breadcrumb-current">{t("checkout.payment")}</span>
           </nav>
 
           <CheckoutStepper activeStep="payment" />
@@ -154,7 +177,7 @@ function CheckoutPage() {
                 boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
               }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Tiempo restante para completar la reserva
+                  {t("checkout.timerLabel")}
                 </span>
                 <span style={{ 
                   fontSize: "1.75rem", 
@@ -181,6 +204,8 @@ function CheckoutPage() {
                 serviceFee={summary.serviceFee}
                 taxes={summary.taxes}
                 total={summary.total}
+                pricingCurrencyCode={summary.pricingCurrencyCode}
+                settlementCurrencyCode={summary.settlementCurrencyCode}
                 guestEmail={guestEmail}
                 guestFormValid={guestFormValid}
                 paymentFormValid={paymentFormValid}

@@ -1,14 +1,12 @@
 import { useId, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useTravelerDisplayCurrency } from "../../context/TravelerDisplayCurrencyContext";
 import { IconStar } from "../home/HeroIcons";
 import "./FilterSidebar.css";
 
 export const FILTER_PRICE_FLOOR = 10;
 export const FILTER_PRICE_CEILING = 500;
 const PRICE_STEP = 10;
-
-function formatPrice(value) {
-  return `$${value.toLocaleString("es")}`;
-}
 
 function normalizeAmenitiesRecord(value) {
   if (value == null || typeof value !== "object" || Array.isArray(value)) return {};
@@ -35,6 +33,10 @@ function FilterSidebar({
   onApply,
   onResetFilters,
 }) {
+  const { t } = useTranslation();
+  const { formatUsdBaseAmount } = useTravelerDisplayCurrency();
+  const formatPrice = (value) => formatUsdBaseAmount(value);
+
   const headingId = useId();
   const priceMinId = useId();
   const priceMaxId = useId();
@@ -106,19 +108,19 @@ function FilterSidebar({
     >
       <header className="filter-sidebar__header">
         <h2 id={headingId} className="filter-sidebar__title">
-          {copy?.title ?? "Filtros"}
+          {copy?.title ?? t("search.filters.title")}
         </h2>
         <button
           type="button"
           className="filter-sidebar__reset"
           onClick={handleReset}
         >
-          {copy?.resetAll ?? "Reiniciar"}
+          {copy?.resetAll ?? t("search.filters.resetAll")}
         </button>
       </header>
 
       <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">{copy?.priceRange ?? "Precio"}</h3>
+        <h3 className="filter-sidebar__section-title">{copy?.priceRange ?? t("search.filters.priceRange")}</h3>
 
         <div
           className="filter-sidebar__range"
@@ -131,7 +133,7 @@ function FilterSidebar({
             <div className="filter-sidebar__range-fill" />
           </div>
           <label htmlFor={priceMinId} className="filter-sidebar__visually-hidden">
-            {copy?.priceMinLabel ?? "Mínimo"}
+            {copy?.priceMinLabel ?? t("search.filters.priceMinLabel")}
           </label>
           <input
             id={priceMinId}
@@ -145,7 +147,7 @@ function FilterSidebar({
             aria-valuetext={formatPrice(priceMin)}
           />
           <label htmlFor={priceMaxId} className="filter-sidebar__visually-hidden">
-            {copy?.priceMaxLabel ?? "Máximo"}
+            {copy?.priceMaxLabel ?? t("search.filters.priceMaxLabel")}
           </label>
           <input
             id={priceMaxId}
@@ -170,8 +172,12 @@ function FilterSidebar({
       </section>
 
       <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">{copy?.starRating ?? "Estrellas"}</h3>
-        <ul className="filter-sidebar__stars" role="radiogroup" aria-label={copy?.starRating ?? ""}>
+        <h3 className="filter-sidebar__section-title">{copy?.starRating ?? t("search.filters.starRating")}</h3>
+        <ul
+          className="filter-sidebar__stars"
+          role="radiogroup"
+          aria-label={copy?.starRating ?? t("search.filters.starRating")}
+        >
           {(Array.isArray(copy?.starOptions) ? copy.starOptions : []).map(({ value, label }) => {
             const isActive = minStars === value;
             return (
@@ -206,7 +212,7 @@ function FilterSidebar({
       </section>
 
       <section className="filter-sidebar__section">
-        <h3 className="filter-sidebar__section-title">{copy?.amenities ?? "Amenidades"}</h3>
+        <h3 className="filter-sidebar__section-title">{copy?.amenities ?? t("search.filters.amenities")}</h3>
         <ul className="filter-sidebar__checklist">
           {amenityOptions.map(({ key, label, icon }) => {
             const am = normalizeAmenitiesRecord(amenities);
@@ -247,14 +253,12 @@ function FilterSidebar({
 
       <div className="filter-sidebar__apply">
         <button type="button" className="filter-sidebar__apply-button" onClick={handleApply}>
-          {copy?.applyFilters ?? "Aplicar filtros"}
+          {copy?.applyFilters ?? t("search.filters.applyFilters")}
         </button>
         <p className="filter-sidebar__active-count" aria-live="polite">
           {typeof copy?.activeFilters === "function"
             ? copy.activeFilters(activeFiltersCount)
-            : activeFiltersCount === 1
-              ? "1 filtro activo"
-              : `${activeFiltersCount} filtros activos`}
+            : t("search.filters.activeFilters", { count: activeFiltersCount })}
         </p>
       </div>
     </aside>

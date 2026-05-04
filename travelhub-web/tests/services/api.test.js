@@ -351,16 +351,16 @@ describe("listUserReservations", () => {
           },
         ],
         total: 1,
-        limit: 50,
+        limit: 10,
         offset: 0,
       }),
     );
 
-    const out = await listUserReservations({ limit: 50, offset: 0 });
+    const out = await listUserReservations({ limit: 10, offset: 0 });
 
     const [url, init] = lastFetchCall();
     expect(url).toContain("/reservations/user?");
-    expect(url).toContain("limit=50");
+    expect(url).toContain("limit=10");
     expect(url).toContain("offset=0");
     expect(init.method).toBe("GET");
     expect(init.headers.Authorization).toBe("Bearer tok");
@@ -372,15 +372,26 @@ describe("listUserReservations", () => {
     expect(out.items[0].id).toBe("r1");
   });
 
-  it("defaults to limit=20, offset=0", async () => {
+  it("defaults to limit=10, offset=0", async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, "tok");
     globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
 
     await listUserReservations();
 
     const [url] = lastFetchCall();
-    expect(url).toContain("limit=20");
+    expect(url).toContain("limit=10");
     expect(url).toContain("offset=0");
+  });
+
+  it("allows overriding limit and offset", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
+
+    await listUserReservations({ limit: 25, offset: 10 });
+
+    const [url] = lastFetchCall();
+    expect(url).toContain("limit=25");
+    expect(url).toContain("offset=10");
   });
 
   it("falls back to total = items.length when the backend omits total", async () => {
@@ -401,6 +412,23 @@ describe("listUserReservations", () => {
     expect(out.items).toEqual([{ id: "r1" }]);
     expect(out.total).toBe(1);
   });
+
+  it("accepts items nested under data.result", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(
+      jsonResponse({
+        result: {
+          items: [{ id: "nested-1" }],
+          total: 5,
+        },
+      }),
+    );
+
+    const out = await listUserReservations();
+    expect(out.items).toHaveLength(1);
+    expect(out.items[0].id).toBe("nested-1");
+    expect(out.total).toBe(5);
+  });
 });
 
 describe("mapUserReservationDto", () => {
@@ -418,12 +446,14 @@ describe("mapUserReservationDto", () => {
 
     expect(r).toMatchObject({
       id: "r-1",
+      apiReservationId: "r-1",
       reference: "RES-XYZ",
       checkIn: "2026-05-01",
       checkOut: "2026-05-05",
       nights: 4,
       guests: 3,
       total: 750,
+      totalCurrencyCode: "COP",
       status: "confirmed",
       source: "backend",
     });
@@ -461,6 +491,23 @@ describe("mapUserReservationDto", () => {
     expect(r.hotel.name).toBe("Casa Sol");
     expect(r.hotel.location).toBe("Lima, Perú");
     expect(r.hotel.rating).toBe(4.5);
+  });
+
+  it("expone totalCurrencyCode desde currency_code o payment", () => {
+    expect(
+      mapUserReservationDto({
+        id: "a",
+        currency_code: "USD",
+        total_price: 100,
+      }).totalCurrencyCode,
+    ).toBe("USD");
+    expect(
+      mapUserReservationDto({
+        id: "b",
+        payment: { currency_code: "COP" },
+        total_price: 200,
+      }).totalCurrencyCode,
+    ).toBe("COP");
   });
 
   it("returns null nights when dates are missing or invalid", () => {
@@ -587,7 +634,13 @@ describe("getHotelAvailability", () => {
             max_capacity: 2,
             price_per_night: "100",
             total_price: "400",
-            amenities: ["wifi"],
+            amenities: [
+              "wifi",
+              null,
+              { name: "  spa  " },
+              {},
+              { foo: 1 },
+            ],
           },
         ],
       }),
@@ -606,6 +659,11 @@ describe("getHotelAvailability", () => {
       price: 100,
       availableRooms: ["Suite"],
     });
+    const room = out.availableRoomObjects[0];
+    expect(room.amenities).toEqual(
+      expect.arrayContaining(["wifi", "spa"]),
+    );
+    expect(room.amenities).toHaveLength(2);
   });
 });
 
@@ -634,9 +692,11 @@ describe("createBooking / processPayment / createReservation", () => {
     expect(JSON.parse(init.body)).toEqual({ token: "x" });
   });
 
-  it("createReservation builds the canonical body shape and posts it", async () => {
+  it("createReservation fetches USD/COP, converts amounts, and POSTs COP to /reservation-flow/create", async () => {
     localStorage.setItem(AUTH_TOKEN_KEY, "tok");
-    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ id: "r-1" }));
+    globalThis.fetch
+      .mockResolvedValueOnce(jsonResponse({ rate: 4000 }))
+      .mockResolvedValueOnce(jsonResponse({ id: "r-1" }));
 
     await createReservation({
       hotelId: "h1",
@@ -652,7 +712,13 @@ describe("createBooking / processPayment / createReservation", () => {
       cardNumber: "4111-1111-1111-1111",
     });
 
-    const [, init] = lastFetchCall();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    const [ratesUrl] = globalThis.fetch.mock.calls[0];
+    expect(String(ratesUrl)).toMatch(/currency\/v1\/rates/);
+    expect(String(ratesUrl)).toContain("base=USD");
+    expect(String(ratesUrl)).toContain("quote=COP");
+
+    const [, init] = globalThis.fetch.mock.calls[1];
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({
       hotel_id: "h1",
@@ -660,17 +726,43 @@ describe("createBooking / processPayment / createReservation", () => {
       check_in: "2026-05-01",
       check_out: "2026-05-05",
       guests: 2,
-      total_price: "400.00",
-      currency_code: "USD",
+      base_price: "1600000",
+      total_price: "1600000",
+      currency_code: "COP",
       primary_guest: expect.objectContaining({
         first_name: "Ana",
         last_name: "Lopez",
       }),
       payment: expect.objectContaining({
-        amount: "400.00",
+        amount: "1600000",
+        currency_code: "COP",
         payment_token: expect.stringContaining("tok_visa_"),
       }),
     });
+  });
+
+  it("createReservation throws 503 when the FX payload has no usable USD/COP rate", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "tok");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({}));
+
+    await expect(
+      createReservation({
+        hotelId: "h1",
+        roomTypeId: "rt1",
+        checkIn: "2026-05-01",
+        checkOut: "2026-05-05",
+        guests: 2,
+        totalPrice: 400,
+        pricePerNight: 100,
+        nights: 4,
+        guestFirstName: "Ana",
+        guestLastName: "Lopez",
+      }),
+    ).rejects.toMatchObject({
+      status: 503,
+      message: expect.stringMatching(/tasa USD\/COP/i),
+    });
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });
 

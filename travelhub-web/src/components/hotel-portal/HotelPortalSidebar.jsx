@@ -1,24 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_HOTEL_PORTAL_HOME } from "../../constants/routes";
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  PATH_HOTEL_MANAGE_RESERVATIONS,
+  PATH_HOTEL_PORTAL_HOME,
+} from "../../constants/routes";
 import { HotelPortalNavIcon } from "./HotelPortalNavIcons";
 import "./HotelPortalSidebar.css";
-
-const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", to: PATH_HOTEL_PORTAL_HOME, end: true, icon: "dashboard" },
-  { id: "reports", label: "Reportes", to: "#reportes", icon: "reports" },
-  { id: "notifications", label: "Notificaciones", to: "#notificaciones", icon: "notifications" },
-  { id: "rates", label: "Tarifas", to: "#tarifas", icon: "rates" },
-  { id: "bookings", label: "Gestionar reservas", to: PATH_HOTEL_MANAGE_RESERVATIONS, icon: "bookings" },
-  { id: "rooms", label: "Habitaciones", to: "#habitaciones", icon: "rooms" },
-  { id: "guests", label: "Huéspedes", to: "#huespedes", icon: "guests" },
-];
-
-const SETTINGS_ITEM = {
-  id: "settings",
-  label: "Configuración",
-  to: "#configuracion",
-  icon: "settings",
-};
 
 function initialsFromName(name) {
   if (!name || typeof name !== "string") return "?";
@@ -75,18 +63,56 @@ function NavRow({ item, hashActive }) {
   );
 }
 
-/**
- * Barra lateral del portal hotelero (navegación contextual al dashboard).
- */
 function HotelPortalSidebar({
   activeId = "dashboard",
   displayName = "Usuario",
-  propertyLabel = "Tu establecimiento",
+  propertyLabel,
 }) {
+  const { t } = useTranslation();
+  const resolvedProperty = propertyLabel ?? t("hotelPortal.propertyLabel");
+  const navItems = useMemo(
+    () => [
+      {
+        id: "dashboard",
+        label: t("hotelPortal.nav.dashboard"),
+        to: PATH_HOTEL_PORTAL_HOME,
+        end: true,
+        icon: "dashboard",
+      },
+      { id: "reports", label: t("hotelPortal.nav.reports"), to: "#reportes", icon: "reports" },
+      {
+        id: "notifications",
+        label: t("hotelPortal.nav.notifications"),
+        to: "#notificaciones",
+        icon: "notifications",
+      },
+      { id: "rates", label: t("hotelPortal.nav.rates"), to: "#tarifas", icon: "rates" },
+      {
+        id: "bookings",
+        label: t("hotelPortal.nav.bookings"),
+        to: PATH_HOTEL_MANAGE_RESERVATIONS,
+        icon: "bookings",
+      },
+      { id: "rooms", label: t("hotelPortal.nav.rooms"), to: "#habitaciones", icon: "rooms" },
+      { id: "guests", label: t("hotelPortal.nav.guests"), to: "#huespedes", icon: "guests" },
+    ],
+    [t],
+  );
+
+  const settingsItem = useMemo(
+    () => ({
+      id: "settings",
+      label: t("hotelPortal.nav.settings"),
+      to: "#configuracion",
+      icon: "settings",
+    }),
+    [t],
+  );
+
   const initials = initialsFromName(displayName);
 
   return (
-    <aside className="hp-sidebar" aria-label="Portal hotelero">
+    <aside className="hp-sidebar" aria-label={t("hotelPortal.sidebarAria")}>
       <div className="hp-sidebar__profile-block">
         <div className="hp-sidebar__profile">
           <span className="hp-sidebar__avatar" aria-hidden="true">
@@ -94,17 +120,17 @@ function HotelPortalSidebar({
           </span>
           <div className="hp-sidebar__profile-text">
             <span className="hp-sidebar__profile-name">{displayName}</span>
-            <span className="hp-sidebar__profile-property">{propertyLabel}</span>
+            <span className="hp-sidebar__profile-property">{resolvedProperty}</span>
           </div>
         </div>
       </div>
 
       <div className="hp-sidebar__divider" aria-hidden="true" />
 
-      <nav className="hp-sidebar__nav" aria-label="Secciones del portal">
+      <nav className="hp-sidebar__nav" aria-label={t("hotelPortal.navAria")}>
         <div className="hp-sidebar__nav-inner">
           <ul className="hp-sidebar__list hp-sidebar__list--main">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const hashActive = item.to.startsWith("#") && item.id === activeId;
               return (
                 <li
@@ -123,8 +149,8 @@ function HotelPortalSidebar({
           <ul className="hp-sidebar__list hp-sidebar__list--footer">
             <li className="hp-sidebar__item">
               <NavRow
-                item={SETTINGS_ITEM}
-                hashActive={SETTINGS_ITEM.id === activeId}
+                item={settingsItem}
+                hashActive={settingsItem.id === activeId}
               />
             </li>
           </ul>

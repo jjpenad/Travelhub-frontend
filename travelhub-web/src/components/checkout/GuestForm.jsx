@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getCurrentUserClaims } from "../../auth/sessionAuth";
 import "./GuestForm.css";
 
@@ -59,6 +60,8 @@ function GuestForm({
   /** Override solo para tests; en producción los datos se leen del JWT. */
   prefillOverride,
 }) {
+  const { t } = useTranslation();
+
   // El pre-fill se calcula UNA vez al montar. Si después cambia el token
   // (login/logout), la página padre se re-monta o navega, así que no
   // intentamos hidratar el form a mitad de sesión.
@@ -122,12 +125,12 @@ function GuestForm({
   return (
     <section className="guest-form" aria-labelledby="guest-form-title">
       <h2 id="guest-form-title" className="guest-form__title">
-        Datos del huésped
+        {t("guestForm.title")}
       </h2>
       <div className="guest-form__grid">
         <div className="guest-form__field">
           <label className="guest-form__label" htmlFor="guest-form-first-name">
-            Nombre
+            {t("auth.firstName")}
           </label>
           <input
             id="guest-form-first-name"
@@ -148,13 +151,13 @@ function GuestForm({
           />
           {showNombreError ? (
             <p id="guest-form-error-nombre" className="guest-form__error" role="alert">
-              Indica tu nombre.
+              {t("guestForm.errors.name")}
             </p>
           ) : null}
         </div>
         <div className="guest-form__field">
           <label className="guest-form__label" htmlFor="guest-form-last-name">
-            Apellidos
+            {t("auth.lastName")}
           </label>
           <input
             id="guest-form-last-name"
@@ -179,13 +182,13 @@ function GuestForm({
               className="guest-form__error"
               role="alert"
             >
-              Indica tus apellidos.
+              {t("guestForm.errors.lastname")}
             </p>
           ) : null}
         </div>
         <div className="guest-form__field guest-form__field--full">
           <label className="guest-form__label" htmlFor="guest-form-email">
-            Correo electrónico
+            {t("auth.email")}
           </label>
           <input
             id="guest-form-email"
@@ -207,14 +210,14 @@ function GuestForm({
           {showEmailError ? (
             <p id="guest-form-error-email" className="guest-form__error" role="alert">
               {form.email.trim() === ""
-                ? "Indica un correo electrónico."
-                : "Introduce un correo electrónico válido."}
+                ? t("guestForm.errors.emailMissing")
+                : t("guestForm.errors.emailInvalid")}
             </p>
           ) : null}
         </div>
         <div className="guest-form__field guest-form__field--full">
           <label className="guest-form__label" htmlFor="guest-form-phone">
-            Teléfono
+            {t("guestForm.phone")}
           </label>
           <input
             id="guest-form-phone"
@@ -237,7 +240,7 @@ function GuestForm({
               className="guest-form__error"
               role="alert"
             >
-              Indica un número de teléfono.
+              {t("guestForm.errors.phoneMissing")}
             </p>
           ) : null}
         </div>
@@ -246,7 +249,7 @@ function GuestForm({
             className="guest-form__label"
             htmlFor="guest-form-special-requests"
           >
-            Peticiones especiales
+            {t("guestForm.specialRequests")}
           </label>
           <div className="guest-form__textarea-wrap">
             <textarea
@@ -254,7 +257,7 @@ function GuestForm({
               className="guest-form__textarea guest-form__textarea--counter"
               name="specialRequests"
               rows={4}
-              placeholder="Alergias, llegada tardía, celebraciones…"
+              placeholder={t("guestForm.specialPlaceholder")}
               value={form.peticionesEspeciales}
               maxLength={MAX_PETICIONES}
               aria-describedby="guest-form-peticiones-count"

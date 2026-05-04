@@ -66,7 +66,7 @@ function HotelCard({ hotel, copy }) {
       <div className="hotel-card__aside">
         <div className="hotel-card__price-block">
           <span className="hotel-card__price-amount">
-            {copy.priceLabel(hotel.price)}
+            {copy.priceLabel(hotel.price, hotel.priceCurrencyCode)}
           </span>
           <span className="hotel-card__price-meta">
             {copy.perNight}

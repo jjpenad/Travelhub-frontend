@@ -1,4 +1,5 @@
-import { createElement } from "react";
+import { createElement, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { IconStar } from "../home/HeroIcons";
 import {
   IconAmenityBar,
@@ -11,34 +12,38 @@ import {
 } from "./hotelAmenityIcons";
 import "./HotelHeader.css";
 
-const AMENITIES = [
-  { id: "pool", label: "Piscina", Icon: IconAmenityPool },
-  { id: "breakfast", label: "Desayuno", Icon: IconAmenityBreakfast },
-  { id: "wifi", label: "WiFi", Icon: IconAmenityWifi },
-  { id: "spa", label: "Spa", Icon: IconAmenitySpa },
-  { id: "parking", label: "Aparcamiento", Icon: IconAmenityParking },
-  { id: "bar", label: "Bar", Icon: IconAmenityBar },
-];
-
 function HotelHeader({ hotel }) {
+  const { t } = useTranslation();
+
+  const amenities = useMemo(
+    () => [
+      { id: "pool", labelKey: "hotelDetail.headerAmenityPool", Icon: IconAmenityPool },
+      { id: "breakfast", labelKey: "hotelDetail.headerAmenityBreakfast", Icon: IconAmenityBreakfast },
+      { id: "wifi", labelKey: "hotelDetail.headerAmenityWifi", Icon: IconAmenityWifi },
+      { id: "spa", labelKey: "hotelDetail.headerAmenitySpa", Icon: IconAmenitySpa },
+      { id: "parking", labelKey: "hotelDetail.headerAmenityParking", Icon: IconAmenityParking },
+      { id: "bar", labelKey: "hotelDetail.headerAmenityBar", Icon: IconAmenityBar },
+    ],
+    [],
+  );
+
   if (!hotel) {
     return null;
   }
 
   const title = hotel.name ?? "";
-  const location = hotel.location ?? "Santorini, Grecia";
+  const location = hotel.location ?? t("hotelDetail.headerLocationFallback");
   const rating = hotel.rating ?? 4.9;
-  const ratingNum =
-    typeof rating === "number" ? rating.toFixed(1) : String(rating ?? "");
+  const ratingNum = typeof rating === "number" ? rating.toFixed(1) : String(rating ?? "");
 
   return (
     <header className="hotel-header">
       <div className="hotel-header__title-row">
         <h1 className="hotel-header__title">{title}</h1>
-        <div className="hotel-header__badges" aria-label="Tipo de alojamiento">
-          <span className="hotel-header__badge">Hotel</span>
+        <div className="hotel-header__badges" aria-label={t("hotelDetail.headerBadgesAria")}>
+          <span className="hotel-header__badge">{t("hotelDetail.propertyTypeHotel")}</span>
           <span className="hotel-header__badge hotel-header__badge--verified">
-            Verificado
+            {t("hotelDetail.verifiedBadge")}
           </span>
         </div>
       </div>
@@ -48,10 +53,7 @@ function HotelHeader({ hotel }) {
         <span>{location}</span>
       </p>
 
-      <div
-        className="hotel-header__rating-row"
-        aria-label={`Valoración ${ratingNum} de 5`}
-      >
+      <div className="hotel-header__rating-row" aria-label={t("hotelDetail.headerRatingAria", { rating: ratingNum })}>
         <span className="hotel-header__stars" aria-hidden="true">
           {[0, 1, 2, 3, 4].map((i) => (
             <IconStar key={i} className="hotel-header__star" />
@@ -60,13 +62,13 @@ function HotelHeader({ hotel }) {
         <span className="hotel-header__rating-value">{ratingNum}</span>
       </div>
 
-      <ul className="hotel-header__amenities" aria-label="Servicios destacados">
-        {AMENITIES.map(({ id, label, Icon }) => (
+      <ul className="hotel-header__amenities" aria-label={t("hotelDetail.headerAmenitiesAria")}>
+        {amenities.map(({ id, labelKey, Icon }) => (
           <li key={id} className="hotel-header__amenity">
             {createElement(Icon, {
               className: "hotel-header__amenity-icon",
             })}
-            <span className="hotel-header__amenity-label">{label}</span>
+            <span className="hotel-header__amenity-label">{t(labelKey)}</span>
           </li>
         ))}
       </ul>

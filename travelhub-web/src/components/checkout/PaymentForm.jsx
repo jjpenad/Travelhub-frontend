@@ -1,15 +1,9 @@
 import { useEffect, useId, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import "./PaymentForm.css";
-
-const METHODS = [
-  { id: "card", label: "Tarjeta de crédito", value: "card" },
-  { id: "paypal", label: "PayPal", value: "paypal" },
-  { id: "apple", label: "Apple Pay", value: "apple" },
-];
 
 /**
  * En false, oculta la UI de selección de método de pago (radios).
- * El bloque JSX completo sigue en el archivo; solo no se renderiza.
  */
 const SHOW_PAYMENT_METHOD_SELECTOR = false;
 
@@ -38,64 +32,11 @@ function luhnCheck(numStr) {
   return sum % 10 === 0;
 }
 
-function validateCardNumber(digits) {
-  if (!digits) return "Indica el número de tarjeta.";
-  if (digits.length < 13 || digits.length > 19) {
-    return "El número debe tener entre 13 y 19 dígitos.";
-  }
-  if (!luhnCheck(digits)) return "Número de tarjeta no válido.";
-  return null;
-}
-
 function formatExpiryInput(raw) {
   const d = onlyDigits(raw).slice(0, 4);
   if (d.length === 0) return "";
   if (d.length <= 2) return d;
   return `${d.slice(0, 2)} / ${d.slice(2, 4)}`;
-}
-
-function validateExpiry(displayValue) {
-  const d = onlyDigits(displayValue);
-  if (d.length !== 4) return "Indica mes y año (MM/AA).";
-  const mm = parseInt(d.slice(0, 2), 10);
-  const yy = parseInt(d.slice(2, 4), 10);
-  if (mm < 1 || mm > 12) return "Mes inválido (01–12).";
-  const fullYear = 2000 + yy;
-  const now = new Date();
-  const expYm = fullYear * 12 + (mm - 1);
-  const curYm = now.getFullYear() * 12 + now.getMonth();
-  if (expYm < curYm) return "La tarjeta está caducada.";
-  return null;
-}
-
-function validateCvv(value) {
-  const d = onlyDigits(value);
-  if (!d) return "Indica el CVV.";
-  if (d.length < 3 || d.length > 4) {
-    return "El CVV debe tener 3 o 4 dígitos.";
-  }
-  return null;
-}
-
-function validateCardholder(name) {
-  const t = name.trim().replace(/\s+/g, " ");
-  if (!t) return "Indica el titular de la tarjeta.";
-  if (t.length < 2) return "Nombre demasiado corto.";
-  if (t.length > 80) return "El nombre no puede superar 80 caracteres.";
-  if (!/^[\p{L}\s'.-]+$/u.test(t)) {
-    return "Usa solo letras y espacios.";
-  }
-  return null;
-}
-
-function isCardPaymentDataValid(cardNumber, cardholderName, cardExpiry, cardCvv) {
-  const digits = onlyDigits(cardNumber);
-  return (
-    validateCardNumber(digits) === null &&
-    validateCardholder(cardholderName) === null &&
-    validateExpiry(cardExpiry) === null &&
-    validateCvv(cardCvv) === null
-  );
 }
 
 function PaymentForm({
@@ -105,6 +46,7 @@ function PaymentForm({
   onCardNumberChange,
   onValidityChange,
 }) {
+  const { t } = useTranslation();
   const baseId = useId();
   const [cardholderName, setCardholderName] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
@@ -116,6 +58,58 @@ function PaymentForm({
     cardCvv: false,
   });
 
+  const methods = useMemo(
+    () => [
+      { id: "card", label: t("paymentForm.methods.card"), value: "card" },
+      { id: "paypal", label: t("paymentForm.methods.paypal"), value: "paypal" },
+      { id: "apple", label: t("paymentForm.methods.apple"), value: "apple" },
+    ],
+    [t],
+  );
+
+  function validateCardNumber(digits) {
+    if (!digits) return t("paymentForm.errors.cardRequired");
+    if (digits.length < 13 || digits.length > 19) {
+      return t("paymentForm.errors.cardLength");
+    }
+    if (!luhnCheck(digits)) return t("paymentForm.errors.cardInvalid");
+    return null;
+  }
+
+  function validateExpiry(displayValue) {
+    const d = onlyDigits(displayValue);
+    if (d.length !== 4) return t("paymentForm.errors.expiryIncomplete");
+    const mm = parseInt(d.slice(0, 2), 10);
+    const yy = parseInt(d.slice(2, 4), 10);
+    if (mm < 1 || mm > 12) return t("paymentForm.errors.monthInvalid");
+    const fullYear = 2000 + yy;
+    const now = new Date();
+    const expYm = fullYear * 12 + (mm - 1);
+    const curYm = now.getFullYear() * 12 + now.getMonth();
+    if (expYm < curYm) return t("paymentForm.errors.expired");
+    return null;
+  }
+
+  function validateCvv(value) {
+    const d = onlyDigits(value);
+    if (!d) return t("paymentForm.errors.cvvRequired");
+    if (d.length < 3 || d.length > 4) {
+      return t("paymentForm.errors.cvvLength");
+    }
+    return null;
+  }
+
+  function validateCardholder(name) {
+    const n = name.trim().replace(/\s+/g, " ");
+    if (!n) return t("paymentForm.errors.holderRequired");
+    if (n.length < 2) return t("paymentForm.errors.holderShort");
+    if (n.length > 80) return t("paymentForm.errors.holderLong");
+    if (!/^[\p{L}\s'.-]+$/u.test(n)) {
+      return t("paymentForm.errors.holderChars");
+    }
+    return null;
+  }
+
   const digits = onlyDigits(cardNumber);
   const errCard = touched.cardNumber ? validateCardNumber(digits) : null;
   const errHolder = touched.cardholderName
@@ -124,15 +118,13 @@ function PaymentForm({
   const errExpiry = touched.cardExpiry ? validateExpiry(cardExpiry) : null;
   const errCvv = touched.cardCvv ? validateCvv(cardCvv) : null;
 
-  const paymentDataValid = useMemo(() => {
-    if (paymentMethod !== "card") return true;
-    return isCardPaymentDataValid(
-      cardNumber,
-      cardholderName,
-      cardExpiry,
-      cardCvv,
-    );
-  }, [paymentMethod, cardNumber, cardholderName, cardExpiry, cardCvv]);
+  const paymentDataValid =
+    paymentMethod !== "card"
+      ? true
+      : validateCardNumber(digits) === null &&
+        validateCardholder(cardholderName) === null &&
+        validateExpiry(cardExpiry) === null &&
+        validateCvv(cardCvv) === null;
 
   useEffect(() => {
     onValidityChange?.(paymentDataValid);
@@ -145,18 +137,18 @@ function PaymentForm({
   return (
     <section className="payment-form" aria-labelledby="payment-form-title">
       <h2 id="payment-form-title" className="payment-form__title">
-        Métodos de pago
+        {t("paymentForm.title")}
       </h2>
 
       {SHOW_PAYMENT_METHOD_SELECTOR ? (
         <fieldset className="payment-form__fieldset">
-          <legend className="payment-form__legend">Método de pago</legend>
+          <legend className="payment-form__legend">{t("paymentForm.methodLegend")}</legend>
           <div
             className="payment-form__methods"
             role="radiogroup"
-            aria-label="Método de pago"
+            aria-label={t("paymentForm.methodAria")}
           >
-            {METHODS.map((m) => {
+            {methods.map((m) => {
               const selected = paymentMethod === m.value;
               return (
                 <label
@@ -190,7 +182,7 @@ function PaymentForm({
               ? " payment-form__card-fields--no-method-row"
               : "")
           }
-          aria-label="Datos de la tarjeta"
+          aria-label={t("paymentForm.cardSectionAria")}
         >
           <div className="payment-form__card-row payment-form__card-row--number-titular">
             <div className="payment-form__field">
@@ -198,7 +190,7 @@ function PaymentForm({
                 className="payment-form__field-label"
                 htmlFor={`${baseId}-card-number`}
               >
-                Número de tarjeta
+                {t("paymentForm.cardNumber")}
               </label>
               <input
                 id={`${baseId}-card-number`}
@@ -236,7 +228,7 @@ function PaymentForm({
                 className="payment-form__field-label"
                 htmlFor={`${baseId}-cardholder`}
               >
-                Titular
+                {t("paymentForm.cardholder")}
               </label>
               <input
                 id={`${baseId}-cardholder`}
@@ -247,7 +239,7 @@ function PaymentForm({
                 type="text"
                 name="ccname"
                 autoComplete="cc-name"
-                placeholder="Como figura en la tarjeta"
+                placeholder={t("paymentForm.cardholderPh")}
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
                 onBlur={() => markTouched("cardholderName")}
@@ -273,7 +265,7 @@ function PaymentForm({
                 className="payment-form__field-label"
                 htmlFor={`${baseId}-expiry`}
               >
-                Fecha de expiración
+                {t("paymentForm.expiry")}
               </label>
               <input
                 id={`${baseId}-expiry`}
@@ -309,7 +301,7 @@ function PaymentForm({
                 className="payment-form__field-label"
                 htmlFor={`${baseId}-cvv`}
               >
-                CVV
+                {t("paymentForm.cvv")}
               </label>
               <input
                 id={`${baseId}-cvv`}
