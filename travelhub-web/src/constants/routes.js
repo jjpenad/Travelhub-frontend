@@ -10,9 +10,17 @@ export const PATH_HOTEL_PORTAL_HOME = "/hoteles/inicio";
 /** Listado y gestión de reservas (portal hotelero) */
 export const PATH_HOTEL_MANAGE_RESERVATIONS = "/hoteles/reservas";
 
+/** Gestión de tarifas y habitaciones (portal hotelero) */
+export const PATH_HOTEL_MANAGE_RATES = "/hoteles/tarifas";
+
 /** Detalle de una reserva (portal hotelero). `id` ej. r-1 */
 export function pathHotelReservationDetail(id) {
   return `${PATH_HOTEL_MANAGE_RESERVATIONS}/${encodeURIComponent(id)}`;
+}
+
+/** Detalle de un tipo de habitación / tarifa (portal hotelero) */
+export function pathHotelRoomDetail(id) {
+  return `${PATH_HOTEL_MANAGE_RATES}/${encodeURIComponent(id)}`;
 }
 
 /** Ruta histórica: redirige a {@link PATH_HOTEL_PORTAL_HOME} */

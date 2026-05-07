@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import ProtectedTravelerRoute from "./auth/ProtectedTravelerRoute";
 import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
+  PATH_HOTEL_MANAGE_RATES,
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
   PATH_LOGIN,
@@ -14,8 +15,10 @@ import ConfirmationPage from "./pages/ConfirmationPage";
 import Home from "./pages/Home";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import HotelManageReservationsPage from "./pages/HotelManageReservationsPage";
+import HotelManageRatesPage from "./pages/HotelManageRatesPage";
 import HotelPortalPage from "./pages/HotelPortalPage";
 import HotelReservationDetailPage from "./pages/HotelReservationDetailPage";
+import HotelRoomDetailPage from "./pages/HotelRoomDetailPage";
 import LoginPage from "./pages/LoginPage";
 import MyTripsPage from "./pages/MyTripsPage";
 import TripDetailPage from "./pages/TripDetailPage";
@@ -56,6 +59,8 @@ function App() {
         <Route path={PATH_HOTEL_PORTAL_HOME} element={<HotelPortalPage />} />
         <Route path={`${PATH_HOTEL_MANAGE_RESERVATIONS}/:reservationId`} element={<HotelReservationDetailPage />} />
         <Route path={PATH_HOTEL_MANAGE_RESERVATIONS} element={<HotelManageReservationsPage />} />
+        <Route path={`${PATH_HOTEL_MANAGE_RATES}/:roomTypeId`} element={<HotelRoomDetailPage />} />
+        <Route path={PATH_HOTEL_MANAGE_RATES} element={<HotelManageRatesPage />} />
         <Route
           path={PATH_HOTEL_PORTAL_LEGACY}
           element={<Navigate to={PATH_HOTEL_PORTAL_HOME} replace />}
