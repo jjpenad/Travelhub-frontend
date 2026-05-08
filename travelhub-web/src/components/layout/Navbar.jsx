@@ -45,7 +45,9 @@ function Navbar() {
     pathname === PATH_HOTEL_PORTAL_HOME ||
     pathname.startsWith("/hoteles/");
   const hideTravelerCurrency =
-    isHotelPortalRoute || pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
+    isHome ||
+    isHotelPortalRoute ||
+    pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
