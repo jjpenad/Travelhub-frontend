@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
+  PATH_HOTEL_MANAGE_RATES,
   PATH_HOTEL_PORTAL_HOME,
 } from "../../constants/routes";
 import { HotelPortalNavIcon } from "./HotelPortalNavIcons";
@@ -86,7 +87,7 @@ function HotelPortalSidebar({
         to: "#notificaciones",
         icon: "notifications",
       },
-      { id: "rates", label: t("hotelPortal.nav.rates"), to: "#tarifas", icon: "rates" },
+      { id: "rates", label: t("hotelPortal.nav.rates"), to: PATH_HOTEL_MANAGE_RATES, icon: "rates" },
       {
         id: "bookings",
         label: t("hotelPortal.nav.bookings"),

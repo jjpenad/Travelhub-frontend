@@ -690,5 +690,65 @@
     "kyotoCountry": "Japan",
     "marrakechCountry": "Morocco",
     "reykjavikCountry": "Iceland"
+  },
+  "hotelManageRates": {
+    "pageTitle": "Manage Rates",
+    "pageSubtitle": "Configure prices and availability for your rooms",
+    "tableColRoomType": "Room type",
+    "tableColDescription": "Description",
+    "tableColAction": "Actions",
+    "actionEdit": "Edit rate",
+    "tableEmpty": "No room types defined."
+  },
+  "hotelRoomDetail": {
+    "backToManage": "← Back to Rates",
+    "notFound": "This room was not found or the link is invalid.",
+    "loading": "Loading…",
+    "titleDetail": "Room Detail: {{name}}",
+    "sectionBasic": "Basic Information",
+    "labelName": "Type name",
+    "labelDescription": "Description",
+    "labelMaxCapacity": "Max capacity",
+    "labelBedType": "Bed type",
+    "labelSize": "Size (m²)",
+    "labelTotalUnits": "Total units",
+    "labelStatus": "Status",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "sectionPrice": "Base Rate",
+    "labelBasePrice": "Price per night",
+    "labelCurrency": "Currency",
+    "sectionAmenities": "Amenities",
+    "labelCreatedAt": "Created at",
+    "labelUpdatedAt": "Updated at"
+  },
+  "hotelRoomCalendar": {
+    "title": "Availability & Pricing Calendar",
+    "tableColDate": "Date",
+    "tableColAvailable": "Available",
+    "tableColPrice": "Price/Night",
+    "tableColMinStay": "Min stay",
+    "tableEmpty": "No data for the selected range.",
+    "statusSoldOut": "Sold out"
+  },
+  "hotelRoomRateModal": {
+    "title": "Edit Rate and Availability",
+    "infoRoom": "Room",
+    "infoDate": "Date",
+    "labelPrice": "Price per night",
+    "labelUnits": "Available units",
+    "btnSave": "Save changes",
+    "btnCancel": "Cancel",
+    "saveSuccess": "Rate updated successfully.",
+    "saveError": "Error updating the rate."
+  },
+  "hotelRoomBulkRateModal": {
+    "title": "Add New Rates (Bulk)",
+    "labelStartDate": "Start Date",
+    "labelEndDate": "End Date",
+    "labelMinStay": "Minimum stay",
+    "labelCurrency": "Currency",
+    "btnCreate": "Create rates",
+    "conflictError": "There are already records in this range. You must edit them individually or choose another range."
   }
 }
