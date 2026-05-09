@@ -8,7 +8,6 @@ import { PATH_HOTEL_MANAGE_RATES, PATH_TRAVELERS_HOME } from "../constants/route
 import { getHotelRoomDetail, getHotelRoomCalendar, updateHotelRoomInventory, createHotelInventoryBulk } from "../services/api";
 import { formatApiUserError } from "../utils/formatApiUserError";
 import { displayNameFromEmail } from "../utils/hotelPortalFormat";
-import { getCalendarMonthBounds, MONTHS_ES } from "../utils/hotelPortalMonthRange";
 import HotelRoomCalendarTable from "../components/hotel-portal/HotelRoomCalendarTable";
 import HotelRoomRateModal from "../components/hotel-portal/HotelRoomRateModal";
 import HotelRoomBulkRateModal from "../components/hotel-portal/HotelRoomBulkRateModal";
@@ -110,23 +109,15 @@ function HotelRoomDetailPage() {
 
   const handleSaveRate = async (payload) => {
     if (!editingDay?.id) return;
-    try {
-      await updateHotelRoomInventory(editingDay.id, payload);
-      // Refresh calendar after successful save
-      await handleSearchCalendar();
-    } catch (err) {
-      throw err; // Let the modal handle the error display
-    }
+    await updateHotelRoomInventory(editingDay.id, payload);
+    // Refresh calendar after successful save
+    await handleSearchCalendar();
   };
 
   const handleSaveBulkRate = async (payload) => {
-    try {
-      await createHotelInventoryBulk(payload);
-      // Refresh calendar after successful bulk create
-      await handleSearchCalendar();
-    } catch (err) {
-      throw err; // Let the modal handle the error display
-    }
+    await createHotelInventoryBulk(payload);
+    // Refresh calendar after successful bulk create
+    await handleSearchCalendar();
   };
 
   const pagedCalendarItems = useMemo(() => {

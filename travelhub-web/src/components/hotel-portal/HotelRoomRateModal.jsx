@@ -29,7 +29,7 @@ function HotelRoomRateModal({ isOpen, onClose, roomName, dayData, onSave }) {
         price_per_night: String(pricePerNight)
       });
       onClose();
-    } catch (err) {
+    } catch {
       setError(t("hotelRoomRateModal.saveError"));
     } finally {
       setSaving(false);

@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import { pathHotelRoomDetail } from "../../constants/routes";
 
 /**
- * @param {{ rows: object[], onEdit: (id: string) => void }} props
+ * @param {{ rows: object[] }} props
  */
-function HotelManageRatesTable({ rows, onEdit }) {
+function HotelManageRatesTable({ rows }) {
   const { t } = useTranslation();
 
   return (
