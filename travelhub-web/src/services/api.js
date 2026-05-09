@@ -21,7 +21,8 @@ import {
 } from "../utils/fxFrankfurterFallback";
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_URL ||
+  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-core";
 
 const ANALYTICS_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL ||
