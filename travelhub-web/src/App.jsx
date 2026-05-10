@@ -8,10 +8,13 @@ import {
   PATH_LOGIN,
   PATH_MY_TRIPS,
   PATH_MY_TRIPS_RESERVATION,
+  PATH_CONFIRMATION,
+  PATH_PAYMENT_VOUCHER,
   PATH_TRAVELERS_HOME,
 } from "./constants/routes";
 import CheckoutPage from "./pages/CheckoutPage";
 import ConfirmationPage from "./pages/ConfirmationPage";
+import PaymentVoucherPage from "./pages/PaymentVoucherPage";
 import Home from "./pages/Home";
 import HotelDetailPage from "./pages/HotelDetailPage";
 import HotelManageReservationsPage from "./pages/HotelManageReservationsPage";
@@ -69,7 +72,8 @@ function App() {
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/hotel/:hotelId" element={<HotelDetailPage />} />
         <Route path="/checkout/:hotelId" element={<CheckoutPage />} />
-        <Route path="/confirmation" element={<ConfirmationPage />} />
+        <Route path={PATH_PAYMENT_VOUCHER} element={<PaymentVoucherPage />} />
+        <Route path={PATH_CONFIRMATION} element={<ConfirmationPage />} />
       </Routes>
       </div>
       <AppFooter />

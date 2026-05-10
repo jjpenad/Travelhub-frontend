@@ -22,11 +22,11 @@ import {
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-core";
+  "http://k8s-travelhubdev-3d982ad1bb-1625103206.us-east-2.elb.amazonaws.com/service-core";
 
 const ANALYTICS_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL ||
-  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
+  "http://k8s-travelhubdev-3d982ad1bb-1625103206.us-east-2.elb.amazonaws.com/service-soport";
 
 /**
  * Raíz para GET/POST FX. `VITE_FX_API_URL` gana si está definido; si no, y `baseUrl`

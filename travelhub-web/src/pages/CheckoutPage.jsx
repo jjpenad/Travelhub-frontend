@@ -86,8 +86,7 @@ function CheckoutPage() {
   const [guestName, setGuestName] = useState({ firstName: "", lastName: "" });
   const [guestFormValid, setGuestFormValid] = useState(false);
   const [paymentFormValid, setPaymentFormValid] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [cardNumber, setCardNumber] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutos en segundos
   const { hotelId } = useParams();
   const location = useLocation();
@@ -156,10 +155,8 @@ function CheckoutPage() {
                 onValidityChange={setGuestFormValid}
               />
               <PaymentForm
-                paymentMethod={paymentMethod}
-                onPaymentMethodChange={setPaymentMethod}
-                cardNumber={cardNumber}
-                onCardNumberChange={setCardNumber}
+                selectedPaymentMethod={selectedPaymentMethod}
+                onSelectedPaymentMethodChange={setSelectedPaymentMethod}
                 onValidityChange={setPaymentFormValid}
               />
             </div>
@@ -209,8 +206,7 @@ function CheckoutPage() {
                 guestEmail={guestEmail}
                 guestFormValid={guestFormValid}
                 paymentFormValid={paymentFormValid}
-                paymentMethod={paymentMethod}
-                cardNumber={cardNumber}
+                selectedPaymentMethod={selectedPaymentMethod}
                 guestFirstName={guestName.firstName}
                 guestLastName={guestName.lastName}
               />

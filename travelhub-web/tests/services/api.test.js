@@ -41,6 +41,11 @@ import {
   listTravelerReservationsForStatusPoll,
   getTravelerReservationByIdForPoll,
   getTravelerReservationsListForUI,
+  listHotelRoomsSimple,
+  getHotelRoomDetail,
+  getHotelRoomCalendar,
+  updateHotelRoomInventory,
+  createHotelInventoryBulk,
 } from "../../src/services/api";
 
 const GUEST_ID_KEY = "travelhub_guest_id";
@@ -895,6 +900,125 @@ describe("service-soport notification email", () => {
     expect(init.headers.Authorization).toBe("Bearer svc-token");
     expect(init.headers["X-Guest-Id"]).toBeUndefined();
     expect(JSON.parse(init.body)).toEqual({ email: "a@b.com", message: "hello" });
+  });
+
+  it("returns false when fetch throws (network error)", async () => {
+    vi.resetModules();
+    import.meta.env.VITE_TOKEN_SOPORT_SERVICES = "svc-token";
+    const { sendEmailNotification: sendMail } = await import("../../src/services/api");
+    globalThis.fetch.mockRejectedValueOnce(new Error("offline"));
+    await expect(sendMail({ email: "a@b.com", message: "x" })).resolves.toBe(false);
+  });
+});
+
+describe("hotel-admin API client", () => {
+  it("listHotelRoomsSimple throws 401 without JWT", async () => {
+    await expect(listHotelRoomsSimple()).rejects.toMatchObject({ status: 401 });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("listHotelRoomsSimple GETs /hotel-admin/rooms/simple when authenticated", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
+
+    await listHotelRoomsSimple();
+
+    const [url, init] = lastFetchCall();
+    expect(String(url)).toMatch(/\/hotel-admin\/rooms\/simple$/);
+    expect(init.method).toBe("GET");
+    expect(init.headers.Authorization).toBe("Bearer jwt-hotel");
+  });
+
+  it("getHotelRoomDetail throws 401 without session", async () => {
+    await expect(getHotelRoomDetail("rt1")).rejects.toMatchObject({ status: 401 });
+  });
+
+  it("getHotelRoomDetail throws 400 for blank room id", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    await expect(getHotelRoomDetail("  ")).rejects.toMatchObject({ status: 400 });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("getHotelRoomDetail GETs encoded room path", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ id: "rt1" }));
+
+    await getHotelRoomDetail("suite-deluxe");
+
+    expect(String(lastFetchCall()[0])).toMatch(/\/hotel-admin\/rooms\/suite-deluxe$/);
+  });
+
+  it("getHotelRoomCalendar throws 401 without session", async () => {
+    await expect(
+      getHotelRoomCalendar("rt1", { startDate: "2026-06-01", endDate: "2026-06-30" }),
+    ).rejects.toMatchObject({ status: 401 });
+  });
+
+  it("getHotelRoomCalendar throws 400 when dates missing", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    await expect(
+      getHotelRoomCalendar("rt1", { startDate: "", endDate: "2026-06-30" }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("getHotelRoomCalendar GETs calendar query string", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ items: [], total: 0 }));
+
+    await getHotelRoomCalendar("rt1", {
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+    });
+
+    const [url] = lastFetchCall();
+    expect(String(url)).toContain("/hotel-admin/rooms/rt1/calendar?");
+    expect(String(url)).toContain("start_date=2026-06-01");
+    expect(String(url)).toContain("end_date=2026-06-30");
+  });
+
+  it("updateHotelRoomInventory throws 401 without session", async () => {
+    await expect(updateHotelRoomInventory("inv1", { price_per_night: "100" })).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+
+  it("updateHotelRoomInventory throws 400 for blank inventory id", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    await expect(updateHotelRoomInventory("", { available_units: 2 })).rejects.toMatchObject({
+      status: 400,
+    });
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
+  it("updateHotelRoomInventory PATCHes payload", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
+
+    await updateHotelRoomInventory("inv-99", { price_per_night: "250000" });
+
+    const [url, init] = lastFetchCall();
+    expect(String(url)).toMatch(/\/hotel-admin\/inventory\/inv-99$/);
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body)).toEqual({ price_per_night: "250000" });
+  });
+
+  it("createHotelInventoryBulk throws 401 without session", async () => {
+    await expect(createHotelInventoryBulk({ hotel_id: "h1" })).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+
+  it("createHotelInventoryBulk POSTs JSON body", async () => {
+    localStorage.setItem(AUTH_TOKEN_KEY, "jwt-hotel");
+    globalThis.fetch.mockResolvedValueOnce(jsonResponse({ created: 3 }));
+
+    await createHotelInventoryBulk({ room_type_id: "r1", dates: ["2026-07-01"] });
+
+    const [url, init] = lastFetchCall();
+    expect(String(url)).toMatch(/\/hotel-admin\/inventory\/bulk$/);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ room_type_id: "r1", dates: ["2026-07-01"] });
   });
 });
 

@@ -372,33 +372,37 @@
   },
   "paymentForm": {
     "title": "Métodos de pago",
-    "methodLegend": "Método de pago",
-    "methodAria": "Método de pago",
-    "methods": {
-      "card": "Tarjeta de crédito",
-      "paypal": "PayPal",
-      "apple": "Apple Pay"
-    },
-    "cardSectionAria": "Datos de la tarjeta",
-    "cardNumber": "Número de tarjeta",
-    "cardholder": "Titular",
-    "cardholderPh": "Como figura en la tarjeta",
-    "expiry": "Fecha de expiración",
-    "cvv": "CVV",
-    "errors": {
-      "cardRequired": "Indica el número de tarjeta.",
-      "cardLength": "El número debe tener entre 13 y 19 dígitos.",
-      "cardInvalid": "Número de tarjeta no válido.",
-      "expiryIncomplete": "Indica mes y año (MM/AA).",
-      "monthInvalid": "Mes inválido (01–12).",
-      "expired": "La tarjeta está caducada.",
-      "cvvRequired": "Indica el CVV.",
-      "cvvLength": "El CVV debe tener 3 o 4 dígitos.",
-      "holderRequired": "Indica el titular de la tarjeta.",
-      "holderShort": "Nombre demasiado corto.",
-      "holderLong": "El nombre no puede superar 80 caracteres.",
-      "holderChars": "Usa solo letras y espacios."
+    "walletsIntro": "Elige una plataforma segura. No almacenamos datos de tarjeta en este paso.",
+    "wallet": {
+      "paypal": {
+        "name": "PayPal",
+        "desc": "Paga con tu saldo o tarjetas vinculadas a PayPal."
+      },
+      "apple_pay": {
+        "name": "Apple Pay",
+        "desc": "Confirmación rápida con Face ID o Touch ID."
+      },
+      "google_pay": {
+        "name": "Google Pay",
+        "desc": "Paga con tu cuenta Google de forma protegida."
+      },
+      "mercado_pago": {
+        "name": "Mercado Pago",
+        "desc": "Cuotas y medios disponibles según tu cuenta."
+      }
     }
+  },
+  "paymentVoucher": {
+    "title": "Pago confirmado",
+    "subtitle": "Tu pago se procesó correctamente. Guardamos este comprobante por si lo necesitas.",
+    "ticketAria": "Comprobante de pago",
+    "statusApproved": "Aprobado",
+    "method": "Método de pago",
+    "statusLabel": "Estado",
+    "transactionId": "ID de transacción",
+    "date": "Fecha y hora",
+    "totalPaid": "Total pagado",
+    "finishBooking": "FINALIZAR RESERVA"
   },
   "bookingSummary": {
     "hotelFallback": "Hotel",
@@ -522,6 +526,7 @@
     "downloadReceipt": "Descargar recibo",
     "qrNote": "El código QR de check-in está disponible en Detalles del viaje",
     "backHome": "Volver al inicio",
+    "exploreMoreDestinations": "Explorar más destinos",
     "emptyTitle": "Confirmación",
     "emptyLead": "No hay datos de reserva. Si acabas de completar el pago, vuelve desde el checkout.",
     "goHome": "Ir al inicio",
@@ -591,6 +596,11 @@
     "arrivalColStatus": "Estado",
     "arrivalColAction": "Acción",
     "arrivalViewMore": "Ver más",
+    "arrivalsPaginationAria": "Paginación de próximas llegadas",
+    "arrivalsPaginationPrev": "Anterior",
+    "arrivalsPaginationNext": "Siguiente",
+    "arrivalsPaginationRange": "{{from}}–{{to}} de {{total}}",
+    "arrivalsPaginationPageStatus": "(página {{current}} de {{totalPages}})",
     "chartDailyAria": "Ingresos diarios, {{count}} días",
     "chartDayAria": "Día {{day}}, {{amount}}",
     "chartDayTooltipDay": "Día {{day}}",
