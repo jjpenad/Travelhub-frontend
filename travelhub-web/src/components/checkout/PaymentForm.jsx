@@ -1,16 +1,7 @@
 import { useEffect, useId } from "react";
 import { useTranslation } from "react-i18next";
+import { WALLET_PAYMENT_METHOD_IDS } from "../../constants/paymentWalletConstants";
 import "./PaymentForm.css";
-
-/** @typedef {'paypal' | 'apple_pay' | 'google_pay' | 'mercado_pago'} WalletPaymentMethodId */
-
-/** @type {readonly WalletPaymentMethodId[]} */
-export const WALLET_PAYMENT_METHOD_IDS = Object.freeze([
-  "paypal",
-  "apple_pay",
-  "google_pay",
-  "mercado_pago",
-]);
 
 function IconPayPal({ className }) {
   return (

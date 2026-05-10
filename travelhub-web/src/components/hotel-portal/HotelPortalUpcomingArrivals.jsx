@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./HotelPortalUpcomingArrivals.css";
@@ -16,18 +16,12 @@ function badgeClass(status) {
  */
 function HotelPortalUpcomingArrivals({
   rows = [],
-  /** Cambia al filtrar por periodo (ej. mes+año) para volver a la página 1. */
-  arrivalsResetKey,
   viewAllTo,
   viewAllHref = "#",
   viewAllState,
 }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setPage(1);
-  }, [arrivalsResetKey]);
 
   const total = rows.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -37,10 +31,6 @@ function HotelPortalUpcomingArrivals({
     const start = (currentPage - 1) * PAGE_SIZE;
     return rows.slice(start, start + PAGE_SIZE);
   }, [rows, currentPage]);
-
-  useEffect(() => {
-    if (page !== currentPage) setPage(currentPage);
-  }, [page, currentPage]);
 
   const showPagination = total > PAGE_SIZE;
   const rangeFrom = total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;

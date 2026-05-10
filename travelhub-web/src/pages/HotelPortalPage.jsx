@@ -228,8 +228,8 @@ function HotelPortalPage() {
           </div>
           <div className="hotel-portal-dashboard__arrivals">
             <HotelPortalUpcomingArrivals
+              key={`${periodMonth}|${periodYear}`}
               rows={arrivalRows}
-              arrivalsResetKey={`${periodMonth}|${periodYear}`}
               viewAllTo={PATH_HOTEL_MANAGE_RESERVATIONS}
               viewAllState={{ reservations: dashboardReservations }}
             />

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
@@ -46,7 +46,7 @@ function PaymentVoucherPage() {
   const selectedPaymentMethod = state?.selectedPaymentMethod ?? null;
   const totalPrice = state?.totalPrice;
 
-  const transactionId = useRef(generateTransactionId()).current;
+  const [transactionId] = useState(() => generateTransactionId());
   const pageRootRef = useRef(null);
 
   useLayoutEffect(() => {
