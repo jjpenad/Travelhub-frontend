@@ -17,6 +17,7 @@ import {
   PATH_MY_TRIPS,
   PATH_TRAVELERS_HOME,
 } from "../../constants/routes";
+import { RESET_HOME_SEARCH_EVENT } from "../../constants/homeSearchEvents";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 import CurrencySwitcher from "../currency/CurrencySwitcher";
 import LanguageSwitcher from "../language/LanguageSwitcher";
@@ -92,7 +93,16 @@ function Navbar() {
     <header className="navbar">
       <div className="navbar__inner navbar__inner--compact">
         <div className="navbar__start">
-          <Link className="navbar__brand" to={PATH_TRAVELERS_HOME}>
+          <Link
+            className="navbar__brand"
+            to={PATH_TRAVELERS_HOME}
+            onClick={(e) => {
+              if (pathname === PATH_TRAVELERS_HOME) {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent(RESET_HOME_SEARCH_EVENT));
+              }
+            }}
+          >
             <span className="navbar__brand-container">
               <span className="navbar__logo" aria-hidden="true">
                 <img
