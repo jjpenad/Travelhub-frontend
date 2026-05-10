@@ -4,6 +4,12 @@ export const PATH_LOGIN = "/login";
 /** Home del portal de viajeros (exploración y búsqueda pública) */
 export const PATH_TRAVELERS_HOME = "/travelers";
 
+/** Comprobante simulado del procesador de pago antes del resumen de reserva */
+export const PATH_PAYMENT_VOUCHER = "/payment-voucher";
+
+/** Resumen / confirmación de reserva (post-pago) */
+export const PATH_CONFIRMATION = "/confirmation";
+
 /** Inicio / dashboard del administrador hotelero (tras login rol hotel) */
 export const PATH_HOTEL_PORTAL_HOME = "/hoteles/inicio";
 

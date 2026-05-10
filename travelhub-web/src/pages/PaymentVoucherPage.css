@@ -1,0 +1,263 @@
+/* Payment voucher — TravelHub violet palette, ticket perforations */
+
+.payment-voucher-page {
+  min-height: 100vh;
+  background: var(--page-bg);
+  font-family: var(--sans);
+}
+
+/* Enfoque programático al entrar: sin anillo (no es destino de teclado). */
+.payment-voucher-page:focus {
+  outline: none;
+}
+
+.payment-voucher-page .page-container {
+  background: var(--page-bg);
+  border-top-color: transparent;
+}
+
+.payment-voucher-page .page-container__inner {
+  background: var(--page-bg);
+}
+
+.payment-voucher {
+  box-sizing: border-box;
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: var(--page-block-y-start) 0 var(--page-block-y);
+}
+
+.payment-voucher__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.65rem;
+  margin-bottom: var(--section-gap-sm);
+}
+
+.payment-voucher__hero-icon {
+  filter: drop-shadow(0 6px 14px var(--accent-shadow-sm));
+}
+
+.payment-voucher__title {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(1.65rem, 4vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: var(--leading-display);
+  color: var(--text-h);
+}
+
+.payment-voucher__subtitle {
+  margin: 0;
+  max-width: 28rem;
+  font-size: var(--type-body-muted);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+}
+
+/* Ticket card */
+.payment-voucher__ticket {
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  background: var(--bg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.payment-voucher__ticket-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.35rem 1rem;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--accent) 9%, var(--bg)) 0%,
+    var(--bg) 55%
+  );
+}
+
+.payment-voucher__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+.payment-voucher__brand {
+  margin: 0;
+  font-size: var(--type-body-muted);
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: 0.02em;
+}
+
+/* Perforated divider (ticket tear) */
+.payment-voucher__perforation {
+  height: 14px;
+  margin: 0;
+  background-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 6px,
+    var(--page-bg) 6.5px
+  );
+  background-size: 14px 14px;
+  background-repeat: repeat-x;
+  background-position: center;
+  border-top: 1px dashed color-mix(in srgb, var(--accent) 25%, var(--border));
+  border-bottom: 1px dashed color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+
+.payment-voucher__perforation--flip {
+  transform: scaleY(-1);
+}
+
+.payment-voucher__rows {
+  margin: 0;
+  padding: 1.15rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payment-voucher__row {
+  display: grid;
+  grid-template-columns: minmax(0, 38%) minmax(0, 62%);
+  gap: 0.75rem 1rem;
+  align-items: baseline;
+}
+
+.payment-voucher__row dt {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.payment-voucher__row dd {
+  margin: 0;
+  font-size: var(--type-body);
+  font-weight: 700;
+  color: var(--text-h);
+  text-align: right;
+  word-break: break-word;
+}
+
+.payment-voucher__mono {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+
+.payment-voucher__pill {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+  font-weight: 800;
+  font-size: var(--type-body-muted);
+}
+
+.payment-voucher__total-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.35rem 1.35rem 1.5rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 6%, var(--surface)) 0%,
+    var(--surface) 100%
+  );
+  border-top: 1px solid var(--border);
+}
+
+.payment-voucher__total-label {
+  font-size: var(--type-body-muted);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.payment-voucher__total-value {
+  font-family: var(--heading);
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+.payment-voucher__finish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  margin: var(--section-gap-sm) auto 0;
+  padding: 0.95rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: var(--type-body);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--accent-shadow-sm);
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.payment-voucher__finish:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 6px 22px var(--accent-shadow-md);
+}
+
+.payment-voucher__finish:active {
+  transform: scale(0.98);
+}
+
+.payment-voucher__finish:focus-visible {
+  outline: 2px solid var(--accent-focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .payment-voucher__row {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-voucher__row dd {
+    text-align: left;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .payment-voucher__perforation {
+    background-image: radial-gradient(
+      circle at 50% 50%,
+      transparent 6px,
+      var(--page-bg) 6.5px
+    );
+  }
+}

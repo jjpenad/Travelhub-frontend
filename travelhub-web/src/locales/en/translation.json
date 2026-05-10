@@ -342,33 +342,37 @@
   },
   "paymentForm": {
     "title": "Payment methods",
-    "methodLegend": "Payment method",
-    "methodAria": "Payment method",
-    "methods": {
-      "card": "Credit card",
-      "paypal": "PayPal",
-      "apple": "Apple Pay"
-    },
-    "cardSectionAria": "Card details",
-    "cardNumber": "Card number",
-    "cardholder": "Cardholder",
-    "cardholderPh": "As shown on card",
-    "expiry": "Expiry date",
-    "cvv": "CVV",
-    "errors": {
-      "cardRequired": "Enter the card number.",
-      "cardLength": "Card number must be between 13 and 19 digits.",
-      "cardInvalid": "Card number is not valid.",
-      "expiryIncomplete": "Enter month and year (MM/YY).",
-      "monthInvalid": "Invalid month (01–12).",
-      "expired": "Card has expired.",
-      "cvvRequired": "Enter the CVV.",
-      "cvvLength": "CVV must have 3 or 4 digits.",
-      "holderRequired": "Enter the cardholder name.",
-      "holderShort": "Name is too short.",
-      "holderLong": "Name must be 80 characters or less.",
-      "holderChars": "Use only letters and spaces."
+    "walletsIntro": "Pick a secure wallet. We never collect raw card data at this step.",
+    "wallet": {
+      "paypal": {
+        "name": "PayPal",
+        "desc": "Pay with your balance or linked cards."
+      },
+      "apple_pay": {
+        "name": "Apple Pay",
+        "desc": "Fast checkout with Face ID or Touch ID."
+      },
+      "google_pay": {
+        "name": "Google Pay",
+        "desc": "Pay with your Google account, protected checkout."
+      },
+      "mercado_pago": {
+        "name": "Mercado Pago",
+        "desc": "Installments and methods available on your account."
+      }
     }
+  },
+  "paymentVoucher": {
+    "title": "Payment confirmed",
+    "subtitle": "Your payment went through. Keep this voucher for your records.",
+    "ticketAria": "Payment receipt",
+    "statusApproved": "Approved",
+    "method": "Payment method",
+    "statusLabel": "Status",
+    "transactionId": "Transaction ID",
+    "date": "Date & time",
+    "totalPaid": "Amount paid",
+    "finishBooking": "FINISH RESERVATION"
   },
   "bookingSummary": {
     "hotelFallback": "Hotel",
