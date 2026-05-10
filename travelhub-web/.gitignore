@@ -13,6 +13,8 @@ coverage
 test-results
 playwright-report
 playwright/.cache
+# Frames intermedios del GIF de documentación (el GIF final sí se versiona)
+docs/assets/gif-frames/
 
 # Variables de entorno (secretos / solo máquina local)
 .env
