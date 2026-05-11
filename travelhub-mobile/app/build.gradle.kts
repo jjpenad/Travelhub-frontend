@@ -4,6 +4,10 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlinx.kover")
+    // Procesa `app/google-services.json` y registra el FirebaseApp default
+    // al iniciar la app. Si el archivo no existe el build FALLA — por eso
+    // sólo agregar esta línea cuando `google-services.json` esté en su sitio.
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -30,6 +34,26 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // BASE_URL del backend en producción (AWS dev cluster). Si
+            // sale un cluster prod separado, sobrescribir aquí o usar
+            // un `productFlavors` por entorno.
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/\""
+            )
+        }
+        debug {
+            // En debug apuntamos al host local para que el emulador
+            // alcance al backend que corre en `localhost:8000` del
+            // dev. `10.0.2.2` es la IP loopback que el emulador Android
+            // mapea automáticamente al host. Para device físico, cambia
+            // a la IP del host en la LAN (ver `RUNNING_LOCALLY.md`).
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://10.0.2.2:8000/\""
+            )
         }
     }
     compileOptions {
@@ -42,6 +66,10 @@ android {
     }
     buildFeatures {
         compose = true
+        // Necesario para acceder a `BuildConfig.VERSION_NAME` desde el
+        // FcmTokenSync / FirebaseMessagingService (lo enviamos al backend
+        // como `app_version` al registrar el device token).
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.4.3"
@@ -135,7 +163,14 @@ kover {
                     // ContextCompat / NotificationManagerCompat / ActivityResultLauncher.
                     // Validated on device; the testable logic lives in NotificationsViewModel.
                     "com.example.travelhub.notifications.AndroidPostNotificationsPermissionGate*",
-                    "com.example.travelhub.notifications.AndroidNotificationDispatcher*"
+                    "com.example.travelhub.notifications.AndroidNotificationDispatcher*",
+                    // FCM service + helpers que tocan FirebaseMessaging directamente:
+                    // requieren Firebase initialization para correr y solo se exercise en
+                    // device. La lógica de orquestación (DeviceTokenRepositoryImpl) sí
+                    // queda dentro de Kover.
+                    "com.example.travelhub.notifications.TravelHubFirebaseMessagingService*",
+                    "com.example.travelhub.notifications.TravelHubFirebaseMessagingServiceKt*",
+                    "com.example.travelhub.notifications.FcmTokenSyncImpl*"
                 )
             }
         }
@@ -194,6 +229,15 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Firebase Cloud Messaging — la lib lincada viaja siempre; el plugin
+    // `com.google.gms.google-services` se aplica recién cuando el equipo
+    // deje un `google-services.json` real en `app/`. Sin ese archivo, FCM
+    // queda inactivo en runtime (logs de warning en LogCat) pero la app
+    // compila + corre + los tests del DeviceTokenRepository pasan, porque
+    // toda la lógica de negocio depende solo del cliente Retrofit.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Core Library Desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

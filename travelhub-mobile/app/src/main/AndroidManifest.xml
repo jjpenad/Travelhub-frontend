@@ -41,14 +41,22 @@
             </intent-filter>
         </activity>
 
-        <!-- TODO(backend): Add Firebase Cloud Messaging service for push notifications
-             <service
-                 android:name=".data.remote.TravelHubFirebaseMessagingService"
-                 android:exported="false">
-                 <intent-filter>
-                     <action android:name="com.google.firebase.MESSAGING_EVENT" />
-                 </intent-filter>
-             </service> -->
+        <!-- FCM service: recibe `onNewToken` (rotación del token) y los
+             pushes entrantes via `onMessageReceived`. Si `google-services.json`
+             no está presente en `app/`, FCM no se inicializa en runtime y este
+             service simplemente no recibe callbacks — la app sigue corriendo
+             sin push remoto, solo con notificaciones locales. -->
+        <service
+            android:name=".notifications.TravelHubFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="travelhub_general" />
     </application>
 
 </manifest>
