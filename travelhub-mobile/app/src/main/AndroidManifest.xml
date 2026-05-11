@@ -5,8 +5,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- TODO(permissions): Add POST_NOTIFICATIONS for Android 13+ (API 33+) push notifications
-         <uses-permission android:name="android.permission.POST_NOTIFICATIONS" /> -->
+    <!-- Android 13+ (API 33+) requiere permiso explícito para postear
+         notificaciones; en versiones anteriores el sistema lo concede
+         automáticamente al instalar la app. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- TODO(permissions): Add CAMERA permission if QR code scanning is needed
          <uses-permission android:name="android.permission.CAMERA" /> -->
@@ -39,14 +41,22 @@
             </intent-filter>
         </activity>
 
-        <!-- TODO(backend): Add Firebase Cloud Messaging service for push notifications
-             <service
-                 android:name=".data.remote.TravelHubFirebaseMessagingService"
-                 android:exported="false">
-                 <intent-filter>
-                     <action android:name="com.google.firebase.MESSAGING_EVENT" />
-                 </intent-filter>
-             </service> -->
+        <!-- FCM service: recibe `onNewToken` (rotación del token) y los
+             pushes entrantes via `onMessageReceived`. Si `google-services.json`
+             no está presente en `app/`, FCM no se inicializa en runtime y este
+             service simplemente no recibe callbacks — la app sigue corriendo
+             sin push remoto, solo con notificaciones locales. -->
+        <service
+            android:name=".notifications.TravelHubFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="travelhub_general" />
     </application>
 
 </manifest>
