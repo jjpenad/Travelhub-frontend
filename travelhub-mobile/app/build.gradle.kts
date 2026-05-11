@@ -4,10 +4,17 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.kapt")
     id("org.jetbrains.kotlinx.kover")
-    // Procesa `app/google-services.json` y registra el FirebaseApp default
-    // al iniciar la app. Si el archivo no existe el build FALLA — por eso
-    // sólo agregar esta línea cuando `google-services.json` esté en su sitio.
-    id("com.google.gms.google-services")
+}
+
+// El plugin google-services SÓLO se aplica si el archivo está presente en
+// `app/`. CI / máquinas sin Firebase configurado evitan así el error
+// `File google-services.json is missing` que rompería todo el build —
+// incluido lint y unit tests — antes de poder correr lo que importa.
+// Cuando un dev coloca el archivo real, el plugin se activa automáticamente
+// en el siguiente build sin cambios en el código.
+val hasGoogleServicesJson = file("google-services.json").exists()
+if (hasGoogleServicesJson) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
