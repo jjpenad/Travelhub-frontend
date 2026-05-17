@@ -5,6 +5,7 @@ import {
   PATH_HOTEL_MANAGE_RESERVATIONS,
   PATH_HOTEL_MANAGE_RATES,
   PATH_HOTEL_PORTAL_HOME,
+  PATH_HOTEL_REPORTS,
 } from "../../constants/routes";
 import { HotelPortalNavIcon } from "./HotelPortalNavIcons";
 import "./HotelPortalSidebar.css";
@@ -80,7 +81,7 @@ function HotelPortalSidebar({
         end: true,
         icon: "dashboard",
       },
-      { id: "reports", label: t("hotelPortal.nav.reports"), to: "#reportes", icon: "reports" },
+      { id: "reports", label: t("hotelPortal.nav.reports"), to: PATH_HOTEL_REPORTS, icon: "reports" },
       {
         id: "notifications",
         label: t("hotelPortal.nav.notifications"),
@@ -94,8 +95,6 @@ function HotelPortalSidebar({
         to: PATH_HOTEL_MANAGE_RESERVATIONS,
         icon: "bookings",
       },
-      { id: "rooms", label: t("hotelPortal.nav.rooms"), to: "#habitaciones", icon: "rooms" },
-      { id: "guests", label: t("hotelPortal.nav.guests"), to: "#huespedes", icon: "guests" },
     ],
     [t],
   );

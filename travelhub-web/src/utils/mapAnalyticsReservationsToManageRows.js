@@ -5,6 +5,7 @@ import {
 } from "../auth/hotelPortalCurrency";
 import { currentLocaleTag } from "./currentLocaleTag";
 import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
+import { normalizeReservationStatus } from "./reservationStatus";
 
 export const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed", "#dc2626"];
 
@@ -69,13 +70,7 @@ export function mapAnalyticsReservationsToManageRows(reservations, hotelCurrency
       : getHotelPortalCurrencyCode();
 
   const rows = reservations.map((r) => {
-    const statusRaw = String(r.status || "pending").toLowerCase();
-    const status =
-      statusRaw === "confirmed"
-        ? "confirmed"
-        : statusRaw === "cancelled"
-          ? "cancelled"
-          : "pending";
+    const status = normalizeReservationStatus(r);
     const guestName =
       (r.user_name && String(r.user_name).trim()) || i18n.t("reservationData.guestFallback");
     const id = String(r.id ?? "");

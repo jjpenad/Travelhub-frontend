@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { isTerminalReservationStatus } from "../../utils/reservationStatus";
 import "./HotelPortalUpcomingArrivals.css";
 
 const PAGE_SIZE = 10;
@@ -19,6 +20,9 @@ function HotelPortalUpcomingArrivals({
   viewAllTo,
   viewAllHref = "#",
   viewAllState,
+  actingId = null,
+  onConfirm,
+  onReject,
 }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
@@ -88,10 +92,35 @@ function HotelPortalUpcomingArrivals({
                     {r.statusLabel}
                   </span>
                 </td>
-                <td>
-                  <button type="button" className="hp-arrivals__btn hp-arrivals__btn--primary">
-                    {t("hotelPortal.arrivalViewMore")}
-                  </button>
+                <td className="hp-arrivals__cell-actions">
+                  {!isTerminalReservationStatus(r.status) ? (
+                    <div className="hp-arrivals__actions">
+                      <button
+                        type="button"
+                        className="hp-arrivals__btn hp-arrivals__btn--confirm"
+                        disabled={
+                          !r.id || actingId != null || r.status === "confirmed"
+                        }
+                        onClick={() => onConfirm?.(r.id)}
+                      >
+                        {actingId === r.id
+                          ? t("hotelPortal.arrivalActionLoading")
+                          : t("hotelPortal.arrivalConfirm")}
+                      </button>
+                      <button
+                        type="button"
+                        className="hp-arrivals__btn hp-arrivals__btn--reject"
+                        disabled={!r.id || actingId != null}
+                        onClick={() => onReject?.(r.id)}
+                      >
+                        {t("hotelPortal.arrivalReject")}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="hp-arrivals__no-action" aria-hidden="true">
+                      —
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

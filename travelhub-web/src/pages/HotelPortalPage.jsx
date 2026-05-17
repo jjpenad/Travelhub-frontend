@@ -17,9 +17,13 @@ import {
 } from "../auth/sessionAuth";
 import { PATH_HOTEL_MANAGE_RESERVATIONS, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { syncHotelPortalCurrencyFromAnalyticsDto } from "../auth/hotelPortalCurrency";
-import { getDashboardAnalytics } from "../services/api";
+import { getDashboardAnalytics, updateHotelReservationStatus } from "../services/api";
 import { formatApiUserError } from "../utils/formatApiUserError";
 import { buildDashboardViewModel } from "../utils/hotelPortalAnalyticsMap";
+import {
+  normalizeReservationStatus,
+  patchReservationStatusInList,
+} from "../utils/reservationStatus";
 import { getCalendarMonthBounds } from "../utils/hotelPortalMonthRange";
 import { displayMonthLocalized } from "../utils/displayMonthLocalized";
 import { displayNameFromEmail, welcomeNameFromEmail } from "../utils/hotelPortalFormat";
@@ -54,6 +58,7 @@ function HotelPortalPage() {
   /** JSON crudo de analíticas; el view model depende del idioma. */
   const [analyticsDto, setAnalyticsDto] = useState(null);
   const [dashboardReservations, setDashboardReservations] = useState([]);
+  const [arrivalActingId, setArrivalActingId] = useState(null);
 
   const periodRange = useMemo(
     () => getCalendarMonthBounds(periodMonth, periodYear),
@@ -118,6 +123,53 @@ function HotelPortalPage() {
       cancelled = true;
     };
   }, [navigate, periodRange, t]);
+
+  const applyReservationStatusLocally = (reservationId, status) => {
+    const normalized = normalizeReservationStatus(status);
+    setDashboardReservations((prev) =>
+      patchReservationStatusInList(prev, reservationId, normalized),
+    );
+    setAnalyticsDto((prev) => {
+      if (!prev) return prev;
+      const list = Array.isArray(prev.reservations) ? prev.reservations : [];
+      return {
+        ...prev,
+        reservations: patchReservationStatusInList(list, reservationId, normalized),
+      };
+    });
+  };
+
+  const reloadDashboardAnalytics = async () => {
+    const { startDate, endDate } = periodRange;
+    const dto = await getDashboardAnalytics({ startDate, endDate });
+    syncHotelPortalCurrencyFromAnalyticsDto(dto);
+    setAnalyticsDto(dto ?? null);
+    setDashboardReservations(Array.isArray(dto?.reservations) ? dto.reservations : []);
+    return dto;
+  };
+
+  const handleArrivalStatusChange = async (reservationId, nextStatus) => {
+    if (!reservationId || arrivalActingId) return;
+    setArrivalActingId(reservationId);
+    setError(null);
+    try {
+      const patchResult = await updateHotelReservationStatus(reservationId, nextStatus);
+      const resolvedStatus = normalizeReservationStatus(
+        patchResult?.reservation ?? patchResult ?? nextStatus,
+      );
+      applyReservationStatusLocally(reservationId, resolvedStatus);
+      await reloadDashboardAnalytics();
+      applyReservationStatusLocally(reservationId, resolvedStatus);
+    } catch (e) {
+      setError(formatApiUserError(e, "hotelPortal.arrivalStatusError"));
+      if (e?.status === 401 || e?.status === 403) {
+        clearSessionUser();
+        navigate("/login", { replace: true });
+      }
+    } finally {
+      setArrivalActingId(null);
+    }
+  };
 
   const firstName = useMemo(() => {
     void i18n.resolvedLanguage;
@@ -232,6 +284,9 @@ function HotelPortalPage() {
               rows={arrivalRows}
               viewAllTo={PATH_HOTEL_MANAGE_RESERVATIONS}
               viewAllState={{ reservations: dashboardReservations }}
+              actingId={arrivalActingId}
+              onConfirm={(id) => handleArrivalStatusChange(id, "confirmed")}
+              onReject={(id) => handleArrivalStatusChange(id, "cancelled")}
             />
           </div>
         </main>
