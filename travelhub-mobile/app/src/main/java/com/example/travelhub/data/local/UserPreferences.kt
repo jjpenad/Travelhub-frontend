@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,12 +30,48 @@ class UserPreferences @Inject constructor(
      *  the user is logged in so the same UUID is on both sides. */
     private val cachedUserId = AtomicReference<String?>(null)
 
+    /** In-memory mirror of the persisted locale tag (e.g. "es", "en", or null for
+     *  "follow system"). Read synchronously at app start so we can apply the
+     *  locale before the first activity inflates any resource. */
+    private val cachedAuthLocale = AtomicReference<String?>(null)
+
     companion object {
         private val KEY_USER_ID = stringPreferencesKey("user_id")
         private val KEY_EMAIL = stringPreferencesKey("email")
         private val KEY_FULL_NAME = stringPreferencesKey("full_name")
         private val KEY_TOKEN = stringPreferencesKey("token")
         private val KEY_PASSWORD = stringPreferencesKey("password")
+        /** Key for the user-chosen locale (BCP-47 tag) or empty for "follow system". */
+        private val KEY_AUTH_LOCALE = stringPreferencesKey("auth_locale")
+    }
+
+    /** Observable BCP-47 tag of the user-chosen locale. Empty string means
+     *  "follow system" (the default when the user has never chosen one). */
+    val authLocale: Flow<String> = dataStore.data.map { it[KEY_AUTH_LOCALE].orEmpty() }
+
+    /** Synchronous read used at process start by [LocaleManager] before any
+     *  activity inflates a resource. Returns empty string for "follow system".
+     *  If the in-memory cache hasn't been hydrated yet (very first launch
+     *  before [preload] runs), reads DataStore once on the calling thread —
+     *  acceptable cost since this is called from Application.onCreate before
+     *  any UI work. */
+    fun currentAuthLocale(): String {
+        val cached = cachedAuthLocale.get()
+        if (cached != null) return cached
+        val fromDisk = runBlocking { dataStore.data.first()[KEY_AUTH_LOCALE].orEmpty() }
+        cachedAuthLocale.compareAndSet(null, fromDisk)
+        return fromDisk
+    }
+
+    /** Persist the user-chosen locale. Pass empty string (or null) to reset to
+     *  "follow system" behavior. */
+    suspend fun saveAuthLocale(tag: String?) {
+        val normalized = tag.orEmpty()
+        cachedAuthLocale.set(normalized)
+        dataStore.edit { prefs ->
+            if (normalized.isEmpty()) prefs.remove(KEY_AUTH_LOCALE)
+            else prefs[KEY_AUTH_LOCALE] = normalized
+        }
     }
 
     val session: Flow<UserSession?> = dataStore.data.map { prefs ->
@@ -67,6 +104,7 @@ class UserPreferences @Inject constructor(
             }
             cachedToken.compareAndSet(null, token)
             cachedUserId.compareAndSet(null, prefs[KEY_USER_ID])
+            cachedAuthLocale.compareAndSet(null, prefs[KEY_AUTH_LOCALE].orEmpty())
         }
     }
 

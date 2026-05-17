@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -80,9 +82,21 @@ class SearchViewModel @Inject constructor(
     val hasMore: Boolean get() = _total.value?.let { _items.value.size < it } ?: true
 
     // ── Date helpers ────────────────────────────────────────────────────────
+    //
+    // Display-side formatting follows the locale currently applied by
+    // AppCompatDelegate (which the runtime mirrors into `Locale.getDefault()`
+    // after the activity is recreated). FormatStyle.MEDIUM matches the
+    // localisation requirement in the i18n user story — e.g. "May 1, 2026"
+    // in English, "1 may 2026" in Spanish. The API representation stays
+    // ISO-8601 (LocalDate.toString()) since the backend is locale-agnostic.
 
-    val checkInFormatted: String get() = _checkIn.value.format(DateTimeFormatter.ofPattern("MMM dd"))
-    val checkOutFormatted: String get() = _checkOut.value.format(DateTimeFormatter.ofPattern("MMM dd"))
+    private val localizedDateFormatter: DateTimeFormatter
+        get() = DateTimeFormatter
+            .ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault())
+
+    val checkInFormatted: String get() = _checkIn.value.format(localizedDateFormatter)
+    val checkOutFormatted: String get() = _checkOut.value.format(localizedDateFormatter)
     val checkInApi: String get() = _checkIn.value.toString()
     val checkOutApi: String get() = _checkOut.value.toString()
 

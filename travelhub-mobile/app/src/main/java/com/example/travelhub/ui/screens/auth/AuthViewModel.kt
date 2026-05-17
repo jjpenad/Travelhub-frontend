@@ -2,10 +2,12 @@ package com.example.travelhub.ui.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.travelhub.R
 import com.example.travelhub.data.repository.EmailAlreadyExistsException
 import com.example.travelhub.domain.model.UserSession
 import com.example.travelhub.domain.repository.AuthRepository
 import com.example.travelhub.domain.usecase.LoginUseCase
+import com.example.travelhub.ui.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,14 +19,15 @@ sealed interface LoginUiState {
     object Idle : LoginUiState
     object Loading : LoginUiState
     data class Success(val session: UserSession) : LoginUiState
-    data class Error(val message: String) : LoginUiState
+    /** [text] is resolved at render time by the screen via [UiText.asString]. */
+    data class Error(val text: UiText) : LoginUiState
 }
 
 sealed interface SignUpUiState {
     object Idle : SignUpUiState
     object Loading : SignUpUiState
     data class Success(val session: UserSession) : SignUpUiState
-    data class Error(val message: String, val emailAlreadyExists: Boolean = false) : SignUpUiState
+    data class Error(val text: UiText, val emailAlreadyExists: Boolean = false) : SignUpUiState
 }
 
 @HiltViewModel
@@ -62,7 +65,7 @@ class AuthViewModel @Inject constructor(
             val result = loginUseCase(_email.value, _password.value)
             _loginState.value = result.fold(
                 onSuccess = { LoginUiState.Success(it) },
-                onFailure = { LoginUiState.Error(it.message ?: "Login failed") }
+                onFailure = { LoginUiState.Error(UiText.fromExceptionOrFallback(it, R.string.error_login_failed)) }
             )
         }
     }
@@ -102,7 +105,7 @@ class AuthViewModel @Inject constructor(
             _firstName.value.isBlank() || _lastName.value.isBlank()
         ) {
             _signUpState.value = SignUpUiState.Error(
-                "Fill in name, email and a password of at least 6 characters"
+                UiText.of(R.string.error_signup_validation_required)
             )
             return
         }
@@ -118,7 +121,7 @@ class AuthViewModel @Inject constructor(
                 onSuccess = { SignUpUiState.Success(it) },
                 onFailure = { e ->
                     SignUpUiState.Error(
-                        message = e.message ?: "Sign up failed",
+                        text = UiText.fromExceptionOrFallback(e, R.string.error_signup_failed),
                         emailAlreadyExists = e is EmailAlreadyExistsException
                     )
                 }

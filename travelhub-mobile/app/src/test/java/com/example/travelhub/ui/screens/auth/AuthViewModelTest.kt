@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -67,7 +68,11 @@ class AuthViewModelTest {
 
         val state = viewModel.loginState.value
         assertTrue(state is LoginUiState.Error)
-        assertTrue((state as LoginUiState.Error).message == "Invalid credentials")
+        // The exception's non-blank message is preserved verbatim via
+        // UiText.DynamicString so server-rendered messages reach the UI as-is.
+        val text = (state as LoginUiState.Error).text
+        assertTrue(text is com.example.travelhub.ui.util.UiText.DynamicString)
+        assertEquals("Invalid credentials", (text as com.example.travelhub.ui.util.UiText.DynamicString).value)
     }
 
     @Test

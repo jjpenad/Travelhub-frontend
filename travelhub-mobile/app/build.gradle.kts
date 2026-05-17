@@ -58,6 +58,21 @@ android {
             isReturnDefaultValues = true
         }
     }
+
+    // i18n guardrail: any new hardcoded user-visible literal in layouts /
+    // Compose code that lint can detect must fail the build. Pairs with the
+    // strings.xml extraction policy from the i18n user story — every visible
+    // string must live under res/values*/strings.xml.
+    lint {
+        abortOnError = true
+        // HardcodedText fires on literals inside XML layouts and Compose UI
+        // (e.g. `Text("hello")`). Upgraded to error so CI rejects new offenders.
+        error += "HardcodedText"
+        // MissingTranslation fires when a string declared in values/ has no
+        // counterpart in values-en/ (or vice-versa, paired with ExtraTranslation).
+        // Keeps the two locales in lockstep automatically.
+        error += "MissingTranslation"
+    }
 }
 
 kapt {
@@ -147,6 +162,12 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.0")
+
+    // AppCompat — required by AppCompatDelegate.setApplicationLocales (per-app
+    // language API). Backports the Android 13+ locale switching to API 24+ so
+    // the runtime language selector in ProfileSettingsScreen works on every
+    // supported device.
+    implementation("androidx.appcompat:appcompat:1.6.1")
 
     // Compose
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))

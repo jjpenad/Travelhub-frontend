@@ -35,11 +35,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.ui.components.PropertyCard
 import com.example.travelhub.ui.screens.search.SearchViewModel
@@ -95,13 +97,13 @@ private fun HomeContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Good morning", style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
+                    Text(text = stringResource(R.string.home_greeting), style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
                     IconButton(onClick = onNotificationsClick) {
-                        Icon(imageVector = Icons.Filled.Notifications, contentDescription = "Notifications", tint = White)
+                        Icon(imageVector = Icons.Filled.Notifications, contentDescription = stringResource(R.string.home_notifications_cd), tint = White)
                     }
                 }
-                Text(text = "Where to next?", style = MaterialTheme.typography.headlineMedium, color = White, fontWeight = FontWeight.Bold)
-                Text(text = "Explore the world's best destinations", style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.7f))
+                Text(text = stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium, color = White, fontWeight = FontWeight.Bold)
+                Text(text = stringResource(R.string.home_subtitle), style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.7f))
             }
         }
 
@@ -117,16 +119,16 @@ private fun HomeContent(
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Filled.Search, contentDescription = "Search", tint = TextSecondary)
-                Text(text = "Search destinations, hotels...", color = TextSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 8.dp))
-                Icon(imageVector = Icons.Filled.FilterList, contentDescription = "Filter", tint = Purple)
+                Icon(imageVector = Icons.Filled.Search, contentDescription = stringResource(R.string.home_search_cd), tint = TextSecondary)
+                Text(text = stringResource(R.string.home_search_placeholder), color = TextSecondary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                Icon(imageVector = Icons.Filled.FilterList, contentDescription = stringResource(R.string.home_filter_cd), tint = Purple)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         // Featured Destinations (cities) - clicking navigates to Search with city pre-selected
-        SectionHeader(title = "Featured Destinations", onSeeAllClick = onSearchClick)
+        SectionHeader(title = stringResource(R.string.home_section_featured_destinations), onSeeAllClick = onSearchClick)
         LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             items(SearchViewModel.AVAILABLE_CITIES) { city ->
                 CityCard(city = city, onClick = { onCityClick(city) })
@@ -137,7 +139,7 @@ private fun HomeContent(
 
         // Hotels list from API
         if (hotels.isNotEmpty()) {
-            SectionHeader(title = "Hotels", onSeeAllClick = onSearchClick)
+            SectionHeader(title = stringResource(R.string.home_section_hotels), onSeeAllClick = onSearchClick)
             Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 hotels.forEach { property ->
                     PropertyCard(property = property, onClick = { onPropertyClick(property.id) })
@@ -152,12 +154,23 @@ private fun HomeContent(
     }
 }
 
+/**
+ * Resolves the localised country caption for one of the AVAILABLE_CITIES.
+ * The cities themselves are proper nouns (Bogotá, Lima, etc.) and stay as-is.
+ */
+@Composable
+private fun countryFor(city: String): String = when (city) {
+    "Bogotá" -> stringResource(R.string.country_colombia)
+    "Lima" -> stringResource(R.string.country_peru)
+    "Quito" -> stringResource(R.string.country_ecuador)
+    "Santiago" -> stringResource(R.string.country_chile)
+    "Buenos Aires" -> stringResource(R.string.country_argentina)
+    "Ciudad de México" -> stringResource(R.string.country_mexico)
+    else -> ""
+}
+
 @Composable
 private fun CityCard(city: String, onClick: () -> Unit) {
-    val countryMap = mapOf(
-        "Bogotá" to "Colombia", "Lima" to "Peru", "Quito" to "Ecuador",
-        "Santiago" to "Chile", "Buenos Aires" to "Argentina", "Ciudad de México" to "Mexico"
-    )
     val colorMap = mapOf(
         "Bogotá" to Purple, "Lima" to PurpleDark, "Quito" to PurpleLight,
         "Santiago" to Purple.copy(alpha = 0.7f), "Buenos Aires" to PurpleDark.copy(alpha = 0.8f),
@@ -188,7 +201,7 @@ private fun CityCard(city: String, onClick: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.LocationOn, null, modifier = Modifier.padding(end = 2.dp), tint = White.copy(alpha = 0.8f))
                     Text(
-                        text = countryMap[city] ?: "",
+                        text = countryFor(city),
                         color = White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -206,7 +219,7 @@ private fun SectionHeader(title: String, onSeeAllClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(text = "See all", color = Purple, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.clickable(onClick = onSeeAllClick))
+        Text(text = stringResource(R.string.home_see_all), color = Purple, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.clickable(onClick = onSeeAllClick))
     }
 }
 

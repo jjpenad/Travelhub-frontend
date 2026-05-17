@@ -1,21 +1,378 @@
 <resources>
+    <!-- Default = Spanish. English lives in values-en/strings.xml. Both files
+         must declare the same keys; the lint rule MissingTranslation enforces it. -->
     <string name="app_name">TravelHub</string>
 
-    <!-- Notifications: foundation HU. La copy refleja el contrato del
-         feature actual (permiso + notificación local de prueba). Cuando
-         se sume FCM se añadirán strings por categoría/payload. -->
+    <!-- ════════════════════════════════════════════════════════════════════
+         Common / dialogs / generic actions
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="action_back">Atrás</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_sign_in">Iniciar sesión</string>
+    <string name="action_use_different_email">Usar otro correo</string>
+    <string name="dialog_cancel">Cancelar</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Notifications (system + UI)
+         ════════════════════════════════════════════════════════════════════ -->
     <string name="notif_channel_general_name">General</string>
     <string name="notif_channel_general_desc">Confirmaciones, recordatorios y avisos.</string>
     <string name="notif_test_title">¡Funciona!</string>
     <string name="notif_test_body">Las notificaciones de TravelHub están activas.</string>
 
-    <string name="notifications_section_title">Notifications</string>
-    <string name="notifications_status_granted">Enabled</string>
-    <string name="notifications_status_denied">Blocked — enable them from system settings</string>
-    <string name="notifications_status_not_requested">Not requested yet</string>
-    <string name="notifications_status_not_applicable">This Android version does not require permission</string>
-    <string name="notifications_enable_cta">Enable</string>
-    <string name="notifications_send_test_cta">Send test notification</string>
-    <string name="notifications_test_sent_ok">Test notification sent</string>
-    <string name="notifications_test_sent_fail">Could not send: permission missing</string>
+    <string name="notifications_section_title">Notificaciones</string>
+    <string name="notifications_status_granted">Activadas</string>
+    <string name="notifications_status_denied">Bloqueadas — actívalas desde la configuración del sistema</string>
+    <string name="notifications_status_not_requested">Aún no solicitadas</string>
+    <string name="notifications_status_not_applicable">Esta versión de Android no requiere permiso</string>
+    <string name="notifications_enable_cta">Activar</string>
+    <string name="notifications_send_test_cta">Enviar notificación de prueba</string>
+    <string name="notifications_test_sent_ok">Notificación de prueba enviada</string>
+    <string name="notifications_test_sent_fail">No se pudo enviar: falta el permiso</string>
+
+    <!-- Notifications screen -->
+    <string name="notifications_screen_title">Notificaciones</string>
+    <string name="notifications_screen_back_cd">Volver</string>
+    <string name="notifications_preferences_title">Preferencias de notificación</string>
+    <string name="notifications_pref_booking_updates">Actualizaciones de reserva</string>
+    <string name="notifications_pref_checkin_reminders">Recordatorios de check-in</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Auth — Login
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="login_brand_tagline">Tu estancia perfecta, en cualquier parte del mundo</string>
+    <string name="login_welcome_title">Bienvenido de vuelta</string>
+    <string name="login_welcome_subtitle">Inicia sesión para continuar tu viaje</string>
+    <string name="login_anonymous_hint">¿Reservaste como invitado? Toca «Crear cuenta» abajo con el mismo correo — vincularemos tus reservas a la nueva cuenta.</string>
+    <string name="login_field_email_label">Correo electrónico</string>
+    <string name="login_field_email_placeholder">tu@ejemplo.com</string>
+    <string name="login_field_password_label">Contraseña</string>
+    <string name="login_field_password_placeholder">Ingresa tu contraseña</string>
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_submit">Iniciar sesión</string>
+    <string name="login_or_continue_with">— o continúa con —</string>
+    <string name="login_provider_google">Google</string>
+    <string name="login_provider_apple">Apple</string>
+    <string name="login_no_account_prompt">¿No tienes cuenta? </string>
+    <string name="login_no_account_cta">Crear cuenta</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Auth — Sign up
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="signup_back_cd">Volver</string>
+    <string name="signup_title">Crea tu cuenta</string>
+    <string name="signup_subtitle_anonymous_link">¿Ya reservaste como invitado? Crea cuenta con el mismo correo y vincularemos tus reservas automáticamente.</string>
+    <string name="signup_field_first_name_label">Nombre</string>
+    <string name="signup_field_first_name_placeholder">Juan</string>
+    <string name="signup_field_last_name_label">Apellido</string>
+    <string name="signup_field_last_name_placeholder">Pérez</string>
+    <string name="signup_field_email_label">Correo electrónico</string>
+    <string name="signup_field_email_placeholder">tu@ejemplo.com</string>
+    <string name="signup_field_password_label">Contraseña</string>
+    <string name="signup_field_password_placeholder">Mínimo 6 caracteres</string>
+    <string name="signup_password_strength_strong">Fuerte</string>
+    <string name="signup_password_strength_medium">Media</string>
+    <string name="signup_password_strength_weak">Débil</string>
+    <string name="signup_password_strength_hint">%1$s — usa 8+ caracteres, números y símbolos</string>
+    <string name="signup_submit">Crear cuenta</string>
+    <string name="signup_error_email_exists">Ese correo ya está registrado. Vuelve atrás e inicia sesión.</string>
+    <string name="signup_back_to_signin_hint">¿Ya tienes cuenta? Toca atrás para iniciar sesión.</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Home
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="home_greeting">Buenos días</string>
+    <string name="home_notifications_cd">Notificaciones</string>
+    <string name="home_title">¿A dónde vamos?</string>
+    <string name="home_subtitle">Explora los mejores destinos del mundo</string>
+    <string name="home_search_cd">Buscar</string>
+    <string name="home_search_placeholder">Busca destinos, hoteles…</string>
+    <string name="home_filter_cd">Filtrar</string>
+    <string name="home_section_featured_destinations">Destinos destacados</string>
+    <string name="home_section_hotels">Hoteles</string>
+    <string name="home_see_all">Ver todos</string>
+
+    <!-- Countries used as captions on city cards (display only). -->
+    <string name="country_colombia">Colombia</string>
+    <string name="country_peru">Perú</string>
+    <string name="country_ecuador">Ecuador</string>
+    <string name="country_chile">Chile</string>
+    <string name="country_argentina">Argentina</string>
+    <string name="country_mexico">México</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Search
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="search_title">Encuentra tu estancia</string>
+    <string name="search_subtitle">Busca hoteles, resorts y más</string>
+    <string name="search_section_destination">DESTINO</string>
+    <string name="search_city_placeholder">Selecciona una ciudad</string>
+    <string name="search_city_picker_cd">Selecciona una ciudad</string>
+    <string name="search_section_dates">CHECK-IN / CHECK-OUT</string>
+    <string name="search_checkin_label">Check-in</string>
+    <string name="search_checkout_label">Check-out</string>
+    <string name="search_section_guests_rooms">HUÉSPEDES Y HABITACIONES</string>
+    <string name="search_guests_rooms_summary">  %1$d adultos · %2$d habitación</string>
+    <string name="search_decrement_cd">Disminuir</string>
+    <string name="search_increment_cd">Aumentar</string>
+    <string name="search_submit">Buscar hoteles</string>
+
+    <!-- Sort options used by Results -->
+    <string name="sort_label">Ordenar por</string>
+    <string name="sort_options_dropdown_cd">Abrir opciones de orden</string>
+    <string name="sort_price_asc">Precio: menor a mayor</string>
+    <string name="sort_price_desc">Precio: mayor a menor</string>
+    <string name="sort_rating">Mejor calificados</string>
+    <string name="sort_popularity">Más populares</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Results
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="results_all_destinations">Todos los destinos</string>
+    <string name="results_summary_template">%1$s · %2$d huéspedes · %3$s resultados</string>
+    <string name="results_count_unknown_suffix">+</string>
+    <string name="results_empty_title">No hay hoteles disponibles</string>
+    <string name="results_empty_subtitle">Prueba con otras fechas u otra ciudad</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Property card / detail (rating + reviews)
+         ════════════════════════════════════════════════════════════════════ -->
+    <!-- The leading space is intentional: the icon (★) renders immediately
+         before this label so we pad with a hair of whitespace. %1$s is the
+         already-locale-formatted rating ("4.8" in en, "4,8" in es). -->
+    <string name="property_card_rating_value"> %1$s</string>
+    <!-- %1$s is the locale-formatted review count ("578" / "1,234" / "1.234"). -->
+    <string name="property_card_reviews_template"> (%1$s reseñas)</string>
+
+    <string name="property_back_cd">Volver</string>
+    <string name="property_favorite_cd">Favorito</string>
+    <string name="property_rating_template"> %1$s · %2$d estrellas</string>
+    <string name="property_section_about">Sobre esta estancia</string>
+    <string name="property_dates_template">%1$s → %2$s · %3$d noches</string>
+    <string name="property_section_rooms">Habitaciones disponibles</string>
+    <string name="property_no_rooms_available">No hay habitaciones disponibles para las fechas seleccionadas</string>
+    <string name="property_room_price_per_night">$%1$d / noche</string>
+    <string name="property_room_capacity">  %1$d huéspedes</string>
+    <string name="property_room_bed_type">  %1$s</string>
+    <string name="property_room_size_sqm">%1$d m²</string>
+    <string name="property_room_total">Total: $%1$d</string>
+    <string name="property_room_select_cta">Elegir habitación</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Booking payment
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="booking_back_cd">Volver</string>
+    <string name="booking_title">Completar reserva</string>
+    <string name="booking_summary_city_country">%1$s, %2$s</string>
+    <string name="booking_summary_dates">%1$s → %2$s · %3$d noches</string>
+    <string name="booking_summary_room">Habitación: %1$s</string>
+    <string name="booking_summary_total">Total: $%1$d %2$s</string>
+    <string name="booking_guest_info_title_authenticated">Información del huésped (desde tu cuenta)</string>
+    <string name="booking_guest_info_title_anonymous">Información del huésped</string>
+    <string name="booking_field_first_name">Nombre</string>
+    <string name="booking_field_last_name">Apellido</string>
+    <string name="booking_field_email">Correo electrónico</string>
+    <string name="booking_authenticated_profile_hint">Actualiza tu nombre o correo desde Perfil.</string>
+    <string name="booking_field_document_number">Número de documento (opcional)</string>
+    <string name="booking_field_card_number">Número de tarjeta (simulado)</string>
+    <string name="booking_create_account_title">Crear cuenta</string>
+    <string name="booking_create_account_subtitle">Lleva tus viajes entre dispositivos. Opcional.</string>
+    <string name="booking_create_account_password_label">Contraseña</string>
+    <string name="booking_create_account_password_hint">Mínimo 6 caracteres</string>
+    <string name="booking_section_price_breakdown">Desglose de precio</string>
+    <string name="booking_price_per_night_breakdown">$%1$d x %2$d noches</string>
+    <string name="booking_price_subtotal_value">$%1$d</string>
+    <string name="booking_price_total_label">Total</string>
+    <string name="booking_price_total_value">$%1$d</string>
+    <string name="booking_confirm_pay_cta">Confirmar y pagar  $%1$d</string>
+    <string name="booking_secure_payment_footer">Protegido con cifrado SSL de 256 bits.</string>
+    <string name="booking_processing">Procesando reserva…</string>
+    <string name="booking_error_title">Error</string>
+    <string name="booking_error_go_back">Volver</string>
+    <string name="booking_email_exists_dialog_title">La cuenta ya existe</string>
+    <string name="booking_email_exists_dialog_text">Ya existe una cuenta con este correo. Inicia sesión con la contraseña que ingresaste o usa un correo diferente.</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Booking confirmation
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="booking_confirmation_emoji">¡Listo!</string>
+    <string name="booking_confirmation_title">¡Reserva confirmada!</string>
+    <string name="booking_confirmation_subtitle">Tu reserva en %1$s está confirmada</string>
+    <string name="booking_confirmation_ref_template">Código de reserva: %1$s</string>
+    <string name="booking_confirmation_hotel_label">HOTEL</string>
+    <string name="booking_confirmation_hotel_value">%1$s · %2$s</string>
+    <string name="booking_confirmation_total_paid_label">TOTAL PAGADO</string>
+    <string name="booking_confirmation_total_paid_value">$%1$d USD · Visa ••4242</string>
+    <string name="booking_confirmation_view_trips_cta">Ver mis viajes</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         My Trips
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="trips_title">Mis viajes</string>
+    <string name="trips_subtitle">Tus próximas y pasadas aventuras</string>
+    <string name="trips_tab_upcoming">Próximos</string>
+    <string name="trips_tab_past">Pasados</string>
+    <string name="trips_signin_prompt_title">Inicia sesión para ver tus viajes</string>
+    <string name="trips_signin_prompt_subtitle">Las reservas hechas de forma anónima permanecen anónimas. Crea una cuenta o inicia sesión para ver tus reservas en todos tus dispositivos.</string>
+    <string name="trips_empty_upcoming_title">Aún no tienes viajes próximos</string>
+    <string name="trips_empty_upcoming_subtitle">Empieza a explorar y reserva tu próxima estancia.</string>
+    <string name="trips_empty_past_title">No hay viajes pasados</string>
+    <string name="trips_empty_past_subtitle">Los viajes pasados aparecerán aquí.</string>
+    <string name="trips_status_confirmed">Confirmada</string>
+    <string name="trips_status_pending">Pendiente</string>
+    <string name="trips_status_cancelled">Cancelada</string>
+    <string name="trips_status_completed">Completada</string>
+    <string name="trips_status_checked_in">Check-in hecho</string>
+    <string name="trips_card_dates_template">%1$s → %2$s · %3$d huéspedes</string>
+    <string name="trips_card_view_details">Ver detalles</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Trip details
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="trip_details_back_cd">Volver</string>
+    <string name="trip_details_status_template">%1$s</string>
+    <string name="trip_details_checkin_label">CHECK-IN</string>
+    <string name="trip_details_checkin_time_hint">Desde las 3:00 PM</string>
+    <string name="trip_details_checkout_label">CHECK-OUT</string>
+    <string name="trip_details_checkout_time_hint">Antes de las 11:00 AM</string>
+    <string name="trip_details_booking_ref_label">CÓDIGO DE RESERVA</string>
+    <string name="trip_details_summary_template">%1$d huéspedes · 7 noches · %2$s</string>
+    <string name="trip_details_qr_button_default">Ver código QR de check-in</string>
+    <string name="trip_details_qr_button_checked_in">Ver código QR de check-in (con check-in)</string>
+    <string name="trip_details_notifications_cta">Notificaciones y actualizaciones</string>
+    <string name="trip_details_section_contact">Contacto y políticas del hotel</string>
+    <string name="trip_details_contact_line">+30 22860 71114 · %1$s</string>
+    <string name="trip_details_amenities_line">Transfer al aeropuerto gratis · Desayuno incluido</string>
+    <string name="trip_details_free_cancellation">Cancelación gratis hasta el 12 de marzo de 2025</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         QR check-in
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="qr_back_cd">Volver</string>
+    <string name="qr_title">Check-in con QR</string>
+    <string name="qr_info_cd">Contenido del QR</string>
+    <string name="qr_status_active">Muestra este código en recepción</string>
+    <string name="qr_status_already_checked_in">Ya hiciste check-in</string>
+    <string name="qr_status_expired">QR vencido — tu estancia terminó</string>
+    <string name="qr_status_cancelled">Reserva cancelada</string>
+    <string name="qr_card_header_template">%1$s · #%2$s</string>
+    <string name="qr_card_ref_placeholder">—</string>
+    <string name="qr_image_cd">Código QR</string>
+    <string name="qr_image_inactive_cd">Código QR (inactivo)</string>
+    <string name="qr_unavailable">QR no disponible</string>
+    <string name="qr_badge_ready">Listo para escanear</string>
+    <string name="qr_badge_checked_in">Check-in hecho</string>
+    <string name="qr_badge_expired">Vencido</string>
+    <string name="qr_badge_cancelled">Cancelada</string>
+    <string name="qr_validity_template">Válido para tu estancia: %1$s → %2$s</string>
+    <string name="qr_token_expires_template">Token vence %1$s</string>
+    <string name="qr_section_checkin_time">HORA DE CHECK-IN</string>
+    <string name="qr_checkin_time_value">3:00 PM</string>
+    <string name="qr_section_room">HABITACIÓN</string>
+    <string name="qr_room_tba">Por asignar</string>
+    <string name="qr_complete_checkin_cta">Completar check-in</string>
+    <string name="qr_security_note">El QR se genera localmente y se firma con HMAC-SHA256. Contiene los ids de la reserva, hotel y sesión, además de una marca de expiración.</string>
+    <string name="qr_info_dialog_title">Contenido del QR</string>
+    <string name="qr_info_dialog_intro">Lo que se codifica en el QR (con fines de revisión):</string>
+    <string name="qr_info_dialog_reservation">ID de reserva</string>
+    <string name="qr_info_dialog_session">Sesión de invitado</string>
+    <string name="qr_info_dialog_hotel">ID de hotel</string>
+    <string name="qr_info_dialog_confirmation">Código de confirmación</string>
+    <string name="qr_info_dialog_issued_at">Emitido</string>
+    <string name="qr_info_dialog_expires_at">Vence</string>
+    <string name="qr_info_dialog_signature">Firma (Base64URL)</string>
+    <string name="qr_info_dialog_encoded_token">Token codificado</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Profile & Settings
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="profile_screen_title">Perfil y ajustes</string>
+    <string name="profile_avatar_initial">A</string>
+    <string name="profile_guest_name">Invitado</string>
+    <string name="profile_guest_browsing_title">Navegando como invitado</string>
+    <string name="profile_guest_subtitle">Inicia sesión para llevar tus viajes entre dispositivos</string>
+
+    <string name="profile_section_account">CUENTA</string>
+    <string name="profile_row_personal_information">Información personal</string>
+    <string name="profile_row_my_bookings">Mis reservas</string>
+    <string name="profile_row_payment_methods">Métodos de pago</string>
+
+    <string name="profile_section_language_region">IDIOMA Y REGIÓN</string>
+    <string name="profile_row_language">Idioma</string>
+    <string name="profile_row_currency">Moneda</string>
+    <string name="profile_row_currency_subtitle">Precios mostrados en esta moneda</string>
+    <string name="profile_currency_value_usd">USD ($)</string>
+    <string name="profile_row_region">Región</string>
+    <string name="profile_row_region_subtitle">Afecta fechas, formatos y contenido local</string>
+    <string name="profile_region_value_colombia">Colombia</string>
+
+    <string name="profile_section_preferences">PREFERENCIAS</string>
+    <string name="profile_action_logout">Cerrar sesión</string>
+
+    <string name="profile_section_guest_session">SESIÓN DE INVITADO</string>
+    <string name="profile_guest_session_id_label">ID de sesión</string>
+    <string name="profile_guest_session_id_empty">(aún no asignado)</string>
+    <string name="profile_action_reset_guest_session">Restablecer sesión de invitado</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         ViewModel / repository error fallbacks
+         ════════════════════════════════════════════════════════════════════ -->
+    <!-- Auth -->
+    <string name="error_login_failed">No se pudo iniciar sesión</string>
+    <string name="error_signup_failed">No se pudo crear la cuenta</string>
+    <string name="error_signup_validation_required">Completa nombre, correo y una contraseña de al menos 6 caracteres</string>
+
+    <!-- Booking -->
+    <string name="error_booking_no_rooms">No hay habitaciones disponibles</string>
+    <string name="error_booking_property_not_found">No se encontró la propiedad</string>
+    <string name="error_booking_create_account_failed">No se pudo crear la cuenta</string>
+    <string name="error_booking_validation_required_fields">Nombre, apellido y correo son obligatorios</string>
+    <string name="error_booking_validation_password_min_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="error_booking_no_reservation_id">La reserva se creó pero el servidor no devolvió un id</string>
+    <string name="error_booking_payment_failed">La reserva se creó pero el pago falló: %1$s</string>
+    <string name="error_booking_reservation_failed">No se pudo crear la reserva</string>
+    <string name="error_booking_signin_failed_with_email">No se pudo iniciar sesión con ese correo</string>
+
+    <!-- Check-in -->
+    <string name="error_checkin_failed">No se pudo completar el check-in</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Amenity labels (mapped from raw codes/names returned by the backend)
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="amenity_pool">Piscina</string>
+    <string name="amenity_infinity_pool">Piscina infinita</string>
+    <string name="amenity_breakfast">Desayuno</string>
+    <string name="amenity_parking">Parqueadero</string>
+    <string name="amenity_wifi">WiFi</string>
+    <string name="amenity_spa">Spa</string>
+    <string name="amenity_wine_bar">Bar de vinos</string>
+    <string name="amenity_sea_view">Vista al mar</string>
+    <string name="amenity_sunset_view">Vista al atardecer</string>
+    <string name="amenity_butler_service">Servicio de mayordomo</string>
+    <string name="amenity_restaurant">Restaurante</string>
+    <string name="amenity_bar">Bar</string>
+    <string name="amenity_laundry">Lavandería</string>
+    <string name="amenity_concierge">Conserjería</string>
+    <string name="amenity_gym">Gimnasio</string>
+    <string name="amenity_room_service">Servicio a la habitación</string>
+    <string name="amenity_yoga">Yoga</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Notification relative timestamps
+         ════════════════════════════════════════════════════════════════════ -->
+    <!-- Single-form approximations; proper plural support is a follow-up via plurals.xml. -->
+    <string name="notification_time_just_now">Ahora mismo</string>
+    <string name="notification_time_hours_ago">Hace %1$d horas</string>
+    <string name="notification_time_yesterday">Ayer</string>
+    <string name="notification_time_days_ago">Hace %1$d días</string>
+
+    <!-- Language picker dialog -->
+    <string name="language_picker_title">Selecciona idioma</string>
+    <string name="language_option_spanish">Español</string>
+    <string name="language_option_english">English</string>
+    <string name="language_option_system">Sistema</string>
+    <string name="language_value_spanish">Español</string>
+    <string name="language_value_english">English</string>
+    <string name="language_value_system">Sistema</string>
 </resources>

@@ -25,6 +25,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
@@ -41,14 +42,37 @@
             </intent-filter>
         </activity>
 
-        <!-- TODO(backend): Add Firebase Cloud Messaging service for push notifications
-             <service
-                 android:name=".data.remote.TravelHubFirebaseMessagingService"
-                 android:exported="false">
-                 <intent-filter>
-                     <action android:name="com.google.firebase.MESSAGING_EVENT" />
-                 </intent-filter>
-             </service> -->
+        <!-- FCM service: recibe `onNewToken` (rotación del token) y los
+             pushes entrantes via `onMessageReceived`. Si `google-services.json`
+             no está presente en `app/`, FCM no se inicializa en runtime y este
+             service simplemente no recibe callbacks — la app sigue corriendo
+             sin push remoto, solo con notificaciones locales. -->
+        <service
+            android:name=".notifications.TravelHubFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="travelhub_general" />
+
+        <!-- Required by AppCompatDelegate.setApplicationLocales to back-port
+             per-app language switching to API < 33 and to coordinate with the
+             system's LocaleManager on 33+. autoStoreLocales is "false" because
+             we persist the chosen tag ourselves via UserPreferences (key
+             "auth_locale") — letting AppCompat double-store would split the
+             source of truth. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="false" />
+        </service>
     </application>
 
 </manifest>

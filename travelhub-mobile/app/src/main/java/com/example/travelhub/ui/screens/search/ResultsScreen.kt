@@ -39,10 +39,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.Room
 import com.example.travelhub.domain.model.SortOption
@@ -125,16 +127,19 @@ private fun ResultsContent(
             modifier = Modifier.fillMaxWidth().background(White).padding(horizontal = 8.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back") }
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, stringResource(R.string.action_back))
+            }
             Column {
                 Text(
-                    text = if (destination.isNotBlank()) destination else "All Destinations",
+                    text = if (destination.isNotBlank()) destination else stringResource(R.string.results_all_destinations),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
-                val countLabel = totalCount?.let { "$it" } ?: "${results.size}+"
+                val countLabel = totalCount?.toString()
+                    ?: (results.size.toString() + stringResource(R.string.results_count_unknown_suffix))
                 Text(
-                    text = "$dateRange · $guests guests · $countLabel results",
+                    text = stringResource(R.string.results_summary_template, dateRange, guests, countLabel),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
@@ -161,8 +166,8 @@ private fun ResultsContent(
                 results.isEmpty() -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No hotels available", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-                            Text("Try different dates or another city", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.results_empty_title), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.results_empty_subtitle), color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
@@ -216,7 +221,7 @@ private fun SortBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Sort by",
+            text = stringResource(R.string.sort_label),
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary
         )
@@ -233,13 +238,13 @@ private fun SortBar(
                 Icon(imageVector = Icons.Filled.Sort, contentDescription = null, tint = Purple)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = selected.label,
+                    text = stringResource(selected.labelRes),
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = "Open sort options", tint = TextSecondary)
+                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = stringResource(R.string.sort_options_dropdown_cd), tint = TextSecondary)
             }
 
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -247,7 +252,7 @@ private fun SortBar(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = option.label,
+                                text = stringResource(option.labelRes),
                                 fontWeight = if (option == selected) FontWeight.SemiBold else FontWeight.Normal,
                                 color = if (option == selected) Purple else TextPrimary
                             )

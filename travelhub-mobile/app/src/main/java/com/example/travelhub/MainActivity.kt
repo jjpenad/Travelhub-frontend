@@ -1,9 +1,13 @@
 package com.example.travelhub
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
+import android.os.LocaleList
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -39,6 +43,38 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var connectivityObserver: ConnectivityObserver
     @Inject lateinit var networkErrorBus: NetworkErrorBus
     @Inject lateinit var notificationsGate: AndroidPostNotificationsPermissionGate
+
+    /**
+     * Per-app locale plumbing for a Compose / ComponentActivity setup.
+     *
+     * AppCompatDelegate.setApplicationLocales stores the user's chosen locale,
+     * but the recreate() it triggers (or that we trigger manually after the
+     * language selector) only matters if THIS activity reads the override when
+     * it rebuilds. AppCompatActivity does that automatically via its own
+     * attachBaseContext; ComponentActivity does not.
+     *
+     * We replicate the same trick here: when the framework attaches the base
+     * context, we wrap it with a Configuration that already has the chosen
+     * locale list applied. From that point on, every `getResources()` /
+     * `getString()` call (including Compose's stringResource) reads from the
+     * right values* folder.
+     *
+     * Without this override, switching the language inside the app appears to
+     * do nothing — the activity recreates but loads the system locale's
+     * resources anyway. This is the missing piece that the AndroidX docs glide
+     * over for ComponentActivity-based projects.
+     */
+    override fun attachBaseContext(newBase: Context) {
+        val locales = AppCompatDelegate.getApplicationLocales()
+        if (locales.isEmpty) {
+            super.attachBaseContext(newBase)
+            return
+        }
+        val overrideConfig = Configuration(newBase.resources.configuration).apply {
+            setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
+        }
+        super.attachBaseContext(newBase.createConfigurationContext(overrideConfig))
+    }
 
     /**
      * Launcher para `POST_NOTIFICATIONS` (Android 13+). Lo registramos
