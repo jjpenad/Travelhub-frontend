@@ -1381,3 +1381,19 @@ function mapRoomType(dto) {
     amenities: (dto.amenities || []).map(mapRoomAmenityName).filter(Boolean),
   };
 }
+
+/**
+ * GET /users/profile/
+ * Obtiene el perfil del usuario autenticado (viajero u hotel).
+ */
+export async function getUserProfile() {
+  return authFetch("/users/profile/", { method: "GET" });
+}
+
+/**
+ * POST /auth/deactivated
+ * Desactiva/elimina la cuenta del usuario actual.
+ */
+export async function deactivateUserAccount() {
+  return authFetch("/auth/deactivated", { method: "POST" });
+}

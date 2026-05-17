@@ -15,6 +15,7 @@ import {
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
   PATH_MY_TRIPS,
+  PATH_USER_PROFILE,
   PATH_TRAVELERS_HOME,
 } from "../../constants/routes";
 import { RESET_HOME_SEARCH_EVENT } from "../../constants/homeSearchEvents";
@@ -134,18 +135,32 @@ function Navbar() {
                 </Link>
               </li>
               {showMyTripsLink ? (
-                <li>
-                  <Link
-                    className={
-                      "navbar__link" +
-                      (isMyTrips ? " navbar__link--active" : "")
-                    }
-                    to={PATH_MY_TRIPS}
-                    aria-current={isMyTrips ? "page" : undefined}
-                  >
-                    {t("nav.myTrips")}
-                  </Link>
-                </li>
+                <>
+                  <li>
+                    <Link
+                      className={
+                        "navbar__link" +
+                        (isMyTrips ? " navbar__link--active" : "")
+                      }
+                      to={PATH_MY_TRIPS}
+                      aria-current={isMyTrips ? "page" : undefined}
+                    >
+                      {t("nav.myTrips")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      className={
+                        "navbar__link" +
+                        (pathname === PATH_USER_PROFILE ? " navbar__link--active" : "")
+                      }
+                      to={PATH_USER_PROFILE}
+                      aria-current={pathname === PATH_USER_PROFILE ? "page" : undefined}
+                    >
+                      {t("nav.profile")}
+                    </Link>
+                  </li>
+                </>
               ) : null}
             </ul>
           </nav>

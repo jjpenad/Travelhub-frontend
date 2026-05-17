@@ -112,6 +112,7 @@
     "mainAria": "Principal",
     "explore": "Explorar",
     "myTrips": "Mis viajes",
+    "profile": "Perfil",
     "searchDestinations": "Buscar destinos",
     "searchPlaceholder": "Buscar destinos...",
     "logout": "Cerrar sesión",
@@ -835,5 +836,27 @@
     "labelCurrency": "Divisa",
     "btnCreate": "Crear tarifas",
     "conflictError": "Ya existen registros en este rango. Debes editarlos individualmente o elegir otro rango."
+  },
+  "userProfile": {
+    "loading": "Cargando perfil...",
+    "errorTitle": "Oops, no pudimos cargar tu perfil.",
+    "roleTraveler": "Viajero",
+    "personalDataTitle": "Datos personales",
+    "labelEmail": "Email",
+    "labelPhone": "Teléfono",
+    "labelCountry": "País",
+    "labelStatus": "Estado",
+    "notSpecified": "No especificado",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "tripsSummaryTitle": "Resumen de viajes",
+    "completedTrips": "Viajes completados",
+    "pendingTrips": "Viajes pendientes",
+    "deleteAccountBtn": "Darse de baja",
+    "deleteModalTitle": "Eliminar cuenta",
+    "deleteModalWarning": "Tu cuenta será eliminada de forma permanente. Los registros de tus transacciones previas continuarán existiendo por motivos legales, pero toda tu información será completamente anonimizada.",
+    "deleteModalCheckbox": "Entiendo que esta acción es irreversible y acepto las condiciones.",
+    "deleteModalCancel": "Cerrar",
+    "deleteModalAccept": "Aceptar"
   }
 }
