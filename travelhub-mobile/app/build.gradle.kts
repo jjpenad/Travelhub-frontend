@@ -270,6 +270,15 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // Firebase Cloud Messaging — la lib lincada viaja siempre; el plugin
+    // `com.google.gms.google-services` se aplica recién cuando el equipo
+    // deje un `google-services.json` real en `app/`. Sin ese archivo, FCM
+    // queda inactivo en runtime (logs de warning en LogCat) pero la app
+    // compila + corre + los tests del DeviceTokenRepository pasan, porque
+    // toda la lógica de negocio depende solo del cliente Retrofit.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
     // Core Library Desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
