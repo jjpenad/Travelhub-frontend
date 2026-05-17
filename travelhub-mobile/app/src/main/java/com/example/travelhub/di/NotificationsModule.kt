@@ -15,7 +15,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
 /**
- * Bindings para las interfaces del paquete `notifications`. Las dejamos
+ * Bindings para las dos interfaces del paquete `notifications`. Las dejamos
  * en un módulo separado para que `AppModule` siga ocupándose sólo de
  * Retrofit/Room/DataStore y no se mezcle con plumbing de UI.
  *

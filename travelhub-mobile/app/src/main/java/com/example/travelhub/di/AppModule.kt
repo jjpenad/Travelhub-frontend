@@ -39,7 +39,9 @@ object AppModule {
 
     // BASE_URL viene de BuildConfig (`build.gradle.kts` lo define por
     // buildType: el AWS dev cluster en release, `10.0.2.2:8000` en debug
-    // — la IP loopback del host visible desde el emulador Android).
+    // — la IP loopback del host visible desde el emulador Android). Para
+    // apuntar a otra cosa, override `LOCAL_BACKEND_URL` o edita el
+    // buildConfigField del buildType `debug`.
     private val BASE_URL = com.example.travelhub.BuildConfig.BASE_URL
 
     @Provides

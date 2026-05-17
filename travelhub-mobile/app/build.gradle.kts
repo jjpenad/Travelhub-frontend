@@ -75,8 +75,7 @@ android {
         compose = true
         // Necesario para acceder a `BuildConfig.VERSION_NAME` desde el
         // FcmTokenSync / FirebaseMessagingService (lo enviamos al backend
-        // como `app_version` al registrar el device token) y `BuildConfig.BASE_URL`
-        // que AppModule usa para inicializar Retrofit.
+        // como `app_version` al registrar el device token).
         buildConfig = true
     }
     composeOptions {
