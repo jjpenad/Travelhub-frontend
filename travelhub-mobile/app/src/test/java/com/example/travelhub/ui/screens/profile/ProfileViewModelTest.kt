@@ -38,16 +38,21 @@ class ProfileViewModelTest {
     }
 
     /** Test factory: builds a ProfileViewModel with sensible mock defaults so
-     *  each test only overrides what it actually cares about. */
+     *  each test only overrides what it actually cares about.
+     *
+     *  Explicit type parameter on `mockk<T>(relaxed = true)` because Kotlin's
+     *  type inference doesn't propagate from the parameter declaration through
+     *  the chained `.also { it.X() }`; without the explicit `<T>`, `it` falls
+     *  back to `Any` and the lambdas fail to compile. */
     private fun buildViewModel(
-        store: GuestSessionStore = mockk(relaxed = true).also {
+        store: GuestSessionStore = mockk<GuestSessionStore>(relaxed = true).also {
             every { it.currentId() } returns null
             every { it.observe() } returns flowOf(null)
         },
-        authRepo: AuthRepository = mockk(relaxed = true).also {
+        authRepo: AuthRepository = mockk<AuthRepository>(relaxed = true).also {
             every { it.getSession() } returns flowOf(null)
         },
-        userPreferences: UserPreferences = mockk(relaxed = true).also {
+        userPreferences: UserPreferences = mockk<UserPreferences>(relaxed = true).also {
             every { it.currentAuthLocale() } returns ""
             every { it.authLocale } returns flowOf("")
         },

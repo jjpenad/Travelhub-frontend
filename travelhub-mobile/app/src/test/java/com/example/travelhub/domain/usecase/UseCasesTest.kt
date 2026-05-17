@@ -4,6 +4,7 @@ import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.domain.model.CheckinResult
 import com.example.travelhub.domain.model.Notification
+import com.example.travelhub.domain.model.NotificationTimestamp
 import com.example.travelhub.domain.model.NotificationType
 import com.example.travelhub.domain.model.PaymentReceipt
 import com.example.travelhub.domain.model.PaymentStatus
@@ -88,7 +89,7 @@ class UseCasesTest {
     fun `GetNotificationsUseCase returns repository data`() = runTest {
         val repo = mockk<NotificationRepository>()
         val list = listOf(
-            Notification("n1", "T", "M", NotificationType.BOOKING_CONFIRMED, "now")
+            Notification("n1", "T", "M", NotificationType.BOOKING_CONFIRMED, NotificationTimestamp.JustNow)
         )
         coEvery { repo.getAll() } returns list
 
