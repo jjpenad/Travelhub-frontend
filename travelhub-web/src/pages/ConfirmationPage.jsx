@@ -1,12 +1,18 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
-import { getAuthToken } from "../auth/sessionAuth";
+import { encodeApiReservationDetailSlug } from "../bookings/bookingDetailSlug";
+import { canAccessTravelerAccountRoutes, getAuthToken } from "../auth/sessionAuth";
 import CheckoutStepper from "../components/checkout/CheckoutStepper";
 import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
-import { PATH_LOGIN, PATH_TRAVELERS_HOME } from "../constants/routes";
+import {
+  PATH_LOGIN,
+  PATH_MY_TRIPS,
+  PATH_MY_TRIPS_RESERVATION,
+  PATH_TRAVELERS_HOME,
+} from "../constants/routes";
 import { getTravelerReservationByIdForPoll } from "../services/api";
 import "./ConfirmationPage.css";
 
@@ -144,6 +150,25 @@ function ConfirmationPage() {
     Boolean(apiReservationId && String(apiReservationId).trim() !== "") &&
     Boolean(getAuthToken());
 
+  const tripDetailsLink = useMemo(() => {
+    const apiId =
+      apiReservationId != null && String(apiReservationId).trim() !== ""
+        ? String(apiReservationId).trim()
+        : "";
+    const detailPath = apiId
+      ? `${PATH_MY_TRIPS_RESERVATION}/${encodeApiReservationDetailSlug(apiId)}`
+      : PATH_MY_TRIPS;
+
+    if (canAccessTravelerAccountRoutes()) {
+      return detailPath;
+    }
+
+    return {
+      pathname: PATH_LOGIN,
+      state: { from: detailPath },
+    };
+  }, [apiReservationId]);
+
   return (
     <div className="confirmation-page">
       <Navbar />
@@ -248,9 +273,15 @@ function ConfirmationPage() {
                     <div className="confirmation-actions__buttons">
                       <Link
                         className="confirmation-actions__btn confirmation-actions__btn--secondary"
-                        to={PATH_LOGIN}
+                        to={tripDetailsLink}
                       >
                         {t("confirmation.tripDetailsOpen")}
+                      </Link>
+                      <Link
+                        className="confirmation-actions__btn confirmation-actions__btn--primary"
+                        to={PATH_TRAVELERS_EXPLORE}
+                      >
+                        {t("confirmation.exploreMoreDestinations")}
                       </Link>
                       <Link
                         className="confirmation-actions__btn confirmation-actions__btn--primary"
@@ -267,6 +298,11 @@ function ConfirmationPage() {
                   </div>
                 ) : null}
 
+                {showConfirmationTripActions ? null : (
+                  <Link className="confirmation-card__cta" to={PATH_TRAVELERS_EXPLORE}>
+                    {t("confirmation.exploreMoreDestinations")}
+                  </Link>
+                )}
                 {showConfirmationTripActions ? null : (
                   <Link className="confirmation-card__cta" to={PATH_TRAVELERS_EXPLORE}>
                     {t("confirmation.exploreMoreDestinations")}

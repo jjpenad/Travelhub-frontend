@@ -1,0 +1,63 @@
+.hp-reports-kpi {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .hp-reports-kpi {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hp-reports-kpi__card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.2rem;
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hp-reports-kpi__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hp-reports-kpi__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hp-reports-kpi__value {
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
+  font-weight: 800;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.hp-reports-kpi__trend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hp-reports-kpi__trend--up {
+  color: #16a34a;
+}
+
+.hp-reports-kpi__trend--down {
+  color: #dc2626;
+}

@@ -232,9 +232,23 @@ fun ProfileSettingsScreen(
             onSelect = { tag ->
                 profileViewModel.setLocale(tag)
                 showLanguagePicker = false
-                // setLocale applies the locale synchronously via AppCompatDelegate,
-                // so by the time recreate() runs the new resources are in effect.
-                activity?.recreate()
+                // setLocale applies the locale synchronously via AppCompatDelegate.
+                //
+                // Instead of `activity.recreate()` we do a full
+                // finish + startActivity. Reason: Samsung One UI 8 (Android 14+)
+                // is known to ignore the config change inside `recreate()` for
+                // per-app locale overrides — the activity restarts but reads
+                // the previous locale's resources anyway. Killing and re-
+                // launching the activity forces `attachBaseContext` to run
+                // against a freshly resolved Configuration, which Samsung
+                // honours. Behaviour is identical on other OEMs (Pixel, etc.)
+                // because finish→startActivity is just the textbook restart.
+                activity?.let {
+                    val intent = it.intent
+                    it.finish()
+                    it.startActivity(intent)
+                    it.overridePendingTransition(0, 0)
+                }
             }
         )
     }

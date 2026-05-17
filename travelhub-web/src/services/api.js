@@ -75,6 +75,10 @@ const HOTEL_ADMIN_ROOMS_SIMPLE_PATH =
 const RESERVATION_DETAIL_PATH =
   import.meta.env.VITE_RESERVATION_DETAIL_PATH || "/reservations";
 
+/** PATCH estado de reserva: `/reservations/{id}/status` con body `{ status }`. */
+const RESERVATION_STATUS_PATH =
+  import.meta.env.VITE_RESERVATION_STATUS_PATH || "/reservations";
+
 /**
  * Listado de reservas del viajero (OpenAPI: GET `/reservations/user` con JWT).
  * Detección in-app: transición a confirmada. Sobrescribir con
@@ -899,6 +903,51 @@ export async function getHotelReservationDetailFromApi(id) {
       throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
     }
     throw err instanceof Error ? err : new Error("No se pudo cargar el detalle de la reserva.");
+  }
+}
+
+/**
+ * PATCH …/reservations/{id}/status — actualiza el estado (`confirmed`, `cancelled`, etc.).
+ * Usado en el portal hotelero (confirmar/rechazar) y en Mis viajes (cancelar reserva).
+ * @param {string} id
+ * @param {"confirmed"|"cancelled"|"pending"|"completed"|string} status
+ */
+export async function updateHotelReservationStatus(id, status) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const rid = String(id || "").trim();
+  const nextStatus = String(status || "").trim().toLowerCase();
+  if (!rid || !nextStatus) {
+    const err = new Error("Datos de reserva o estado no válidos.");
+    err.status = 400;
+    throw err;
+  }
+  try {
+    const base = RESERVATION_STATUS_PATH.replace(/\/+$/, "");
+    const path = `${base}/${encodeURIComponent(rid)}/status`;
+    return await authFetch(path, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+  } catch (err) {
+    if (err && typeof err.status === "number") {
+      if (err.status === 401 || err.status === 403) {
+        const friendly = new Error(
+          "Tu sesión expiró o no tienes permiso para actualizar la reserva. Inicia sesión de nuevo.",
+        );
+        friendly.status = err.status;
+        throw friendly;
+      }
+      throw err;
+    }
+    if (err instanceof TypeError) {
+      throw new Error("No hay conexión o el servidor no respondió. Inténtalo más tarde.");
+    }
+    throw err instanceof Error ? err : new Error("No se pudo actualizar el estado de la reserva.");
   }
 }
 
