@@ -32,6 +32,9 @@ export function pathHotelRoomDetail(id) {
 /** Ruta histórica: redirige a {@link PATH_HOTEL_PORTAL_HOME} */
 export const PATH_HOTEL_PORTAL_LEGACY = "/portal-hoteles";
 
+/** Perfil del usuario viajero */
+export const PATH_USER_PROFILE = "/perfil";
+
 /** Reservas guardadas en el navegador del viajero */
 export const PATH_MY_TRIPS = "/mis-viajes";
 

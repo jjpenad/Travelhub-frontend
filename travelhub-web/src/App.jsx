@@ -11,6 +11,7 @@ import {
   PATH_CONFIRMATION,
   PATH_PAYMENT_VOUCHER,
   PATH_TRAVELERS_HOME,
+  PATH_USER_PROFILE,
 } from "./constants/routes";
 import CheckoutPage from "./pages/CheckoutPage";
 import ConfirmationPage from "./pages/ConfirmationPage";
@@ -27,6 +28,7 @@ import MyTripsPage from "./pages/MyTripsPage";
 import TripDetailPage from "./pages/TripDetailPage";
 import SearchResultsPage from "./pages/SearchResultsPage";
 import SignupPage from "./pages/SignupPage";
+import TravelerProfilePage from "./pages/TravelerProfilePage";
 import TravelerConfirmToastProvider from "./components/notifications/TravelerConfirmToastProvider";
 import AppFooter from "./components/layout/AppFooter";
 import { TravelerDisplayCurrencyProvider } from "./context/TravelerDisplayCurrencyContext";
@@ -55,6 +57,14 @@ function App() {
           element={
             <ProtectedTravelerRoute>
               <MyTripsPage />
+            </ProtectedTravelerRoute>
+          }
+        />
+        <Route
+          path={PATH_USER_PROFILE}
+          element={
+            <ProtectedTravelerRoute>
+              <TravelerProfilePage />
             </ProtectedTravelerRoute>
           }
         />
