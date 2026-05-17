@@ -32,6 +32,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.example.travelhub.R
@@ -234,85 +237,6 @@ fun ProfileSettingsScreen(
                 activity?.recreate()
             }
         )
-    }
-}
-
-/**
- * Bloque de notificaciones: muestra el estado del permiso y los CTAs
- * "Enable" / "Send test notification" según corresponda. Lee el estado
- * del ViewModel inyectado desde Hilt en el padre.
- */
-@Composable
-private fun NotificationsSection(viewModel: NotificationsViewModel) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    LaunchedEffect(Unit) { viewModel.refresh() }
-
-    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Filled.Notifications,
-                contentDescription = null,
-                tint = Purple,
-                modifier = Modifier.size(24.dp),
-            )
-            Text(
-                text = stringResource(R.string.notifications_section_title),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(start = 16.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = when (state.status) {
-                PostNotificationsStatus.Granted ->
-                    stringResource(R.string.notifications_status_granted)
-                PostNotificationsStatus.Denied ->
-                    stringResource(R.string.notifications_status_denied)
-                PostNotificationsStatus.NotRequested ->
-                    stringResource(R.string.notifications_status_not_requested)
-                PostNotificationsStatus.NotApplicable ->
-                    stringResource(R.string.notifications_status_not_applicable)
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-        )
-
-        when (state.lastTestResult) {
-            TestResult.Sent -> {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.notifications_test_sent_ok),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = GreenAccent,
-                )
-            }
-            TestResult.PermissionMissing -> {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(R.string.notifications_test_sent_fail),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OrangeAccent,
-                )
-            }
-            TestResult.Idle -> Unit
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (state.status == PostNotificationsStatus.NotRequested) {
-            TravelHubOutlinedButton(
-                text = stringResource(R.string.notifications_enable_cta),
-                onClick = viewModel::requestPermission,
-            )
-        } else if (state.status == PostNotificationsStatus.Granted ||
-            state.status == PostNotificationsStatus.NotApplicable
-        ) {
-            TravelHubOutlinedButton(
-                text = stringResource(R.string.notifications_send_test_cta),
-                onClick = viewModel::sendTestNotification,
-            )
-        }
     }
 }
 
