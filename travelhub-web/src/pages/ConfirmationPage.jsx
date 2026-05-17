@@ -20,6 +20,10 @@ import "./ConfirmationPage.css";
 const showConfirmationTripActions = true;
 
 const PATH_TRAVELERS_EXPLORE = `${PATH_TRAVELERS_HOME}#explore`;
+/** MVP: en `false` oculta «Ver detalles del viaje», «Explorar más destinos» (fila de acciones) y la nota del QR asociada. */
+const showConfirmationTripActions = true;
+
+const PATH_TRAVELERS_EXPLORE = `${PATH_TRAVELERS_HOME}#explore`;
 
 function IconCheckCelebration({ className }) {
   return (
@@ -282,6 +286,12 @@ function ConfirmationPage() {
                         to={PATH_TRAVELERS_EXPLORE}
                       >
                         {t("confirmation.exploreMoreDestinations")}
+                      </Link>
+                      <Link
+                        className="confirmation-actions__btn confirmation-actions__btn--primary"
+                        to={PATH_TRAVELERS_EXPLORE}
+                      >
+                        {t("confirmation.exploreMoreDestinations")}
                         <IconArrowRight className="confirmation-actions__btn-icon" />
                       </Link>
                     </div>
@@ -292,6 +302,11 @@ function ConfirmationPage() {
                   </div>
                 ) : null}
 
+                {showConfirmationTripActions ? null : (
+                  <Link className="confirmation-card__cta" to={PATH_TRAVELERS_EXPLORE}>
+                    {t("confirmation.exploreMoreDestinations")}
+                  </Link>
+                )}
                 {showConfirmationTripActions ? null : (
                   <Link className="confirmation-card__cta" to={PATH_TRAVELERS_EXPLORE}>
                     {t("confirmation.exploreMoreDestinations")}

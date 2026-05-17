@@ -113,6 +113,7 @@
     "explore": "Explorar",
     "myTrips": "Mis viajes",
     "profile": "Perfil",
+    "profile": "Perfil",
     "searchDestinations": "Buscar destinos",
     "searchPlaceholder": "Buscar destinos...",
     "logout": "Cerrar sesión",
@@ -419,6 +420,37 @@
     "date": "Fecha y hora",
     "totalPaid": "Total pagado",
     "finishBooking": "FINALIZAR RESERVA"
+    "walletsIntro": "Elige una plataforma segura. No almacenamos datos de tarjeta en este paso.",
+    "wallet": {
+      "paypal": {
+        "name": "PayPal",
+        "desc": "Paga con tu saldo o tarjetas vinculadas a PayPal."
+      },
+      "apple_pay": {
+        "name": "Apple Pay",
+        "desc": "Confirmación rápida con Face ID o Touch ID."
+      },
+      "google_pay": {
+        "name": "Google Pay",
+        "desc": "Paga con tu cuenta Google de forma protegida."
+      },
+      "mercado_pago": {
+        "name": "Mercado Pago",
+        "desc": "Cuotas y medios disponibles según tu cuenta."
+      }
+    }
+  },
+  "paymentVoucher": {
+    "title": "Pago confirmado",
+    "subtitle": "Tu pago se procesó correctamente. Guardamos este comprobante por si lo necesitas.",
+    "ticketAria": "Comprobante de pago",
+    "statusApproved": "Aprobado",
+    "method": "Método de pago",
+    "statusLabel": "Estado",
+    "transactionId": "ID de transacción",
+    "date": "Fecha y hora",
+    "totalPaid": "Total pagado",
+    "finishBooking": "FINALIZAR RESERVA"
   },
   "bookingSummary": {
     "hotelFallback": "Hotel",
@@ -543,6 +575,7 @@
     "qrNote": "El código QR de check-in está disponible en Detalles del viaje",
     "backHome": "Volver al inicio",
     "exploreMoreDestinations": "Explorar más destinos",
+    "exploreMoreDestinations": "Explorar más destinos",
     "emptyTitle": "Confirmación",
     "emptyLead": "No hay datos de reserva. Si acabas de completar el pago, vuelve desde el checkout.",
     "goHome": "Ir al inicio",
@@ -611,6 +644,12 @@
     "arrivalColArrival": "Llegada",
     "arrivalColStatus": "Estado",
     "arrivalColAction": "Acción",
+    "arrivalViewMore": "Ver más",
+    "arrivalsPaginationAria": "Paginación de próximas llegadas",
+    "arrivalsPaginationPrev": "Anterior",
+    "arrivalsPaginationNext": "Siguiente",
+    "arrivalsPaginationRange": "{{from}}–{{to}} de {{total}}",
+    "arrivalsPaginationPageStatus": "(página {{current}} de {{totalPages}})",
     "arrivalConfirm": "Confirmar",
     "arrivalReject": "Rechazar",
     "arrivalActionLoading": "…",
@@ -791,6 +830,88 @@
     "kyotoCountry": "Japón",
     "marrakechCountry": "Marruecos",
     "reykjavikCountry": "Islandia"
+  },
+  "hotelManageRates": {
+    "pageTitle": "Gestión de Tarifas",
+    "pageSubtitle": "Configura los precios y disponibilidad de tus habitaciones",
+    "tableColRoomType": "Tipo de habitación",
+    "tableColDescription": "Descripción",
+    "tableColAction": "Acciones",
+    "actionEdit": "Editar tarifa",
+    "tableEmpty": "No se encontraron tipos de habitaciones definidos."
+  },
+  "hotelRoomDetail": {
+    "backToManage": "← Volver a Tarifas",
+    "notFound": "No se encontró esta habitación o el enlace no es válido.",
+    "loading": "Cargando…",
+    "titleDetail": "Detalle de Habitación: {{name}}",
+    "sectionBasic": "Información Básica",
+    "labelName": "Nombre del tipo",
+    "labelDescription": "Descripción",
+    "labelMaxCapacity": "Capacidad máxima",
+    "labelBedType": "Tipo de cama",
+    "labelSize": "Tamaño (m²)",
+    "labelTotalUnits": "Unidades totales",
+    "labelStatus": "Estado",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "sectionPrice": "Tarifa Base",
+    "labelBasePrice": "Precio por noche",
+    "labelCurrency": "Divisa",
+    "sectionAmenities": "Amenidades",
+    "labelCreatedAt": "Creado el",
+    "labelUpdatedAt": "Actualizado el"
+  },
+  "hotelRoomCalendar": {
+    "title": "Calendario de Disponibilidad y Precios",
+    "tableColDate": "Fecha",
+    "tableColAvailable": "Disponibles",
+    "tableColPrice": "Precio/Noche",
+    "tableColMinStay": "Estancia mín.",
+    "tableEmpty": "No hay datos para el rango seleccionado.",
+    "statusSoldOut": "Agotado"
+  },
+  "hotelRoomRateModal": {
+    "title": "Editar Tarifa y Disponibilidad",
+    "infoRoom": "Habitación",
+    "infoDate": "Día",
+    "labelPrice": "Precio por noche",
+    "labelUnits": "Unidades disponibles",
+    "btnSave": "Guardar cambios",
+    "btnCancel": "Cancelar",
+    "saveSuccess": "Tarifa actualizada correctamente.",
+    "saveError": "Error al actualizar la tarifa."
+  },
+  "hotelRoomBulkRateModal": {
+    "title": "Agregar Nuevas Tarifas (Masivo)",
+    "labelStartDate": "Fecha Inicio",
+    "labelEndDate": "Fecha Fin",
+    "labelMinStay": "Estancia mínima",
+    "labelCurrency": "Divisa",
+    "btnCreate": "Crear tarifas",
+    "conflictError": "Ya existen registros en este rango. Debes editarlos individualmente o elegir otro rango."
+  },
+  "userProfile": {
+    "loading": "Cargando perfil...",
+    "errorTitle": "Oops, no pudimos cargar tu perfil.",
+    "roleTraveler": "Viajero",
+    "personalDataTitle": "Datos personales",
+    "labelEmail": "Email",
+    "labelPhone": "Teléfono",
+    "labelCountry": "País",
+    "labelStatus": "Estado",
+    "notSpecified": "No especificado",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "tripsSummaryTitle": "Resumen de viajes",
+    "completedTrips": "Viajes completados",
+    "pendingTrips": "Viajes pendientes",
+    "deleteAccountBtn": "Darse de baja",
+    "deleteModalTitle": "Eliminar cuenta",
+    "deleteModalWarning": "Tu cuenta será eliminada de forma permanente. Los registros de tus transacciones previas continuarán existiendo por motivos legales, pero toda tu información será completamente anonimizada.",
+    "deleteModalCheckbox": "Entiendo que esta acción es irreversible y acepto las condiciones.",
+    "deleteModalCancel": "Cerrar",
+    "deleteModalAccept": "Aceptar"
   },
   "hotelManageRates": {
     "pageTitle": "Gestión de Tarifas",
