@@ -95,8 +95,6 @@ function HotelPortalSidebar({
         to: PATH_HOTEL_MANAGE_RESERVATIONS,
         icon: "bookings",
       },
-      { id: "rooms", label: t("hotelPortal.nav.rooms"), to: "#habitaciones", icon: "rooms" },
-      { id: "guests", label: t("hotelPortal.nav.guests"), to: "#huespedes", icon: "guests" },
     ],
     [t],
   );

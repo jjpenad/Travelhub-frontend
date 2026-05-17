@@ -5,6 +5,11 @@ import {
 } from "../auth/hotelPortalCurrency";
 import { currentLocaleTag } from "./currentLocaleTag";
 import { formatHotelPortalMoney } from "./formatHotelPortalMoney";
+import {
+  normalizeReservationStatus,
+  reservationIdFromApiRow,
+  sortReservationsForUpcomingArrivals,
+} from "./reservationStatus";
 
 const AVATAR_TONES = ["#5b21b6", "#0d9488", "#2563eb", "#c2410c", "#7c3aed"];
 
@@ -40,7 +45,11 @@ function segmentLabelForKey(key) {
 }
 
 function statusLabelShort(statusKey) {
-  if (statusKey === "confirmed" || statusKey === "pending" || statusKey === "cancelled") {
+  if (
+    statusKey === "confirmed" ||
+    statusKey === "pending" ||
+    statusKey === "cancelled"
+  ) {
     return i18n.t(`reservationData.status.${statusKey}`);
   }
   return String(statusKey);
@@ -115,29 +124,19 @@ function mapPercentStatusToSegments(percentStatus, reservations) {
 function mapReservationsToArrivalRows(reservations) {
   const dash = i18n.t("reservationData.dash");
   const guestFb = i18n.t("reservationData.guestFallback");
-  return reservations.slice(0, 12).map((r) => {
+  return sortReservationsForUpcomingArrivals(reservations).map((r) => {
     const name = r.user_name?.trim() || guestFb;
-    const statusRaw = String(r.status || "pending").toLowerCase();
-    const statusNormalized =
-      statusRaw === "confirmed"
-        ? "confirmed"
-        : statusRaw === "cancelled"
-          ? "cancelled"
-          : "pending";
+    const id = reservationIdFromApiRow(r);
+    const statusNormalized = normalizeReservationStatus(r);
     return {
-      id: r.id,
+      id,
       guestName: name,
       guestEmail: dash,
       initials: initialsFromName(name),
-      avatarTone: AVATAR_TONES[simpleHash(String(r.id)) % AVATAR_TONES.length],
+      avatarTone: AVATAR_TONES[simpleHash(id || name) % AVATAR_TONES.length],
       room: r.room_type?.name || dash,
       arrival: formatArrivalDate(r.check_in),
-      status:
-        statusNormalized === "confirmed"
-          ? "confirmed"
-          : statusNormalized === "cancelled"
-            ? "cancelled"
-            : "pending",
+      status: statusNormalized,
       statusLabel: statusLabelShort(statusNormalized),
     };
   });
