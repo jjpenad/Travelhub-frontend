@@ -20,6 +20,10 @@ import { syncHotelPortalCurrencyFromAnalyticsDto } from "../auth/hotelPortalCurr
 import { getDashboardAnalytics, updateHotelReservationStatus } from "../services/api";
 import { formatApiUserError } from "../utils/formatApiUserError";
 import { buildDashboardViewModel } from "../utils/hotelPortalAnalyticsMap";
+import {
+  normalizeReservationStatus,
+  patchReservationStatusInList,
+} from "../utils/reservationStatus";
 import { getCalendarMonthBounds } from "../utils/hotelPortalMonthRange";
 import { displayMonthLocalized } from "../utils/displayMonthLocalized";
 import { displayNameFromEmail, welcomeNameFromEmail } from "../utils/hotelPortalFormat";
@@ -120,12 +124,28 @@ function HotelPortalPage() {
     };
   }, [navigate, periodRange, t]);
 
+  const applyReservationStatusLocally = (reservationId, status) => {
+    const normalized = normalizeReservationStatus(status);
+    setDashboardReservations((prev) =>
+      patchReservationStatusInList(prev, reservationId, normalized),
+    );
+    setAnalyticsDto((prev) => {
+      if (!prev) return prev;
+      const list = Array.isArray(prev.reservations) ? prev.reservations : [];
+      return {
+        ...prev,
+        reservations: patchReservationStatusInList(list, reservationId, normalized),
+      };
+    });
+  };
+
   const reloadDashboardAnalytics = async () => {
     const { startDate, endDate } = periodRange;
     const dto = await getDashboardAnalytics({ startDate, endDate });
     syncHotelPortalCurrencyFromAnalyticsDto(dto);
     setAnalyticsDto(dto ?? null);
     setDashboardReservations(Array.isArray(dto?.reservations) ? dto.reservations : []);
+    return dto;
   };
 
   const handleArrivalStatusChange = async (reservationId, nextStatus) => {
@@ -133,8 +153,13 @@ function HotelPortalPage() {
     setArrivalActingId(reservationId);
     setError(null);
     try {
-      await updateHotelReservationStatus(reservationId, nextStatus);
+      const patchResult = await updateHotelReservationStatus(reservationId, nextStatus);
+      const resolvedStatus = normalizeReservationStatus(
+        patchResult?.reservation ?? patchResult ?? nextStatus,
+      );
+      applyReservationStatusLocally(reservationId, resolvedStatus);
       await reloadDashboardAnalytics();
+      applyReservationStatusLocally(reservationId, resolvedStatus);
     } catch (e) {
       setError(formatApiUserError(e, "hotelPortal.arrivalStatusError"));
       if (e?.status === 401 || e?.status === 403) {

@@ -4,10 +4,23 @@
  * @returns {"pending"|"confirmed"|"cancelled"}
  */
 export function normalizeReservationStatus(raw) {
+  const nested =
+    raw && typeof raw === "object" && raw.reservation && typeof raw.reservation === "object"
+      ? raw.reservation
+      : null;
+
   const statusStr =
     typeof raw === "string"
       ? raw
-      : String(raw?.status ?? raw?.booking_status ?? raw?.state ?? "pending");
+      : String(
+          raw?.status ??
+            raw?.booking_status ??
+            raw?.state ??
+            nested?.status ??
+            nested?.booking_status ??
+            nested?.state ??
+            "pending",
+        );
 
   const s = statusStr.toLowerCase().trim();
   if (!s) return "pending";
@@ -41,6 +54,37 @@ export function isTerminalReservationStatus(status) {
  * @param {object} r
  * @returns {string}
  */
+/**
+ * Aplica un estado en la lista local de reservas (p. ej. tras confirmar/rechazar).
+ * @param {object[]} reservations
+ * @param {string} reservationId
+ * @param {string} nextStatus
+ * @returns {object[]}
+ */
+export function patchReservationStatusInList(reservations, reservationId, nextStatus) {
+  const target = String(reservationId || "").trim();
+  const statusValue = String(nextStatus || "").trim().toLowerCase();
+  if (!target || !statusValue || !Array.isArray(reservations)) return reservations;
+
+  const statusFields = {
+    status: statusValue,
+    booking_status: statusValue,
+    state: statusValue,
+  };
+
+  return reservations.map((r) => {
+    if (reservationIdFromApiRow(r) !== target) return r;
+    if (r.reservation && typeof r.reservation === "object") {
+      return {
+        ...r,
+        ...statusFields,
+        reservation: { ...r.reservation, ...statusFields },
+      };
+    }
+    return { ...r, ...statusFields };
+  });
+}
+
 export function reservationIdFromApiRow(r) {
   if (!r || typeof r !== "object") return "";
   const nested =
