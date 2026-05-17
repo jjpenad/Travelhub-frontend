@@ -420,37 +420,6 @@
     "date": "Fecha y hora",
     "totalPaid": "Total pagado",
     "finishBooking": "FINALIZAR RESERVA"
-    "walletsIntro": "Elige una plataforma segura. No almacenamos datos de tarjeta en este paso.",
-    "wallet": {
-      "paypal": {
-        "name": "PayPal",
-        "desc": "Paga con tu saldo o tarjetas vinculadas a PayPal."
-      },
-      "apple_pay": {
-        "name": "Apple Pay",
-        "desc": "Confirmación rápida con Face ID o Touch ID."
-      },
-      "google_pay": {
-        "name": "Google Pay",
-        "desc": "Paga con tu cuenta Google de forma protegida."
-      },
-      "mercado_pago": {
-        "name": "Mercado Pago",
-        "desc": "Cuotas y medios disponibles según tu cuenta."
-      }
-    }
-  },
-  "paymentVoucher": {
-    "title": "Pago confirmado",
-    "subtitle": "Tu pago se procesó correctamente. Guardamos este comprobante por si lo necesitas.",
-    "ticketAria": "Comprobante de pago",
-    "statusApproved": "Aprobado",
-    "method": "Método de pago",
-    "statusLabel": "Estado",
-    "transactionId": "ID de transacción",
-    "date": "Fecha y hora",
-    "totalPaid": "Total pagado",
-    "finishBooking": "FINALIZAR RESERVA"
   },
   "bookingSummary": {
     "hotelFallback": "Hotel",
