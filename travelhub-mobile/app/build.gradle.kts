@@ -41,26 +41,29 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // BASE_URL del backend en producción (AWS dev cluster). Si
-            // sale un cluster prod separado, sobrescribir aquí o usar
-            // un `productFlavors` por entorno.
+            // BASE_URL del backend en producción. Solo el dominio raíz —
+            // las interfaces Retrofit ya prefijan cada endpoint con
+            // `service-core/...`, así que NO incluyas ese path acá o
+            // queda duplicado (`/service-core/service-core/auth/login`).
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/\""
+                "\"https://app.travel-hub.tech/\""
             )
         }
         debug {
-            // En debug apuntamos al host local para que el emulador
-            // alcance al backend que corre en `localhost:8000` del
-            // dev. `10.0.2.2` es la IP loopback que el emulador Android
-            // mapea automáticamente al host. Para device físico, cambia
-            // a la IP del host en la LAN.
+            // Apunta al mismo cluster que release por defecto para que
+            // `installDebug` desde el emulador hable contra el backend
+            // real. Si necesitas pegarle a un service-core local, comenta
+            // la línea de abajo y descomenta la de `10.0.2.2:8000/` —
+            // `10.0.2.2` es la IP loopback que el emulador Android mapea
+            // al host. Para device físico, usa la IP del host en la LAN.
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://10.0.2.2:8000/\""
+                "\"https://app.travel-hub.tech/\""
             )
+            // buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/\"")
         }
     }
     compileOptions {
