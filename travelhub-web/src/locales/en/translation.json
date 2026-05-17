@@ -82,6 +82,7 @@
     "mainAria": "Main",
     "explore": "Explore",
     "myTrips": "My trips",
+    "profile": "Profile",
     "searchDestinations": "Search destinations",
     "searchPlaceholder": "Search destinations...",
     "logout": "Sign out",
@@ -760,5 +761,27 @@
     "labelCurrency": "Currency",
     "btnCreate": "Create rates",
     "conflictError": "There are already records in this range. You must edit them individually or choose another range."
+  },
+  "userProfile": {
+    "loading": "Loading profile...",
+    "errorTitle": "Oops, we couldn't load your profile.",
+    "roleTraveler": "Traveler",
+    "personalDataTitle": "Personal data",
+    "labelEmail": "Email",
+    "labelPhone": "Phone",
+    "labelCountry": "Country",
+    "labelStatus": "Status",
+    "notSpecified": "Not specified",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "tripsSummaryTitle": "Trips summary",
+    "completedTrips": "Completed trips",
+    "pendingTrips": "Pending trips",
+    "deleteAccountBtn": "Deactivate account",
+    "deleteModalTitle": "Delete account",
+    "deleteModalWarning": "Your account will be permanently deleted. Your previous transaction records will remain in our system for legal reasons, but all your personal information will be completely anonymized.",
+    "deleteModalCheckbox": "I understand that this action is irreversible and I accept the conditions.",
+    "deleteModalCancel": "Close",
+    "deleteModalAccept": "Accept"
   }
 }
