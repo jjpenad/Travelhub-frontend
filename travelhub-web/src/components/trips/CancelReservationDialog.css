@@ -1,0 +1,109 @@
+.cancel-res-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(2px);
+}
+
+.cancel-res-dialog {
+  width: min(100%, 26rem);
+  padding: 1.5rem 1.35rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.cancel-res-dialog__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--heading);
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: var(--leading-tight);
+}
+
+.cancel-res-dialog__message {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.cancel-res-dialog__ref {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.cancel-res-dialog__hint {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.cancel-res-dialog__error {
+  margin: 0 0 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--error);
+}
+
+.cancel-res-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.cancel-res-dialog__btn {
+  min-width: 7.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.cancel-res-dialog__btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.cancel-res-dialog__btn--keep {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: var(--accent-shadow-sm, 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+
+.cancel-res-dialog__btn--keep:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #fff;
+}
+
+.cancel-res-dialog__btn--confirm {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+  font-weight: 500;
+}
+
+.cancel-res-dialog__btn--confirm:hover:not(:disabled) {
+  background: color-mix(in srgb, #fef2f2 65%, var(--surface));
+  border-color: #fecaca;
+  color: #b91c1c;
+}

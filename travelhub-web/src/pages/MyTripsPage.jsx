@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
+import CancelReservationDialog from "../components/trips/CancelReservationDialog";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
 import {
@@ -29,7 +31,15 @@ import {
   listHotels,
   listUserReservations,
   mapUserReservationDto,
+  updateHotelReservationStatus,
 } from "../services/api";
+import { formatApiUserError } from "../utils/formatApiUserError";
+import {
+  isTerminalReservationStatus,
+  normalizeReservationStatus,
+  patchReservationStatusInList,
+  reservationIdFromApiRow,
+} from "../utils/reservationStatus";
 import {
   mockMyTripsReservations,
   USE_MOCK_MY_TRIPS,
@@ -89,15 +99,24 @@ function getTripCaption(r, past, t) {
   return t("trips.inDays", { count: days });
 }
 
-function useUpcomingPastCounts(reservations) {
+function isReservationCancelled(r) {
+  return normalizeReservationStatus(r) === "cancelled";
+}
+
+function useTripTabCounts(reservations) {
   return useMemo(() => {
     let upcoming = 0;
     let past = 0;
+    let cancelled = 0;
     for (const r of reservations) {
+      if (isReservationCancelled(r)) {
+        cancelled += 1;
+        continue;
+      }
       if (isReservationPast(r)) past += 1;
       else upcoming += 1;
     }
-    return { upcoming, past };
+    return { upcoming, past, cancelled };
   }, [reservations]);
 }
 
@@ -131,7 +150,32 @@ function StarRow({ value }) {
   );
 }
 
-function TripCard({ r, index }) {
+function reservationApiId(r) {
+  const fromRow = reservationIdFromApiRow(r);
+  if (fromRow) return fromRow;
+  const id = r?.apiReservationId ?? r?.id;
+  return id != null && String(id).trim() !== "" ? String(id).trim() : "";
+}
+
+function applyStatusOverrideToReservations(list, statusOverrides) {
+  if (!Array.isArray(list) || !statusOverrides || Object.keys(statusOverrides).length === 0) {
+    return list;
+  }
+  return list.map((r) => {
+    const id = reservationApiId(r);
+    const forced = id ? statusOverrides[id] : null;
+    if (!forced) return r;
+    return { ...r, status: forced };
+  });
+}
+
+function canOfferTripCancellation(r, past) {
+  if (past) return false;
+  if (!reservationApiId(r)) return false;
+  return !isTerminalReservationStatus(normalizeReservationStatus(r));
+}
+
+function TripCard({ r, index, showCancel, onCancelClick }) {
   const { t, i18n } = useTranslation();
   const loc = localeTagForI18n(i18n.language);
   const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
@@ -169,6 +213,8 @@ function TripCard({ r, index }) {
       : null;
   const caption = getTripCaption(r, past, t);
   const toneClass = `my-trips-card__visual--tone-${(index % 3) + 1}`;
+  const statusNorm = normalizeReservationStatus(r);
+  const isCancelled = statusNorm === "cancelled";
 
   return (
     <li className="my-trips-card">
@@ -185,8 +231,14 @@ function TripCard({ r, index }) {
         ) : (
           <div className="my-trips-card__visual-decor" aria-hidden="true" />
         )}
-        <span className="my-trips-card__badge my-trips-card__badge--ok">
-          {t("trips.confirmed")}
+        <span
+          className={
+            isCancelled
+              ? "my-trips-card__badge my-trips-card__badge--cancelled"
+              : "my-trips-card__badge my-trips-card__badge--ok"
+          }
+        >
+          {isCancelled ? t("trips.cancelled") : t("trips.confirmed")}
         </span>
         {caption ? (
           <span className="my-trips-card__visual-caption">{caption}</span>
@@ -242,6 +294,15 @@ function TripCard({ r, index }) {
               →
             </span>
           </Link>
+          {showCancel ? (
+            <button
+              type="button"
+              className="my-trips-card__btn my-trips-card__btn--danger"
+              onClick={() => onCancelClick?.(r)}
+            >
+              {t("trips.cancelReservation")}
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -254,8 +315,14 @@ function TripCard({ r, index }) {
             <StarRow value={rating} />
           </div>
         ) : null}
-        <p className="my-trips-card__note my-trips-card__note--ok">
-          {t("trips.freeCancellation")}
+        <p
+          className={
+            isCancelled
+              ? "my-trips-card__note my-trips-card__note--muted"
+              : "my-trips-card__note my-trips-card__note--ok"
+          }
+        >
+          {isCancelled ? t("trips.cancelledNote") : t("trips.freeCancellation")}
         </p>
       </aside>
     </li>
@@ -271,6 +338,14 @@ function MyTripsPage() {
   const [remoteReservations, setRemoteReservations] = useState([]);
   const [tab, setTab] = useState("upcoming");
   const [sort, setSort] = useState("checkin-asc");
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  /** Tras cancelar: muestra banner y dispara actualización visual de la card. */
+  const [cancelSuccess, setCancelSuccess] = useState(null);
+  /** Estado cancelado local hasta que el listado del API lo refleje. */
+  const [statusOverrides, setStatusOverrides] = useState({});
+  const cancelSuccessToastRef = useRef(null);
 
   /**
    * Las reservas backend son la fuente autoritativa para usuarios
@@ -286,11 +361,11 @@ function MyTripsPage() {
       (r) => !r.id || !remoteIds.has(r.id),
     );
     const base = [...remoteReservations, ...localOnly];
-    if (USE_MOCK_MY_TRIPS) {
-      return [...mockMyTripsReservations, ...base];
-    }
-    return base;
-  }, [storedReservations, remoteReservations]);
+    const merged = USE_MOCK_MY_TRIPS
+      ? [...mockMyTripsReservations, ...base]
+      : base;
+    return applyStatusOverrideToReservations(merged, statusOverrides);
+  }, [storedReservations, remoteReservations, statusOverrides]);
 
   function refresh() {
     setStoredReservations(getLocalReservations());
@@ -322,34 +397,40 @@ function MyTripsPage() {
     return () => window.removeEventListener("storage", onStorage);
   }, [navigate]);
 
-  // Trae las reservas desde el backend al montar (y cuando vuelve la
-  // pestaña al foco). Mismo contrato que el `OnResumeEffect` de Android:
-  // la sesión autenticada es la fuente de verdad. Si la red falla, los
-  // datos locales siguen visibles vía `storedReservations`.
+  const reloadReservationsFromBackend = useCallback(async () => {
+    if (!canAccessTravelerAccountRoutes()) {
+      setRemoteReservations([]);
+      return;
+    }
+    try {
+      const [hotels, page] = await Promise.all([
+        listHotels().catch(() => []),
+        listUserReservations(),
+      ]);
+      const hotelsById = new Map(hotels.map((h) => [String(h.id), h]));
+      const mapped = page.items.map((dto) => mapUserReservationDto(dto, hotelsById));
+      setRemoteReservations(mapped);
+      setStatusOverrides((prev) => {
+        const next = { ...prev };
+        for (const row of mapped) {
+          const id = reservationApiId(row);
+          if (id && normalizeReservationStatus(row) === "cancelled") {
+            delete next[id];
+          }
+        }
+        return next;
+      });
+    } catch {
+      setRemoteReservations([]);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadFromBackend() {
-      if (!canAccessTravelerAccountRoutes()) {
-        if (!cancelled) setRemoteReservations([]);
-        return;
-      }
-      try {
-        const [hotels, page] = await Promise.all([
-          listHotels().catch(() => []),
-          listUserReservations(),
-        ]);
-        if (cancelled) return;
-        const hotelsById = new Map(
-          hotels.map((h) => [String(h.id), h]),
-        );
-        const mapped = page.items.map((dto) =>
-          mapUserReservationDto(dto, hotelsById),
-        );
-        setRemoteReservations(mapped);
-      } catch {
-        if (!cancelled) setRemoteReservations([]);
-      }
+      if (cancelled) return;
+      await reloadReservationsFromBackend();
     }
 
     loadFromBackend();
@@ -366,16 +447,69 @@ function MyTripsPage() {
       window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
       window.removeEventListener("focus", onFocus);
     };
-  }, []);
+  }, [reloadReservationsFromBackend]);
 
-  const { upcoming: upcomingCount, past: pastCount } =
-    useUpcomingPastCounts(reservations);
+  const closeCancelDialog = useCallback(() => {
+    if (cancelLoading) return;
+    setCancelTarget(null);
+    setCancelError(null);
+  }, [cancelLoading]);
+
+  useEffect(() => {
+    if (!cancelSuccess) return undefined;
+    const timer = window.setTimeout(() => setCancelSuccess(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [cancelSuccess]);
+
+  useLayoutEffect(() => {
+    if (!cancelSuccess) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const focusTimer = window.setTimeout(() => {
+      cancelSuccessToastRef.current?.focus({ preventScroll: true });
+    }, 120);
+    return () => window.clearTimeout(focusTimer);
+  }, [cancelSuccess]);
+
+  const handleConfirmCancel = useCallback(async () => {
+    const rid = cancelTarget ? reservationApiId(cancelTarget) : "";
+    if (!rid || cancelLoading) return;
+    const ref =
+      cancelTarget?.reference != null ? String(cancelTarget.reference).trim() : "";
+    const hotelName =
+      cancelTarget?.hotel && typeof cancelTarget.hotel === "object"
+        ? String(cancelTarget.hotel.name || "").trim()
+        : "";
+    setCancelLoading(true);
+    setCancelError(null);
+    try {
+      await updateHotelReservationStatus(rid, "cancelled");
+      setCancelTarget(null);
+      setStatusOverrides((prev) => ({ ...prev, [rid]: "cancelled" }));
+      setRemoteReservations((prev) => patchReservationStatusInList(prev, rid, "cancelled"));
+      setCancelSuccess({ reservationId: rid, reference: ref, hotelName });
+      setTab("cancelled");
+      void reloadReservationsFromBackend();
+    } catch (e) {
+      setCancelError(formatApiUserError(e, "trips.cancelError"));
+      if (e?.status === 401 || e?.status === 403) {
+        navigate(PATH_LOGIN, { replace: true });
+      }
+    } finally {
+      setCancelLoading(false);
+    }
+  }, [cancelTarget, cancelLoading, reloadReservationsFromBackend, navigate]);
+
+  const { upcoming: upcomingCount, past: pastCount, cancelled: cancelledCount } =
+    useTripTabCounts(reservations);
 
   const filtered = useMemo(() => {
     return reservations.filter((r) => {
+      const cancelled = isReservationCancelled(r);
       const past = isReservationPast(r);
-      if (tab === "upcoming" && past) return false;
-      if (tab === "past" && !past) return false;
+      if (tab === "cancelled") return cancelled;
+      if (cancelled) return false;
+      if (tab === "upcoming") return !past;
+      if (tab === "past") return past;
       return true;
     });
   }, [reservations, tab]);
@@ -437,6 +571,21 @@ function MyTripsPage() {
                   >
                     {t("trips.past", { count: pastCount })}
                   </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === "cancelled"}
+                    className={
+                      "my-trips-tab" +
+                      (tab === "cancelled" ? " my-trips-tab--active" : "")
+                    }
+                    onClick={() => {
+                      setTab("cancelled");
+                      setSort("checkin-desc");
+                    }}
+                  >
+                    {t("trips.cancelledTab", { count: cancelledCount })}
+                  </button>
                 </div>
                 <div className="my-trips-toolbar__end">
                   <div className="my-trips-sort-wrap">
@@ -465,7 +614,19 @@ function MyTripsPage() {
                   {sorted.map((r, index) => {
                     const ref = r.reference != null ? String(r.reference) : "";
                     const key = `${ref}-${r.savedAt ?? index}`;
-                    return <TripCard key={key} r={r} index={index} />;
+                    const past = isReservationPast(r);
+                    return (
+                      <TripCard
+                        key={key}
+                        r={r}
+                        index={index}
+                        showCancel={canOfferTripCancellation(r, past)}
+                        onCancelClick={(reservation) => {
+                          setCancelError(null);
+                          setCancelTarget(reservation);
+                        }}
+                      />
+                    );
                   })}
                 </ul>
               )}
@@ -498,6 +659,55 @@ function MyTripsPage() {
           </section>
         </div>
       </PageContainer>
+      <CancelReservationDialog
+        open={cancelTarget != null}
+        hotelName={
+          cancelTarget?.hotel && typeof cancelTarget.hotel === "object"
+            ? cancelTarget.hotel.name
+            : ""
+        }
+        reference={cancelTarget?.reference != null ? String(cancelTarget.reference) : ""}
+        loading={cancelLoading}
+        error={cancelError}
+        onKeep={closeCancelDialog}
+        onConfirm={handleConfirmCancel}
+      />
+      {cancelSuccess && typeof document !== "undefined"
+        ? createPortal(
+            <div className="my-trips-success-toast-host" role="presentation">
+              <div
+                ref={cancelSuccessToastRef}
+                className="my-trips-success-toast"
+                role="status"
+                aria-live="assertive"
+                tabIndex={-1}
+              >
+                <span className="my-trips-success-toast__icon" aria-hidden="true">
+                  ✓
+                </span>
+                <p className="my-trips-success-toast__text">
+                  {cancelSuccess.hotelName
+                    ? t("trips.cancelSuccessWithHotel", {
+                        hotel: cancelSuccess.hotelName,
+                        ref: cancelSuccess.reference || "—",
+                      })
+                    : t("trips.cancelSuccess", {
+                        ref: cancelSuccess.reference || "—",
+                      })}
+                </p>
+                <button
+                  type="button"
+                  className="my-trips-success-toast__dismiss"
+                  onClick={() => setCancelSuccess(null)}
+                  aria-label={t("trips.cancelSuccessDismiss")}
+                >
+                  ×
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
