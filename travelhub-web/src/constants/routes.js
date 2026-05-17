@@ -16,6 +16,9 @@ export const PATH_HOTEL_PORTAL_HOME = "/hoteles/inicio";
 /** Listado y gestión de reservas (portal hotelero) */
 export const PATH_HOTEL_MANAGE_RESERVATIONS = "/hoteles/reservas";
 
+/** Reportes y analítica (portal hotelero) */
+export const PATH_HOTEL_REPORTS = "/hoteles/reportes";
+
 /** Gestión de tarifas y habitaciones (portal hotelero) */
 export const PATH_HOTEL_MANAGE_RATES = "/hoteles/tarifas";
 
