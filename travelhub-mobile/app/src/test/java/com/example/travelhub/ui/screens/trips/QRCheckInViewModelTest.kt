@@ -126,7 +126,11 @@ class QRCheckInViewModelTest {
 
         val s = vm.state.value
         assertEquals(BookingStatus.CONFIRMED, s.booking?.status) // unchanged
-        assertEquals("boom", s.checkinError)
+        // checkinError is now a UiText; the non-blank exception message is
+        // preserved verbatim via UiText.fromExceptionOrFallback.
+        val text = s.checkinError
+        assertTrue(text is com.example.travelhub.ui.util.UiText.DynamicString)
+        assertEquals("boom", (text as com.example.travelhub.ui.util.UiText.DynamicString).value)
         assertFalse(s.isCheckingIn)
     }
 

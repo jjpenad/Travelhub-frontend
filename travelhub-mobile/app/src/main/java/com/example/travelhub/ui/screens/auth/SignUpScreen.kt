@@ -4,14 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,12 +30,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.components.TravelHubTextField
 import com.example.travelhub.ui.theme.GreenAccent
@@ -47,6 +47,25 @@ import com.example.travelhub.ui.theme.RedAccent
 import com.example.travelhub.ui.theme.TextSecondary
 import com.example.travelhub.ui.theme.TravelHubTheme
 import com.example.travelhub.ui.theme.White
+
+/**
+ * Three-bucket classification of password strength used to drive the meter UI
+ * and the strength label text. Keep this enum (not a raw string) so the
+ * localised label can be looked up by callers via stringResource.
+ */
+private enum class PasswordStrength(val labelRes: Int, val progress: Float) {
+    NONE(0, 0f),
+    WEAK(R.string.signup_password_strength_weak, 0.33f),
+    MEDIUM(R.string.signup_password_strength_medium, 0.66f),
+    STRONG(R.string.signup_password_strength_strong, 1f)
+}
+
+private fun classifyPassword(password: String): PasswordStrength = when {
+    password.length >= 8 && password.any { it.isDigit() } && password.any { !it.isLetterOrDigit() } -> PasswordStrength.STRONG
+    password.length >= 6 -> PasswordStrength.MEDIUM
+    password.isNotEmpty() -> PasswordStrength.WEAK
+    else -> PasswordStrength.NONE
+}
 
 @Composable
 fun SignUpScreen(
@@ -93,23 +112,12 @@ private fun SignUpContent(
     onSignUp: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val passwordStrength = when {
-        password.length >= 8 && password.any { it.isDigit() } && password.any { !it.isLetterOrDigit() } -> "Strong"
-        password.length >= 6 -> "Medium"
-        password.isNotEmpty() -> "Weak"
-        else -> ""
-    }
+    val passwordStrength = classifyPassword(password)
     val strengthColor = when (passwordStrength) {
-        "Strong" -> GreenAccent
-        "Medium" -> OrangeAccent
-        "Weak" -> RedAccent
-        else -> TextSecondary
-    }
-    val strengthProgress = when (passwordStrength) {
-        "Strong" -> 1f
-        "Medium" -> 0.66f
-        "Weak" -> 0.33f
-        else -> 0f
+        PasswordStrength.STRONG -> GreenAccent
+        PasswordStrength.MEDIUM -> OrangeAccent
+        PasswordStrength.WEAK -> RedAccent
+        PasswordStrength.NONE -> TextSecondary
     }
 
     val focusManager = LocalFocusManager.current
@@ -138,16 +146,16 @@ private fun SignUpContent(
         ) {
             Column {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Filled.ArrowBack, "Back", tint = White)
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.signup_back_cd), tint = White)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Create your account",
+                    text = stringResource(R.string.signup_title),
                     fontSize = 24.sp, fontWeight = FontWeight.Bold,
                     color = White, modifier = Modifier.padding(start = 8.dp)
                 )
                 Text(
-                    text = "Already booked anonymously? Sign up with the same email and we'll link your reservations automatically.",
+                    text = stringResource(R.string.signup_subtitle_anonymous_link),
                     fontSize = 13.sp,
                     color = White.copy(alpha = 0.85f),
                     modifier = Modifier.padding(start = 8.dp, top = 6.dp, end = 8.dp)
@@ -156,14 +164,11 @@ private fun SignUpContent(
         }
 
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp)) {
-            // Stacked vertically so each field gets full width and accessibility
-            // tooling (talkback, Maestro) can find both labels reliably even on
-            // narrow screens.
             TravelHubTextField(
                 value = firstName,
                 onValueChange = onFirstNameChange,
-                label = "First name",
-                placeholder = "John",
+                label = stringResource(R.string.signup_field_first_name_label),
+                placeholder = stringResource(R.string.signup_field_first_name_placeholder),
                 leadingIcon = Icons.Filled.Person
             )
 
@@ -172,8 +177,8 @@ private fun SignUpContent(
             TravelHubTextField(
                 value = lastName,
                 onValueChange = onLastNameChange,
-                label = "Last name",
-                placeholder = "Doe",
+                label = stringResource(R.string.signup_field_last_name_label),
+                placeholder = stringResource(R.string.signup_field_last_name_placeholder),
                 leadingIcon = Icons.Filled.Person
             )
 
@@ -182,8 +187,8 @@ private fun SignUpContent(
             TravelHubTextField(
                 value = email,
                 onValueChange = onEmailChange,
-                label = "Email address",
-                placeholder = "you@example.com",
+                label = stringResource(R.string.signup_field_email_label),
+                placeholder = stringResource(R.string.signup_field_email_placeholder),
                 leadingIcon = Icons.Filled.Email,
                 keyboardType = KeyboardType.Email
             )
@@ -193,22 +198,25 @@ private fun SignUpContent(
             TravelHubTextField(
                 value = password,
                 onValueChange = onPasswordChange,
-                label = "Password",
-                placeholder = "At least 6 characters",
+                label = stringResource(R.string.signup_field_password_label),
+                placeholder = stringResource(R.string.signup_field_password_placeholder),
                 leadingIcon = Icons.Filled.Lock,
                 isPassword = true
             )
 
-            if (password.isNotEmpty()) {
+            if (password.isNotEmpty() && passwordStrength != PasswordStrength.NONE) {
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = strengthProgress,
+                    progress = passwordStrength.progress,
                     modifier = Modifier.fillMaxWidth(),
                     color = strengthColor,
                     trackColor = TextSecondary.copy(alpha = 0.2f)
                 )
                 Text(
-                    text = "$passwordStrength — use 8+ chars, numbers & symbols",
+                    text = stringResource(
+                        R.string.signup_password_strength_hint,
+                        stringResource(passwordStrength.labelRes)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = strengthColor,
                     modifier = Modifier.padding(top = 4.dp)
@@ -223,7 +231,7 @@ private fun SignUpContent(
                 }
             } else {
                 TravelHubButton(
-                    text = "Create Account",
+                    text = stringResource(R.string.signup_submit),
                     onClick = onSignUp,
                     enabled = firstName.isNotBlank() && lastName.isNotBlank() &&
                         email.isNotBlank() && password.length >= 6
@@ -233,9 +241,8 @@ private fun SignUpContent(
             if (state is SignUpUiState.Error) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = if (state.emailAlreadyExists) {
-                        "That email is already registered. Go back and sign in instead."
-                    } else state.message,
+                    text = if (state.emailAlreadyExists) stringResource(R.string.signup_error_email_exists)
+                    else state.text.asString(),
                     color = RedAccent,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -244,7 +251,7 @@ private fun SignUpContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Have an account? Tap back to sign in.",
+                text = stringResource(R.string.signup_back_to_signin_hint),
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.CenterHorizontally)

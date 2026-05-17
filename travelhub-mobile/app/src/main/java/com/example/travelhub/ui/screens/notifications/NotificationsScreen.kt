@@ -36,14 +36,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.data.mock.MockNotifications
 import com.example.travelhub.domain.model.Notification
 import com.example.travelhub.domain.model.NotificationType
+import com.example.travelhub.ui.util.label
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
@@ -71,8 +74,10 @@ private fun NotificationsContent(
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(16.dp)) {
             Column {
-                IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = White) }
-                Text(text = "Notifications", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White, modifier = Modifier.padding(start = 8.dp))
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.notifications_screen_back_cd), tint = White)
+                }
+                Text(text = stringResource(R.string.notifications_screen_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White, modifier = Modifier.padding(start = 8.dp))
             }
         }
 
@@ -80,9 +85,9 @@ private fun NotificationsContent(
             items(notifications) { notification -> NotificationCard(notification) }
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Notification Preferences", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 8.dp))
-                PreferenceRow("Booking updates", bookingUpdates) { bookingUpdates = it }
-                PreferenceRow("Check-in reminders", checkinReminders) { checkinReminders = it }
+                Text(stringResource(R.string.notifications_preferences_title), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 8.dp))
+                PreferenceRow(stringResource(R.string.notifications_pref_booking_updates), bookingUpdates) { bookingUpdates = it }
+                PreferenceRow(stringResource(R.string.notifications_pref_checkin_reminders), checkinReminders) { checkinReminders = it }
             }
         }
     }
@@ -102,9 +107,13 @@ private fun NotificationCard(notification: Notification) {
                 Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp))
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
+                // Title and message come from the backend / mock and pass through
+                // unchanged — full backend-side localisation of those is a backend
+                // concern. The timestamp IS localised here because it's a typed
+                // value (NotificationTimestamp) we can resolve.
                 Text(notification.title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyLarge)
                 Text(notification.message, style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.padding(top = 2.dp))
-                Text(notification.timestamp, style = MaterialTheme.typography.labelSmall, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
+                Text(notification.timestamp.label(), style = MaterialTheme.typography.labelSmall, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
             }
         }
     }

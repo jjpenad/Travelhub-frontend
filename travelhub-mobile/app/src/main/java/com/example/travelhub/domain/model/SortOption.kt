@@ -1,10 +1,23 @@
 package com.example.travelhub.domain.model
 
-enum class SortOption(val label: String) {
-    PRICE_ASC("Price: low to high"),
-    PRICE_DESC("Price: high to low"),
-    RATING("Top rated"),
-    POPULARITY("Most popular")
+import androidx.annotation.StringRes
+import com.example.travelhub.R
+
+/**
+ * Sort options for the search Results screen.
+ *
+ * Each option carries a `labelRes` instead of a hard-coded label so the UI can
+ * resolve it via `stringResource(option.labelRes)` and stay localised. Domain
+ * enums normally don't reference UI resources, but the alternative (mapping the
+ * enum to a String in every screen) would scatter the same `when` everywhere
+ * and is the pattern that bit us during the i18n migration. Keeping the
+ * mapping next to the enum is pragmatic and self-contained.
+ */
+enum class SortOption(@StringRes val labelRes: Int) {
+    PRICE_ASC(R.string.sort_price_asc),
+    PRICE_DESC(R.string.sort_price_desc),
+    RATING(R.string.sort_rating),
+    POPULARITY(R.string.sort_popularity)
 }
 
 fun List<Property>.applySort(sort: SortOption): List<Property> = when (sort) {

@@ -103,7 +103,14 @@ class BookingViewModelTest {
 
         val state = vm.uiState.value
         assertTrue(state is BookingUiState.Error)
-        assertEquals("Property not found", (state as BookingUiState.Error).message)
+        // "Property not found" comes from a localised string resource now — we
+        // assert on the resource id rather than a hard-coded English literal.
+        val text = (state as BookingUiState.Error).text
+        assertTrue(text is com.example.travelhub.ui.util.UiText.StringResource)
+        assertEquals(
+            com.example.travelhub.R.string.error_booking_property_not_found,
+            (text as com.example.travelhub.ui.util.UiText.StringResource).resId
+        )
     }
 
     @Test
@@ -187,7 +194,11 @@ class BookingViewModelTest {
 
         val state = vm.uiState.value
         assertTrue(state is BookingUiState.Error)
-        assertEquals("boom", (state as BookingUiState.Error).message)
+        // The repository exception's non-blank message is preserved verbatim
+        // by UiText.fromExceptionOrFallback as DynamicString.
+        val text = (state as BookingUiState.Error).text
+        assertTrue(text is com.example.travelhub.ui.util.UiText.DynamicString)
+        assertEquals("boom", (text as com.example.travelhub.ui.util.UiText.DynamicString).value)
     }
 
     @Test

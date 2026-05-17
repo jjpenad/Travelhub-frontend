@@ -63,9 +63,14 @@ class SortOptionTest {
     }
 
     @Test
-    fun `every SortOption has a non-blank label`() {
+    fun `every SortOption has a label resource`() {
+        // After the i18n migration each option carries a @StringRes id instead
+        // of a hard-coded label. The presence (non-zero) of the resource id is
+        // what we can validate in a pure-JVM unit test; the actual string
+        // content is enforced by the lint MissingTranslation rule, which fails
+        // the build if a key is missing from values-en/.
         SortOption.values().forEach { option ->
-            assert(option.label.isNotBlank()) { "Expected ${option.name} to have a label" }
+            assert(option.labelRes != 0) { "Expected ${option.name} to have a label resource" }
         }
     }
 }

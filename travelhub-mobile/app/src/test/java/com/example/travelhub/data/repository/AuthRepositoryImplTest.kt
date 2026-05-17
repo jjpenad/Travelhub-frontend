@@ -6,6 +6,7 @@ import com.example.travelhub.data.remote.dto.LoginRequestDto
 import com.example.travelhub.data.remote.dto.LoginResponseDto
 import com.example.travelhub.data.remote.dto.RegisterRequestDto
 import com.example.travelhub.data.remote.dto.RegisterResponseDto
+import com.example.travelhub.notifications.FcmTokenSync
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -23,13 +24,17 @@ class AuthRepositoryImplTest {
 
     private lateinit var authApi: AuthApi
     private lateinit var userPreferences: UserPreferences
+    private lateinit var fcmTokenSync: FcmTokenSync
     private lateinit var repo: AuthRepositoryImpl
 
     @Before
     fun setup() {
         authApi = mockk()
         userPreferences = mockk(relaxed = true)
-        repo = AuthRepositoryImpl(authApi, userPreferences)
+        // FcmTokenSync no devuelve nada útil al test (los métodos son
+        // best-effort suspend Unit). `relaxed = true` lo deja como no-op.
+        fcmTokenSync = mockk(relaxed = true)
+        repo = AuthRepositoryImpl(authApi, userPreferences, fcmTokenSync)
     }
 
     @Test

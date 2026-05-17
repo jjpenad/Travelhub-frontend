@@ -28,17 +28,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import java.time.LocalDate
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.data.mock.MockBookings
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.ui.components.OnResumeEffect
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.components.TravelHubOutlinedButton
+import com.example.travelhub.ui.util.formatLocalized
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.TextSecondary
@@ -68,10 +71,20 @@ private fun TripDetailsContent(
     onQRCheckIn: (String) -> Unit,
     onBack: () -> Unit
 ) {
+    val statusLabel = stringResource(
+        when (bk.status) {
+            BookingStatus.CONFIRMED -> R.string.trips_status_confirmed
+            BookingStatus.PENDING -> R.string.trips_status_pending
+            BookingStatus.CANCELLED -> R.string.trips_status_cancelled
+            BookingStatus.COMPLETED -> R.string.trips_status_completed
+        }
+    )
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(16.dp)) {
             Column {
-                IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = White) }
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.trip_details_back_cd), tint = White)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 8.dp)) {
                     Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
                         Text(bk.propertyName.take(2).uppercase(), color = White, fontWeight = FontWeight.Bold)
@@ -82,7 +95,7 @@ private fun TripDetailsContent(
                     }
                 }
                 Box(modifier = Modifier.padding(start = 8.dp, top = 8.dp).clip(RoundedCornerShape(6.dp)).background(GreenAccent).padding(horizontal = 12.dp, vertical = 4.dp)) {
-                    Text("${bk.status}", color = White, style = MaterialTheme.typography.labelSmall)
+                    Text(text = stringResource(R.string.trip_details_status_template, statusLabel), color = White, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -90,42 +103,57 @@ private fun TripDetailsContent(
         Column(modifier = Modifier.padding(20.dp)) {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(2.dp)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column { Text("CHECK-IN", style = MaterialTheme.typography.labelSmall, color = TextSecondary); Text("${bk.checkIn}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); Text("From 3:00 PM", style = MaterialTheme.typography.bodySmall, color = TextSecondary) }
-                    Column(horizontalAlignment = Alignment.End) { Text("CHECK-OUT", style = MaterialTheme.typography.labelSmall, color = TextSecondary); Text("${bk.checkOut}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold); Text("Before 11:00 AM", style = MaterialTheme.typography.bodySmall, color = TextSecondary) }
+                    Column {
+                        Text(stringResource(R.string.trip_details_checkin_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text(bk.checkIn.formatLocalized(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.trip_details_checkin_time_hint), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(stringResource(R.string.trip_details_checkout_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text(bk.checkOut.formatLocalized(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.trip_details_checkout_time_hint), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(2.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("BOOKING REFERENCE", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                    Text(stringResource(R.string.trip_details_booking_ref_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                     Text(bk.bookingRef, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("${bk.guests} Guests · 7 Nights · ${bk.roomType}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(
+                        text = stringResource(R.string.trip_details_summary_template, bk.guests, bk.roomType),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextSecondary
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            // Show the QR button for any reservation that's still actionable —
-            // i.e. not cancelled and not past its checkout date. The QR screen
-            // itself handles the "already checked in" / "expired" states.
+            // Show the QR button for any reservation that's still actionable.
             val canShowQr = bk.status != BookingStatus.CANCELLED &&
                 !bk.checkOut.isBefore(LocalDate.now())
             if (canShowQr) {
                 val buttonLabel = if (bk.isCheckedIn) {
-                    "View QR Check-In Code (Checked in)"
+                    stringResource(R.string.trip_details_qr_button_checked_in)
                 } else {
-                    "View QR Check-In Code"
+                    stringResource(R.string.trip_details_qr_button_default)
                 }
                 TravelHubButton(text = buttonLabel, onClick = { onQRCheckIn(bk.id) })
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            TravelHubOutlinedButton(text = "Notifications & Updates", onClick = { })
+            TravelHubOutlinedButton(text = stringResource(R.string.trip_details_notifications_cta), onClick = { })
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Hotel Contact & Policies", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-            Text("+30 22860 71114 · ${bk.propertyLocation}", style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
-            Text("Free airport transfer · Breakfast included", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-            Text("Free cancellation until Mar 12, 2025", style = MaterialTheme.typography.bodySmall, color = GreenAccent, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.trip_details_section_contact), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.trip_details_contact_line, bk.propertyLocation),
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Text(stringResource(R.string.trip_details_amenities_line), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+            Text(stringResource(R.string.trip_details_free_cancellation), style = MaterialTheme.typography.bodySmall, color = GreenAccent, modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
