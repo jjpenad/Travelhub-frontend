@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1057190894703",
+    "project_id": "travelhub-dev-13451",
+    "storage_bucket": "travelhub-dev-13451.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057190894703:android:16108091420723387f019a",
+        "android_client_info": {
+          "package_name": "com.example.travelhub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMSJqLJbFt0ryFAmNXg-rG5V3KsW6ycMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

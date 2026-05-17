@@ -25,12 +25,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.travelhub.R
 import com.example.travelhub.data.mock.MockProperties
 import com.example.travelhub.domain.model.Property
+import com.example.travelhub.ui.util.formatNumber
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.TravelHubTheme
 import com.example.travelhub.ui.theme.Purple
@@ -115,13 +118,23 @@ fun PropertyCard(
                         tint = OrangeAccent
                     )
                     Text(
-                        text = " ${property.rating}",
+                        // Ratings are decimals — formatNumber respects the
+                        // locale's decimal separator ("." in en, "," in es).
+                        text = stringResource(
+                            R.string.property_card_rating_value,
+                            formatNumber(property.rating)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold,
                         color = OrangeAccent
                     )
                     Text(
-                        text = " (${property.reviewCount} reviews)",
+                        // reviewCount can exceed 999, where the grouping
+                        // separator becomes visible ("1,234" vs "1.234").
+                        text = stringResource(
+                            R.string.property_card_reviews_template,
+                            formatNumber(property.reviewCount)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )

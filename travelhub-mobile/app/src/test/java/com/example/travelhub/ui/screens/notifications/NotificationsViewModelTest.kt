@@ -1,6 +1,7 @@
 package com.example.travelhub.ui.screens.notifications
 
 import com.example.travelhub.domain.model.Notification
+import com.example.travelhub.domain.model.NotificationTimestamp
 import com.example.travelhub.domain.model.NotificationType
 import com.example.travelhub.domain.usecase.GetNotificationsUseCase
 import io.mockk.coEvery
@@ -35,7 +36,7 @@ class NotificationsViewModelTest {
     @Test
     fun `init loads notifications from use case`() = runTest {
         val items = listOf(
-            Notification("n1", "Title", "Message", NotificationType.BOOKING_CONFIRMED, "now")
+            Notification("n1", "Title", "Message", NotificationType.BOOKING_CONFIRMED, NotificationTimestamp.JustNow)
         )
         val useCase = mockk<GetNotificationsUseCase>()
         coEvery { useCase() } returns items

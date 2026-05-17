@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.components.TravelHubTextField
 import com.example.travelhub.ui.theme.Purple
@@ -105,9 +107,9 @@ private fun LoginContent(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "TravelHub", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = White)
+                Text(text = stringResource(R.string.app_name), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = White)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Your perfect stay, anywhere in the world", fontSize = 14.sp, color = White.copy(alpha = 0.8f))
+                Text(text = stringResource(R.string.login_brand_tagline), fontSize = 14.sp, color = White.copy(alpha = 0.8f))
             }
         }
 
@@ -117,14 +119,14 @@ private fun LoginContent(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 32.dp)
         ) {
-            Text(text = "Welcome back", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(text = "Sign in to continue your journey", style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
+            Text(text = stringResource(R.string.login_welcome_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.login_welcome_subtitle), style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Hint for users who booked anonymously and now want to see their trips.
             Text(
-                text = "Booked anonymously? Tap \"Sign up\" below using the same email — we'll link your reservations to the new account.",
+                text = stringResource(R.string.login_anonymous_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = Purple,
                 modifier = Modifier.padding(vertical = 4.dp)
@@ -133,22 +135,26 @@ private fun LoginContent(
             Spacer(modifier = Modifier.height(16.dp))
 
             TravelHubTextField(
-                value = email, onValueChange = onEmailChange, label = "Email address",
-                placeholder = "you@example.com", leadingIcon = Icons.Filled.Email,
+                value = email, onValueChange = onEmailChange,
+                label = stringResource(R.string.login_field_email_label),
+                placeholder = stringResource(R.string.login_field_email_placeholder),
+                leadingIcon = Icons.Filled.Email,
                 keyboardType = KeyboardType.Email, isError = loginState is LoginUiState.Error
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             TravelHubTextField(
-                value = password, onValueChange = onPasswordChange, label = "Password",
-                placeholder = "Enter your password", leadingIcon = Icons.Filled.Lock,
+                value = password, onValueChange = onPasswordChange,
+                label = stringResource(R.string.login_field_password_label),
+                placeholder = stringResource(R.string.login_field_password_placeholder),
+                leadingIcon = Icons.Filled.Lock,
                 isPassword = true, isError = loginState is LoginUiState.Error,
-                errorMessage = (loginState as? LoginUiState.Error)?.message
+                errorMessage = (loginState as? LoginUiState.Error)?.text?.asString()
             )
 
             Text(
-                text = "Forgot password?", color = Purple, style = MaterialTheme.typography.bodySmall,
+                text = stringResource(R.string.login_forgot_password), color = Purple, style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.align(Alignment.End).padding(top = 8.dp).clickable { }
             )
 
@@ -159,25 +165,29 @@ private fun LoginContent(
                     CircularProgressIndicator(color = Purple)
                 }
             } else {
-                TravelHubButton(text = "Sign In", onClick = onLogin)
+                TravelHubButton(text = stringResource(R.string.login_submit), onClick = onLogin)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(text = "— or continue with —", color = TextSecondary, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(text = stringResource(R.string.login_or_continue_with), color = TextSecondary, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedButton(onClick = { }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) { Text("Google") }
-                OutlinedButton(onClick = { }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) { Text("Apple") }
+                OutlinedButton(onClick = { }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                    Text(stringResource(R.string.login_provider_google))
+                }
+                OutlinedButton(onClick = { }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
+                    Text(stringResource(R.string.login_provider_apple))
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Text(text = "Don't have an account? ", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
-                Text(text = "Sign up", color = Purple, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onNavigateToSignUp() })
+                Text(text = stringResource(R.string.login_no_account_prompt), color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+                Text(text = stringResource(R.string.login_no_account_cta), color = Purple, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onNavigateToSignUp() })
             }
         }
     }

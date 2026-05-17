@@ -4,4 +4,8 @@ plugins {
     id("org.jetbrains.kotlin.android") version "1.8.10" apply false
     id("com.google.dagger.hilt.android") version "2.44" apply false
     id("org.jetbrains.kotlinx.kover") version "0.8.3" apply false
+    // Firebase Cloud Messaging — procesa el `app/google-services.json` y
+    // genera el bundle de configuración que el SDK lee al inicializar
+    // FirebaseApp. Sólo se aplica en el módulo `app` (ver app/build.gradle.kts).
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }

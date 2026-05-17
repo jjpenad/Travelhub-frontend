@@ -13,6 +13,7 @@ import com.example.travelhub.data.network.ConnectivityObserver
 import com.example.travelhub.data.network.NetworkErrorBus
 import com.example.travelhub.data.remote.api.AccommodationApi
 import com.example.travelhub.data.remote.api.AuthApi
+import com.example.travelhub.data.remote.api.DeviceTokenApi
 import com.example.travelhub.data.remote.interceptor.AuthInterceptor
 import com.example.travelhub.data.remote.interceptor.GuestSessionInterceptor
 import com.example.travelhub.data.remote.interceptor.NetworkErrorInterceptor
@@ -36,8 +37,12 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    // TODO(backend): Move this to BuildConfig or a config file so it can differ per build variant
-    private const val BASE_URL = "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/"
+    // BASE_URL viene de BuildConfig (`build.gradle.kts` lo define por
+    // buildType: el AWS dev cluster en release, `10.0.2.2:8000` en debug
+    // — la IP loopback del host visible desde el emulador Android). Para
+    // apuntar a otra cosa, override `LOCAL_BACKEND_URL` o edita el
+    // buildConfigField del buildType `debug`.
+    private val BASE_URL = com.example.travelhub.BuildConfig.BASE_URL
 
     @Provides
     @Singleton
@@ -113,6 +118,12 @@ object AppModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDeviceTokenApi(retrofit: Retrofit): DeviceTokenApi {
+        return retrofit.create(DeviceTokenApi::class.java)
     }
 
     @Provides

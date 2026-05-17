@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.TextSecondary
@@ -102,6 +104,8 @@ private fun SearchContent(
 ) {
     var cityDropdownExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val cityPlaceholder = stringResource(R.string.search_city_placeholder)
+    val cityPickerCd = stringResource(R.string.search_city_picker_cd)
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -109,8 +113,8 @@ private fun SearchContent(
         // Header
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(20.dp)) {
             Column {
-                Text(text = "Find your stay", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White)
-                Text(text = "Search hotels, resorts & more", style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
+                Text(text = stringResource(R.string.search_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White)
+                Text(text = stringResource(R.string.search_subtitle), style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
             }
         }
 
@@ -123,10 +127,10 @@ private fun SearchContent(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 // City selector
-                Text("DESTINATION", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.search_section_destination), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Box {
                     OutlinedTextField(
-                        value = selectedCity.ifEmpty { "Select a city" },
+                        value = selectedCity.ifEmpty { cityPlaceholder },
                         onValueChange = {},
                         modifier = Modifier.fillMaxWidth(),
                         enabled = false,
@@ -149,7 +153,7 @@ private fun SearchContent(
                             // accessibility tooling (Maestro, talkback) sees a
                             // single tappable element exposing the description.
                             .semantics(mergeDescendants = true) {
-                                contentDescription = "Select a city"
+                                contentDescription = cityPickerCd
                             }
                     )
                     DropdownMenu(
@@ -171,7 +175,7 @@ private fun SearchContent(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Date selectors
-                Text("CHECK-IN / CHECK-OUT", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.search_section_dates), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -198,7 +202,7 @@ private fun SearchContent(
                         ) {
                             Icon(Icons.Filled.CalendarMonth, null, tint = Purple)
                             Column(modifier = Modifier.padding(start = 8.dp)) {
-                                Text("Check-in", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Text(stringResource(R.string.search_checkin_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                 Text(checkInFormatted, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                             }
                         }
@@ -226,7 +230,7 @@ private fun SearchContent(
                         ) {
                             Icon(Icons.Filled.CalendarMonth, null, tint = Purple)
                             Column(modifier = Modifier.padding(start = 8.dp)) {
-                                Text("Check-out", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                                Text(stringResource(R.string.search_checkout_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                                 Text(checkOutFormatted, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                             }
                         }
@@ -234,17 +238,17 @@ private fun SearchContent(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("GUESTS & ROOMS", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.search_section_guests_rooms), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Person, null, tint = Purple)
                     Text(
-                        text = "  $guests Adults · $rooms Room",
+                        text = stringResource(R.string.search_guests_rooms_summary, guests, rooms),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f).padding(vertical = 12.dp)
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        CounterButton("-", onGuestsDec)
-                        CounterButton("+", onGuestsInc)
+                        CounterButton(label = "-", contentDescription = stringResource(R.string.search_decrement_cd), onClick = onGuestsDec)
+                        CounterButton(label = "+", contentDescription = stringResource(R.string.search_increment_cd), onClick = onGuestsInc)
                     }
                 }
 
@@ -256,7 +260,7 @@ private fun SearchContent(
                     }
                 } else {
                     TravelHubButton(
-                        text = "Search Hotels",
+                        text = stringResource(R.string.search_submit),
                         onClick = onSearch,
                         enabled = selectedCity.isNotEmpty()
                     )
@@ -268,11 +272,21 @@ private fun SearchContent(
     }
 }
 
+/**
+ * `+` / `-` are pure mathematical symbols, identical across all locales —
+ * they stay as raw chars. The contentDescription is what carries the
+ * accessible, localised meaning of the button.
+ */
 @Composable
-private fun CounterButton(text: String, onClick: () -> Unit) {
+private fun CounterButton(label: String, contentDescription: String, onClick: () -> Unit) {
     Box(modifier = Modifier.background(Purple.copy(alpha = 0.1f), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 4.dp)) {
-        IconButton(onClick = onClick, modifier = Modifier.padding(0.dp)) {
-            Text(text, fontWeight = FontWeight.Bold, color = Purple)
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+                .padding(0.dp)
+                .semantics { this.contentDescription = contentDescription }
+        ) {
+            Text(label, fontWeight = FontWeight.Bold, color = Purple)
         }
     }
 }
@@ -285,7 +299,7 @@ private fun SearchScreenPreview() {
             selectedCity = "Lima",
             checkIn = LocalDate.of(2026, 5, 1),
             checkOut = LocalDate.of(2026, 5, 5),
-            checkInFormatted = "May 01", checkOutFormatted = "May 05",
+            checkInFormatted = "May 1, 2026", checkOutFormatted = "May 5, 2026",
             guests = 2, rooms = 1, isLoading = false,
             onCityChange = {}, onCheckInChange = {}, onCheckOutChange = {},
             onGuestsInc = {}, onGuestsDec = {}, onSearch = {}

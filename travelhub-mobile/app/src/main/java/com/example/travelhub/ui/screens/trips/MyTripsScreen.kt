@@ -40,15 +40,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.ui.components.InfiniteScrollEffect
 import com.example.travelhub.ui.components.OnResumeEffect
+import com.example.travelhub.ui.util.formatLocalized
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
@@ -109,8 +112,6 @@ private fun MyTripsContent(
         onRefresh = onRefresh
     )
 
-    // Infinite scroll trigger — only fire while we still have more pages and we're
-    // not in the middle of a refresh.
     InfiniteScrollEffect(
         listState = listState,
         enabled = hasMore && !isRefreshing && !isLoadingMore,
@@ -120,8 +121,8 @@ private fun MyTripsContent(
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(20.dp)) {
             Column {
-                Text("My Trips", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White)
-                Text("Your upcoming & past adventures", style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
+                Text(stringResource(R.string.trips_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White)
+                Text(stringResource(R.string.trips_subtitle), style = MaterialTheme.typography.bodyMedium, color = White.copy(alpha = 0.8f))
             }
         }
 
@@ -130,10 +131,10 @@ private fun MyTripsContent(
             indicator = { tabPositions -> TabRowDefaults.Indicator(modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]), color = Purple) }
         ) {
             Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                Text("Upcoming", modifier = Modifier.padding(16.dp), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.trips_tab_upcoming), modifier = Modifier.padding(16.dp), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal)
             }
             Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                Text("Past", modifier = Modifier.padding(16.dp), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.trips_tab_past), modifier = Modifier.padding(16.dp), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal)
             }
         }
 
@@ -197,19 +198,19 @@ private fun SignInPromptState(onSignInClick: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Sign in to track your trips",
+                text = stringResource(R.string.trips_signin_prompt_title),
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = "Reservations made anonymously stay anonymous. Create an account or sign in to see your bookings here across devices.",
+                text = stringResource(R.string.trips_signin_prompt_subtitle),
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             com.example.travelhub.ui.components.TravelHubButton(
-                text = "Sign in",
+                text = stringResource(R.string.action_sign_in),
                 onClick = onSignInClick
             )
         }
@@ -221,12 +222,16 @@ private fun EmptyState(isUpcoming: Boolean) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = if (isUpcoming) "No upcoming trips yet" else "No past trips",
+                text = stringResource(
+                    if (isUpcoming) R.string.trips_empty_upcoming_title else R.string.trips_empty_past_title
+                ),
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = if (isUpcoming) "Start exploring and book your next stay." else "Past trips will appear here.",
+                text = stringResource(
+                    if (isUpcoming) R.string.trips_empty_upcoming_subtitle else R.string.trips_empty_past_subtitle
+                ),
                 color = TextSecondary,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -260,7 +265,15 @@ private fun TripCard(
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 if (booking.isCheckedIn) CheckedInBadge() else StatusBadge(booking.status)
                 Text(booking.propertyName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-                Text("${booking.checkIn} → ${booking.checkOut} · ${booking.guests} guests", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = stringResource(
+                        R.string.trips_card_dates_template,
+                        booking.checkIn.formatLocalized(),
+                        booking.checkOut.formatLocalized(),
+                        booking.guests
+                    ),
+                    style = MaterialTheme.typography.bodySmall
+                )
                 if (booking.propertyLocation.isNotBlank()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.LocationOn, null, tint = Purple, modifier = Modifier.size(14.dp))
@@ -273,7 +286,7 @@ private fun TripCard(
                         modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(Purple)
                             .padding(horizontal = 12.dp, vertical = 4.dp)
                     ) {
-                        Text("View Details", color = White, style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(R.string.trips_card_view_details), color = White, style = MaterialTheme.typography.labelSmall)
                     }
                 }
             }
@@ -288,24 +301,24 @@ private fun CheckedInBadge() {
             .background(Purple.copy(alpha = 0.15f))
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
-        Text("Checked in", color = Purple, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.trips_status_checked_in), color = Purple, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
 private fun StatusBadge(status: BookingStatus) {
-    val (color, text) = when (status) {
-        BookingStatus.CONFIRMED -> GreenAccent to "Confirmed"
-        BookingStatus.PENDING -> OrangeAccent to "Pending"
-        BookingStatus.CANCELLED -> RedAccent to "Cancelled"
-        BookingStatus.COMPLETED -> TextSecondary to "Completed"
+    val (color, textRes) = when (status) {
+        BookingStatus.CONFIRMED -> GreenAccent to R.string.trips_status_confirmed
+        BookingStatus.PENDING -> OrangeAccent to R.string.trips_status_pending
+        BookingStatus.CANCELLED -> RedAccent to R.string.trips_status_cancelled
+        BookingStatus.COMPLETED -> TextSecondary to R.string.trips_status_completed
     }
     Box(
         modifier = Modifier.clip(RoundedCornerShape(4.dp))
             .background(color.copy(alpha = 0.15f))
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
-        Text(text, color = color, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(textRes), color = color, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
