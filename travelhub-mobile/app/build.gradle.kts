@@ -41,26 +41,29 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // BASE_URL del backend en producción (AWS dev cluster). Si
-            // sale un cluster prod separado, sobrescribir aquí o usar
-            // un `productFlavors` por entorno.
+            // BASE_URL del backend en producción. Solo el dominio raíz —
+            // las interfaces Retrofit ya prefijan cada endpoint con
+            // `service-core/...`, así que NO incluyas ese path acá o
+            // queda duplicado (`/service-core/service-core/auth/login`).
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/\""
+                "\"https://app.travel-hub.tech/\""
             )
         }
         debug {
-            // En debug apuntamos al host local para que el emulador
-            // alcance al backend que corre en `localhost:8000` del
-            // dev. `10.0.2.2` es la IP loopback que el emulador Android
-            // mapea automáticamente al host. Para device físico, cambia
-            // a la IP del host en la LAN (ver `RUNNING_LOCALLY.md`).
+            // Apunta al mismo cluster que release por defecto para que
+            // `installDebug` desde el emulador hable contra el backend
+            // real. Si necesitas pegarle a un service-core local, comenta
+            // la línea de abajo y descomenta la de `10.0.2.2:8000/` —
+            // `10.0.2.2` es la IP loopback que el emulador Android mapea
+            // al host. Para device físico, usa la IP del host en la LAN.
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://10.0.2.2:8000/\""
+                "\"https://app.travel-hub.tech/\""
             )
+            // buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/\"")
         }
     }
     compileOptions {
@@ -92,6 +95,21 @@ android {
         unitTests {
             isReturnDefaultValues = true
         }
+    }
+
+    // i18n guardrail: any new hardcoded user-visible literal in layouts /
+    // Compose code that lint can detect must fail the build. Pairs with the
+    // strings.xml extraction policy from the i18n user story — every visible
+    // string must live under res/values*/strings.xml.
+    lint {
+        abortOnError = true
+        // HardcodedText fires on literals inside XML layouts and Compose UI
+        // (e.g. `Text("hello")`). Upgraded to error so CI rejects new offenders.
+        error += "HardcodedText"
+        // MissingTranslation fires when a string declared in values/ has no
+        // counterpart in values-en/ (or vice-versa, paired with ExtraTranslation).
+        // Keeps the two locales in lockstep automatically.
+        error += "MissingTranslation"
     }
 }
 
@@ -172,9 +190,9 @@ kover {
                     "com.example.travelhub.notifications.AndroidPostNotificationsPermissionGate*",
                     "com.example.travelhub.notifications.AndroidNotificationDispatcher*",
                     // FCM service + helpers que tocan FirebaseMessaging directamente:
-                    // requieren Firebase initialization para correr y solo se exercise en
-                    // device. La lógica de orquestación (DeviceTokenRepositoryImpl) sí
-                    // queda dentro de Kover.
+                    // requieren Firebase initialization para correr y solo se ejercen
+                    // en device. La lógica de orquestación (DeviceTokenRepositoryImpl)
+                    // sí queda dentro de Kover.
                     "com.example.travelhub.notifications.TravelHubFirebaseMessagingService*",
                     "com.example.travelhub.notifications.TravelHubFirebaseMessagingServiceKt*",
                     "com.example.travelhub.notifications.FcmTokenSyncImpl*"
@@ -189,6 +207,12 @@ dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.0")
+
+    // AppCompat — required by AppCompatDelegate.setApplicationLocales (per-app
+    // language API). Backports the Android 13+ locale switching to API 24+ so
+    // the runtime language selector in ProfileSettingsScreen works on every
+    // supported device.
+    implementation("androidx.appcompat:appcompat:1.6.1")
 
     // Compose
     implementation(platform("androidx.compose:compose-bom:2023.10.01"))
@@ -233,6 +257,15 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Firebase Cloud Messaging — la lib lincada viaja siempre; el plugin
+    // `com.google.gms.google-services` se aplica recién cuando el equipo
+    // deje un `google-services.json` real en `app/`. Sin ese archivo, FCM
+    // queda inactivo en runtime (logs de warning en LogCat) pero la app
+    // compila + corre + los tests del DeviceTokenRepository pasan, porque
+    // toda la lógica de negocio depende solo del cliente Retrofit.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")

@@ -2,10 +2,12 @@ package com.example.travelhub.ui.screens.trips
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.QrToken
 import com.example.travelhub.domain.usecase.CheckinUseCase
 import com.example.travelhub.domain.usecase.GenerateReservationQrUseCase
+import com.example.travelhub.ui.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,12 +21,14 @@ import javax.inject.Inject
  *
  * - [booking] is null while we're hydrating from the parent [MyTripsViewModel].
  * - [qr] is recomputed every time the booking changes (e.g. after a self check-in).
+ * - [checkinError] is a [UiText] so the screen resolves it via stringResource
+ *   at render time; the field stays null while no error is pending.
  */
 data class QrCheckInState(
     val booking: Booking? = null,
     val qr: QrToken? = null,
     val isCheckingIn: Boolean = false,
-    val checkinError: String? = null,
+    val checkinError: UiText? = null,
     val showInfoDialog: Boolean = false
 )
 
@@ -79,7 +83,7 @@ class QRCheckInViewModel @Inject constructor(
                     _state.update {
                         it.copy(
                             isCheckingIn = false,
-                            checkinError = e.message ?: "Check-in failed"
+                            checkinError = UiText.fromExceptionOrFallback(e, R.string.error_checkin_failed)
                         )
                     }
                 }

@@ -1,12 +1,28 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { createSearchParams, useNavigate, useSearchParams } from "react-router-dom";
+import { RESET_HOME_SEARCH_EVENT } from "../../constants/homeSearchEvents";
 import { AVAILABLE_CITIES } from "../../services/api";
 import { useTranslation } from "react-i18next";
 import { IconCalendar, IconMapPin, IconSearch, IconUsers } from "./HeroIcons";
 import "./Hero.css";
 
 const SEARCH_STORAGE_KEY = "travelhub-search";
+
+const EMPTY_HERO_SEARCH = {
+  destination: "",
+  checkIn: "",
+  checkOut: "",
+  guests: "1",
+};
+
+function clearPersistedSearchDraft() {
+  try {
+    sessionStorage.removeItem(SEARCH_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 const KNOWN_GUEST_VALUES = new Set(["1", "2", "3", "4", "5"]);
 
@@ -139,7 +155,8 @@ function Hero() {
     }
   }, [checkInValue, trigger]);
 
-  useEffect(() => {
+  /* Antes del pintado: evita que Chrome/Safari restauren fechas tras F5 (session restore). */
+  useLayoutEffect(() => {
     const dest = searchParams.get("destination") ?? "";
     const checkInRaw = searchParams.get("checkIn");
     const checkOutRaw = searchParams.get("checkOut");
@@ -161,21 +178,24 @@ function Hero() {
       return;
     }
 
-    try {
-      const raw = sessionStorage.getItem(SEARCH_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      reset({
-        destination:
-          typeof parsed.destination === "string" ? parsed.destination : "",
-        checkIn: ensureIsoYmd(parsed.checkIn ?? ""),
-        checkOut: ensureIsoYmd(parsed.checkOut ?? ""),
-        guests: normalizeGuestsValue(parsed.guests),
-      });
-    } catch {
-      /* ignore corrupt storage */
-    }
+    reset(EMPTY_HERO_SEARCH);
+    clearPersistedSearchDraft();
+    const id = requestAnimationFrame(() => {
+      reset(EMPTY_HERO_SEARCH);
+    });
+    return () => cancelAnimationFrame(id);
   }, [searchParams, reset]);
+
+  useEffect(() => {
+    function onResetHomeSearch() {
+      reset(EMPTY_HERO_SEARCH);
+      clearPersistedSearchDraft();
+      clearErrors();
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener(RESET_HOME_SEARCH_EVENT, onResetHomeSearch);
+    return () => window.removeEventListener(RESET_HOME_SEARCH_EVENT, onResetHomeSearch);
+  }, [reset, clearErrors]);
 
   const errorKeys = useMemo(() => Object.keys(errors).sort().join(","), [errors]);
 
@@ -200,12 +220,6 @@ function Hero() {
       const checkIn = ensureIsoYmd(data.checkIn);
       const checkOut = ensureIsoYmd(data.checkOut);
       const guests = normalizeGuestsValue(data.guests);
-      const payload = { destination, checkIn, checkOut, guests };
-      try {
-        sessionStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(payload));
-      } catch {
-        /* ignore */
-      }
       navigate({
         pathname: "/search",
         search: createSearchParams({
@@ -282,6 +296,7 @@ function Hero() {
           onSubmit={handleSubmit(onValidSubmit, onInvalidSubmit)}
           role="search"
           noValidate
+          autoComplete="off"
         >
           <div className="home-hero__search-card">
             <div className="home-hero__search-row">
@@ -294,6 +309,7 @@ function Hero() {
                     <IconMapPin className="home-hero__field-icon" aria-hidden="true" />
                     <select
                       id="hero-destination"
+                      autoComplete="off"
                       className={
                         shouldShowError("destination")
                           ? "home-hero__field-select home-hero__field-select--error"
@@ -334,6 +350,7 @@ function Hero() {
                       id="hero-checkin"
                       type="date"
                       min={todayYmd}
+                      autoComplete="off"
                       className={
                         shouldShowError("checkIn")
                           ? "home-hero__field-input home-hero__field-input--date home-hero__field-input--error"
@@ -365,6 +382,7 @@ function Hero() {
                       id="hero-checkout"
                       type="date"
                       min={minCheckOutYmd || undefined}
+                      autoComplete="off"
                       className={
                         shouldShowError("checkOut")
                           ? "home-hero__field-input home-hero__field-input--date home-hero__field-input--error"
@@ -394,6 +412,7 @@ function Hero() {
                     <IconUsers className="home-hero__field-icon" aria-hidden="true" />
                     <select
                       id="hero-guests"
+                      autoComplete="off"
                       className={
                         shouldShowError("guests")
                           ? "home-hero__field-select home-hero__field-select--error"

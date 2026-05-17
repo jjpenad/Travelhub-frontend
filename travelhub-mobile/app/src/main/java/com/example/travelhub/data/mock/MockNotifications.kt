@@ -1,6 +1,7 @@
 package com.example.travelhub.data.mock
 
 import com.example.travelhub.domain.model.Notification
+import com.example.travelhub.domain.model.NotificationTimestamp
 import com.example.travelhub.domain.model.NotificationType
 
 object MockNotifications {
@@ -11,28 +12,28 @@ object MockNotifications {
             title = "Booking Confirmed!",
             message = "Mystique Hotel, Mar 15-22 is confirmed. Check your itinerary.",
             type = NotificationType.BOOKING_CONFIRMED,
-            timestamp = "Just now"
+            timestamp = NotificationTimestamp.JustNow
         ),
         Notification(
             id = "notif_002",
             title = "Check-In Tomorrow!",
             message = "Your QR code is ready. Tap to view and skip the queue.",
             type = NotificationType.CHECKIN_REMINDER,
-            timestamp = "2 hours ago"
+            timestamp = NotificationTimestamp.HoursAgo(2)
         ),
         Notification(
             id = "notif_003",
             title = "Room Upgrade Available",
             message = "Upgrade to Caldera View Suite for only +\$80/night.",
             type = NotificationType.ROOM_UPGRADE,
-            timestamp = "Yesterday"
+            timestamp = NotificationTimestamp.Yesterday
         ),
         Notification(
             id = "notif_004",
             title = "Payment Successful",
             message = "\$2,376 charged to Visa ••4242. Receipt sent to email.",
             type = NotificationType.PAYMENT_SUCCESS,
-            timestamp = "2 days ago"
+            timestamp = NotificationTimestamp.DaysAgo(2)
         )
     )
 

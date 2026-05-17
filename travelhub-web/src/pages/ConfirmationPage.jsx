@@ -6,13 +6,14 @@ import CheckoutStepper from "../components/checkout/CheckoutStepper";
 import ConfirmationTicket from "../components/confirmation/ConfirmationTicket";
 import Navbar from "../components/layout/Navbar";
 import PageContainer from "../components/layout/PageContainer";
-import { PATH_TRAVELERS_HOME } from "../constants/routes";
-import { useTravelerDisplayCurrency } from "../context/TravelerDisplayCurrencyContext";
+import { PATH_LOGIN, PATH_TRAVELERS_HOME } from "../constants/routes";
 import { getTravelerReservationByIdForPoll } from "../services/api";
 import "./ConfirmationPage.css";
 
-/** MVP: en `false` oculta «Ver detalles del viaje», «Descargar recibo» y la nota del QR asociada. */
-const showConfirmationTripActions = false;
+/** MVP: en `false` oculta «Ver detalles del viaje», «Explorar más destinos» (fila de acciones) y la nota del QR asociada. */
+const showConfirmationTripActions = true;
+
+const PATH_TRAVELERS_EXPLORE = `${PATH_TRAVELERS_HOME}#explore`;
 
 function IconCheckCelebration({ className }) {
   return (
@@ -65,32 +66,6 @@ function IconQrSmall({ className }) {
   );
 }
 
-function buildReceiptText(
-  tr,
-  {
-    reference,
-    hotel,
-    totalFmt,
-    checkIn,
-    checkOut,
-    roomType,
-    guestEmail,
-  },
-) {
-  const lines = [
-    tr("confirmation.receiptLines.header"),
-    tr("confirmation.receiptLines.reference", { reference }),
-    hotel?.name ? tr("confirmation.receiptLines.hotel", { name: hotel.name }) : null,
-    hotel?.location ? tr("confirmation.receiptLines.location", { location: hotel.location }) : null,
-    checkIn ? tr("confirmation.receiptLines.checkIn", { value: checkIn }) : null,
-    checkOut ? tr("confirmation.receiptLines.checkOut", { value: checkOut }) : null,
-    roomType ? tr("confirmation.receiptLines.room", { room: roomType }) : null,
-    totalFmt ? tr("confirmation.receiptLines.total", { amount: totalFmt }) : null,
-    guestEmail ? tr("confirmation.receiptLines.guestEmail", { email: guestEmail }) : null,
-  ].filter(Boolean);
-  return `${lines.join("\n")}\n`;
-}
-
 function labelForReservationStatusNorm(tr, norm) {
   if (norm === "confirmed") return tr("confirmation.statusConfirmed");
   if (norm === "pending") return tr("confirmation.statusPending");
@@ -100,7 +75,6 @@ function labelForReservationStatusNorm(tr, norm) {
 
 function ConfirmationPage() {
   const { t } = useTranslation();
-  const { formatPaymentInDisplayCurrency } = useTravelerDisplayCurrency();
   const location = useLocation();
   const data = location.state;
   const [reservationStatusQuery, setReservationStatusQuery] = useState("idle");
@@ -169,39 +143,6 @@ function ConfirmationPage() {
   const canQueryReservationApi =
     Boolean(apiReservationId && String(apiReservationId).trim() !== "") &&
     Boolean(getAuthToken());
-
-  function handleDownloadReceipt() {
-    if (!reference) return;
-    const totalFmt =
-      typeof total === "number" && Number.isFinite(total)
-        ? formatPaymentInDisplayCurrency(total, totalCurrencyCode)
-        : null;
-    const body = buildReceiptText(t, {
-      reference,
-      hotel,
-      totalFmt,
-      checkIn,
-      checkOut,
-      roomType,
-      guestEmail:
-        typeof data?.guestEmail === "string" && data.guestEmail.trim() !== ""
-          ? data.guestEmail.trim()
-          : undefined,
-    });
-    const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `travelhub-recibo-${reference}.txt`;
-    a.rel = "noopener";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  const tripDetailsTo =
-    hotel?.id != null && hotel.id !== ""
-      ? `/hotel/${encodeURIComponent(String(hotel.id))}`
-      : PATH_TRAVELERS_HOME;
 
   return (
     <div className="confirmation-page">
@@ -306,19 +247,18 @@ function ConfirmationPage() {
                   <div className="confirmation-actions">
                     <div className="confirmation-actions__buttons">
                       <Link
-                        className="confirmation-actions__btn confirmation-actions__btn--primary"
-                        to={tripDetailsTo}
+                        className="confirmation-actions__btn confirmation-actions__btn--secondary"
+                        to={PATH_LOGIN}
                       >
                         {t("confirmation.tripDetailsOpen")}
+                      </Link>
+                      <Link
+                        className="confirmation-actions__btn confirmation-actions__btn--primary"
+                        to={PATH_TRAVELERS_EXPLORE}
+                      >
+                        {t("confirmation.exploreMoreDestinations")}
                         <IconArrowRight className="confirmation-actions__btn-icon" />
                       </Link>
-                      <button
-                        type="button"
-                        className="confirmation-actions__btn confirmation-actions__btn--secondary"
-                        onClick={handleDownloadReceipt}
-                      >
-                        {t("confirmation.downloadReceipt")}
-                      </button>
                     </div>
                     <p className="confirmation-actions__qr-note">
                       <IconQrSmall className="confirmation-actions__qr-icon" />
@@ -327,9 +267,11 @@ function ConfirmationPage() {
                   </div>
                 ) : null}
 
-                <Link className="confirmation-card__cta" to={PATH_TRAVELERS_HOME}>
-                  {t("confirmation.backHome")}
-                </Link>
+                {showConfirmationTripActions ? null : (
+                  <Link className="confirmation-card__cta" to={PATH_TRAVELERS_EXPLORE}>
+                    {t("confirmation.exploreMoreDestinations")}
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="confirmation-card__body confirmation-card__body--empty">

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares the locales the app ships translations for. Two purposes:
+    1. Lets the Android 13+ system show TravelHub in the per-app language
+       settings UI (Settings → Apps → TravelHub → Language).
+    2. Tells the framework which locales are "valid" overrides for
+       AppCompatDelegate.setApplicationLocales / LocaleManager.
+
+  Must stay in sync with the values* resource folders (values/ + values-en/).
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="es" />
+    <locale android:name="en" />
+</locale-config>

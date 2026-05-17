@@ -25,6 +25,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
@@ -57,6 +58,21 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="travelhub_general" />
+
+        <!-- Required by AppCompatDelegate.setApplicationLocales to back-port
+             per-app language switching to API < 33 and to coordinate with the
+             system's LocaleManager on 33+. autoStoreLocales is "false" because
+             we persist the chosen tag ourselves via UserPreferences (key
+             "auth_locale") — letting AppCompat double-store would split the
+             source of truth. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="false" />
+        </service>
     </application>
 
 </manifest>

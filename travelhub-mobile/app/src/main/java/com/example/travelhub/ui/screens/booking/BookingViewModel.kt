@@ -3,6 +3,7 @@ package com.example.travelhub.ui.screens.booking
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.travelhub.R
 import com.example.travelhub.data.local.GuestSessionStore
 import com.example.travelhub.data.remote.dto.ConfirmReservationRequestDto
 import com.example.travelhub.data.remote.dto.CreateReservationRequest
@@ -16,6 +17,7 @@ import com.example.travelhub.domain.model.Room
 import com.example.travelhub.domain.repository.AuthRepository
 import com.example.travelhub.domain.repository.BookingRepository
 import com.example.travelhub.domain.repository.PropertyRepository
+import com.example.travelhub.ui.util.UiText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,7 +47,8 @@ sealed interface BookingUiState {
         val property: Property,
         val totalPrice: Double
     ) : BookingUiState
-    data class Error(val message: String) : BookingUiState
+    /** [text] is resolved at render time by the screen via [UiText.asString]. */
+    data class Error(val text: UiText) : BookingUiState
 }
 
 /**
@@ -126,10 +129,10 @@ class BookingViewModel @Inject constructor(
                         totalPrice = selectedRoom.totalPrice
                     )
                 } else {
-                    _uiState.value = BookingUiState.Error("No rooms available")
+                    _uiState.value = BookingUiState.Error(UiText.of(R.string.error_booking_no_rooms))
                 }
             } else {
-                _uiState.value = BookingUiState.Error("Property not found")
+                _uiState.value = BookingUiState.Error(UiText.of(R.string.error_booking_property_not_found))
             }
         }
     }
@@ -159,7 +162,7 @@ class BookingViewModel @Inject constructor(
                 onFailure = { e ->
                     _form.update { it.copy(emailExistsPrompt = false) }
                     _uiState.value = BookingUiState.Error(
-                        e.message ?: "Could not sign in with that email"
+                        UiText.fromExceptionOrFallback(e, R.string.error_booking_signin_failed_with_email)
                     )
                 }
             )
@@ -184,11 +187,11 @@ class BookingViewModel @Inject constructor(
         val s = _form.value
 
         if (s.firstName.isBlank() || s.lastName.isBlank() || s.email.isBlank()) {
-            _uiState.value = BookingUiState.Error("First name, last name and email are required")
+            _uiState.value = BookingUiState.Error(UiText.of(R.string.error_booking_validation_required_fields))
             return
         }
         if (s.createAccount && s.password.length < 6) {
-            _uiState.value = BookingUiState.Error("Password must be at least 6 characters")
+            _uiState.value = BookingUiState.Error(UiText.of(R.string.error_booking_validation_password_min_length))
             return
         }
 
@@ -212,7 +215,7 @@ class BookingViewModel @Inject constructor(
                         return@launch
                     }
                     _uiState.value = BookingUiState.Error(
-                        ex?.message ?: "Could not create account"
+                        UiText.fromExceptionOrFallback(ex, R.string.error_booking_create_account_failed)
                     )
                     return@launch
                 }
@@ -248,7 +251,7 @@ class BookingViewModel @Inject constructor(
                         ?: response.result.confirmationCode
                         ?: run {
                             _uiState.value = BookingUiState.Error(
-                                "Reservation created but server did not return an id"
+                                UiText.of(R.string.error_booking_no_reservation_id)
                             )
                             return@launch
                         }
@@ -288,13 +291,15 @@ class BookingViewModel @Inject constructor(
                             // reservation exists server-side as pending; user can see
                             // it in My Trips (when authenticated) and try again.
                             _uiState.value = BookingUiState.Error(
-                                "Reservation created but payment failed: ${e.message}"
+                                UiText.of(R.string.error_booking_payment_failed, e.message.orEmpty())
                             )
                         }
                     )
                 },
                 onFailure = { e ->
-                    _uiState.value = BookingUiState.Error(e.message ?: "Reservation failed")
+                    _uiState.value = BookingUiState.Error(
+                        UiText.fromExceptionOrFallback(e, R.string.error_booking_reservation_failed)
+                    )
                 }
             )
         }

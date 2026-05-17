@@ -17,11 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.travelhub.R
 import com.example.travelhub.ui.components.TravelHubButton
 import com.example.travelhub.ui.theme.GreenAccent
 import com.example.travelhub.ui.theme.Purple
@@ -60,26 +62,47 @@ private fun ConfirmationContent(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "\uD83C\uDF89", fontSize = 48.sp)
+                // Pure emoji — same across locales — kept as a literal.
+                Text(text = "🎉", fontSize = 48.sp)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Booking Confirmed!", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = White)
-                Text(text = "Your reservation at $propertyName is confirmed", color = White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp))
-                Text(text = "Booking ref: $bookingRef", color = GreenAccent, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                Text(text = stringResource(R.string.booking_confirmation_title), fontSize = 26.sp, fontWeight = FontWeight.Bold, color = White)
+                Text(
+                    text = stringResource(R.string.booking_confirmation_subtitle, propertyName),
+                    color = White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
+                )
+                Text(
+                    text = stringResource(R.string.booking_confirmation_ref_template, bookingRef),
+                    color = GreenAccent,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
         }
 
         Card(modifier = Modifier.fillMaxWidth().padding(24.dp), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(4.dp), colors = CardDefaults.cardColors(containerColor = White)) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("HOTEL", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                Text(text = "$propertyName · $propertyCity", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.booking_confirmation_hotel_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(
+                    text = stringResource(R.string.booking_confirmation_hotel_value, propertyName, propertyCity),
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("TOTAL PAID", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                Text(text = "$$totalPrice USD · Visa ••4242", color = GreenAccent, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.booking_confirmation_total_paid_label), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(
+                    text = stringResource(R.string.booking_confirmation_total_paid_value, totalPrice),
+                    color = GreenAccent,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
             }
         }
 
         Spacer(modifier = Modifier.weight(1f))
-        TravelHubButton(text = "View My Trips", onClick = onViewTrips, modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp))
+        TravelHubButton(text = stringResource(R.string.booking_confirmation_view_trips_cta), onClick = onViewTrips, modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp))
         Spacer(modifier = Modifier.height(16.dp))
     }
 }

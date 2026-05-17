@@ -22,11 +22,11 @@ import {
 
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-core";
+  "http://k8s-travelhubdev-3d982ad1bb-1625103206.us-east-2.elb.amazonaws.com/service-core";
 
 const ANALYTICS_BASE_URL =
   import.meta.env.VITE_ANALYTICS_API_URL ||
-  "http://k8s-travelhubdev-3d982ad1bb-1106876598.us-east-2.elb.amazonaws.com/service-soport";
+  "http://k8s-travelhubdev-3d982ad1bb-1625103206.us-east-2.elb.amazonaws.com/service-soport";
 
 /**
  * Raíz para GET/POST FX. `VITE_FX_API_URL` gana si está definido; si no, y `baseUrl`
@@ -66,6 +66,10 @@ const LOGIN_PATH = import.meta.env.VITE_LOGIN_PATH || "/auth/login";
  */
 const ANALYTICS_DASHBOARD_PATH =
   import.meta.env.VITE_ANALYTICS_DASHBOARD_PATH || "/analitycs/dahsboard";
+
+/** GET listado simple de habitaciones (portal hotelero / hotel-admin) */
+const HOTEL_ADMIN_ROOMS_SIMPLE_PATH =
+  import.meta.env.VITE_HOTEL_ADMIN_ROOMS_SIMPLE_PATH || "/hotel-admin/rooms/simple";
 
 /** GET detalle de reserva (service-core). Sobrescribir con VITE_RESERVATION_DETAIL_PATH si la ruta difiere. */
 const RESERVATION_DETAIL_PATH =
@@ -1149,6 +1153,111 @@ export async function createReservation({
   return data;
 }
 
+/**
+ * GET …/hotel-admin/rooms/simple (Bearer token).
+ * Obtiene el listado simplificado de tipos de habitaciones para el administrador hotelero.
+ * @returns {Promise<{ items: Array<{ id: string, name: string, description: string }>, total: number }>}
+ */
+export async function listHotelRoomsSimple() {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  return authFetch(HOTEL_ADMIN_ROOMS_SIMPLE_PATH, { method: "GET" });
+}
+
+/**
+ * GET …/hotel-admin/rooms/{room_type_id} (Bearer token).
+ * Obtiene el detalle completo de un tipo de habitación.
+ * @param {string} roomTypeId
+ * @returns {Promise<object>}
+ */
+export async function getHotelRoomDetail(roomTypeId) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const id = String(roomTypeId || "").trim();
+  if (!id) {
+    const err = new Error("Identificador de habitación no válido.");
+    err.status = 400;
+    throw err;
+  }
+  // Suponiendo que el path base es /hotel-admin/rooms
+  const path = `/hotel-admin/rooms/${encodeURIComponent(id)}`;
+  return authFetch(path, { method: "GET" });
+}
+
+/**
+ * GET …/hotel-admin/rooms/{room_type_id}/calendar?start_date=&end_date= (Bearer token).
+ * Obtiene el calendario de disponibilidad y precios para un tipo de habitación.
+ * @param {string} roomTypeId
+ * @param {{ startDate: string, endDate: string }} range - YYYY-MM-DD
+ * @returns {Promise<{ items: Array<object>, total: number }>}
+ */
+export async function getHotelRoomCalendar(roomTypeId, { startDate, endDate }) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const id = String(roomTypeId || "").trim();
+  if (!id || !startDate || !endDate) {
+    const err = new Error("Parámetros insuficientes para el calendario.");
+    err.status = 400;
+    throw err;
+  }
+  const qs = new URLSearchParams({ start_date: startDate, end_date: endDate });
+  const path = `/hotel-admin/rooms/${encodeURIComponent(id)}/calendar?${qs.toString()}`;
+  return authFetch(path, { method: "GET" });
+}
+
+/**
+ * PATCH …/hotel-admin/inventory/{inventory_id} (Bearer token).
+ * Actualiza la disponibilidad y/o el precio para un registro de inventario específico.
+ * @param {string} inventoryId
+ * @param {{ available_units?: number, price_per_night?: string }} payload
+ * @returns {Promise<object>}
+ */
+export async function updateHotelRoomInventory(inventoryId, payload) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  const id = String(inventoryId || "").trim();
+  if (!id) {
+    const err = new Error("Identificador de inventario no válido.");
+    err.status = 400;
+    throw err;
+  }
+  const path = `/hotel-admin/inventory/${encodeURIComponent(id)}`;
+  return authFetch(path, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * POST …/hotel-admin/inventory/bulk (Bearer token).
+ * Crea registros de inventario en masa para un rango de fechas.
+ * @param {object} payload
+ * @returns {Promise<object>}
+ */
+export async function createHotelInventoryBulk(payload) {
+  if (!isAuthenticated()) {
+    const err = new Error("No hay sesión activa. Inicia sesión de nuevo.");
+    err.status = 401;
+    throw err;
+  }
+  return authFetch("/hotel-admin/inventory/bulk", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 // ─── Mappers ─────────────────────────────────────────────
 
 /** Map GET /hotels response item → app hotel shape */
@@ -1176,7 +1285,7 @@ function pickCheapestRoomForDisplay(rooms) {
   if (!Array.isArray(rooms) || rooms.length === 0) return null;
   return rooms.reduce((best, r) =>
     Number(r.pricePerNight) < Number(best.pricePerNight) ? r : best,
-  rooms[0]);
+    rooms[0]);
 }
 
 /** Map GET /search response item → app hotel shape */
@@ -1271,4 +1380,20 @@ function mapRoomType(dto) {
     minimumStay: dto.minimum_stay || 1,
     amenities: (dto.amenities || []).map(mapRoomAmenityName).filter(Boolean),
   };
+}
+
+/**
+ * GET /users/profile/
+ * Obtiene el perfil del usuario autenticado (viajero u hotel).
+ */
+export async function getUserProfile() {
+  return authFetch("/users/profile/", { method: "GET" });
+}
+
+/**
+ * POST /auth/deactivated
+ * Desactiva/elimina la cuenta del usuario actual.
+ */
+export async function deactivateUserAccount() {
+  return authFetch("/auth/deactivated", { method: "POST" });
 }

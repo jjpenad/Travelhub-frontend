@@ -1,6 +1,7 @@
 package com.example.travelhub.ui.screens.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,13 +22,19 @@ import androidx.compose.material.icons.filled.Luggage
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.res.stringResource
 import com.example.travelhub.R
@@ -35,10 +42,12 @@ import com.example.travelhub.notifications.NotificationsViewModel
 import com.example.travelhub.notifications.PostNotificationsStatus
 import com.example.travelhub.notifications.TestResult
 import androidx.compose.ui.tooling.preview.Preview
+import android.app.Activity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,13 +60,16 @@ import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.TextSecondary
 import com.example.travelhub.ui.theme.White
 
-// TODO(backend): This screen uses hardcoded user data (name, email, settings).
-//   1. Create a ProfileViewModel that reads UserSession from AuthRepository.getSession()
-//   2. Load real user profile from API (profile picture URL, language, currency, region)
-//   3. Make settings rows functional (navigate to edit screens or show dialogs)
-//   4. "Personal Information" should navigate to an editable profile form
-//   5. "My Bookings" should navigate to MyTrips
-//   6. "Payment Methods" should show saved cards from the payment API
+// Locale tags supported by the in-app language selector. Empty string means
+// "follow the system locale" (default at first launch).
+private const val LOCALE_SPANISH = "es"
+private const val LOCALE_ENGLISH = "en"
+private const val LOCALE_SYSTEM = ""
+
+// TODO(backend): This screen still uses hardcoded user data (avatar, region,
+//   currency). The text values now live in strings.xml so they get localised,
+//   but the underlying data still needs to come from the API. See pre-existing
+//   TODOs below.
 //
 // TODO(ui): Replace the hardcoded "A" avatar with user's profile image using Coil:
 //   AsyncImage(model = userProfile.avatarUrl, ...)
@@ -70,7 +82,16 @@ fun ProfileSettingsScreen(
 ) {
     val guestSessionId by profileViewModel.guestSessionId.collectAsStateWithLifecycle()
     val session by profileViewModel.session.collectAsStateWithLifecycle()
+    val selectedLocale by profileViewModel.selectedLocale.collectAsStateWithLifecycle()
     val isAuthenticated = session?.token?.isNotBlank() == true
+
+    // We need the hosting Activity to force-recreate after a locale change.
+    // ComponentActivity isn't an AppCompatActivity, so AppCompatDelegate
+    // cannot auto-recreate it; without the explicit recreate the UI keeps
+    // rendering the previous locale's resources until the next config change.
+    val activity = LocalContext.current as? Activity
+
+    var showLanguagePicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -86,7 +107,12 @@ fun ProfileSettingsScreen(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Profile & Settings", color = White, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.profile_screen_title),
+                    color = White,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
@@ -95,11 +121,17 @@ fun ProfileSettingsScreen(
                         .background(OrangeAccent),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("A", color = White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(R.string.profile_avatar_initial),
+                        color = White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 if (isAuthenticated) {
-                    val name = session?.fullName?.takeIf { it.isNotBlank() } ?: "Guest"
+                    val name = session?.fullName?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.profile_guest_name)
                     Text(name, color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
                         text = session?.email.orEmpty(),
@@ -107,9 +139,14 @@ fun ProfileSettingsScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                 } else {
-                    Text("Browsing as Guest", color = White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(
-                        "Sign in to track your trips across devices",
+                        text = stringResource(R.string.profile_guest_browsing_title),
+                        color = White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = stringResource(R.string.profile_guest_subtitle),
                         color = White.copy(alpha = 0.8f),
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -118,20 +155,35 @@ fun ProfileSettingsScreen(
         }
 
         // Account section
-        SectionTitle("ACCOUNT")
-        SettingsRow(icon = Icons.Filled.Person, title = "Personal Information")
-        SettingsRow(icon = Icons.Filled.Luggage, title = "My Bookings")
-        SettingsRow(icon = Icons.Filled.CreditCard, title = "Payment Methods")
+        SectionTitle(stringResource(R.string.profile_section_account))
+        SettingsRow(icon = Icons.Filled.Person, title = stringResource(R.string.profile_row_personal_information))
+        SettingsRow(icon = Icons.Filled.Luggage, title = stringResource(R.string.profile_row_my_bookings))
+        SettingsRow(icon = Icons.Filled.CreditCard, title = stringResource(R.string.profile_row_payment_methods))
 
         // Language & Region
-        SectionTitle("LANGUAGE & REGION")
-        SettingsRow(icon = Icons.Filled.Language, title = "Language", value = "English")
-        SettingsRow(icon = Icons.Filled.Language, title = "Currency", subtitle = "Prices displayed in this currency", value = "USD (\$)")
-        SettingsRow(icon = Icons.Filled.Place, title = "Region", subtitle = "Affects dates, formats & local content", value = "Colombia")
+        SectionTitle(stringResource(R.string.profile_section_language_region))
+        SettingsRow(
+            icon = Icons.Filled.Language,
+            title = stringResource(R.string.profile_row_language),
+            value = languageDisplayValue(selectedLocale),
+            onClick = { showLanguagePicker = true }
+        )
+        SettingsRow(
+            icon = Icons.Filled.Language,
+            title = stringResource(R.string.profile_row_currency),
+            subtitle = stringResource(R.string.profile_row_currency_subtitle),
+            value = stringResource(R.string.profile_currency_value_usd)
+        )
+        SettingsRow(
+            icon = Icons.Filled.Place,
+            title = stringResource(R.string.profile_row_region),
+            subtitle = stringResource(R.string.profile_row_region_subtitle),
+            value = stringResource(R.string.profile_region_value_colombia)
+        )
 
         // Preferences — Notifications uses real permission state from the
         // NotificationsViewModel instead of a stale local switch.
-        SectionTitle("PREFERENCES")
+        SectionTitle(stringResource(R.string.profile_section_preferences))
         NotificationsSection(notificationsViewModel)
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -140,7 +192,7 @@ fun ProfileSettingsScreen(
         // to log out from; their identity is the X-Guest-Id (reset below).
         if (isAuthenticated) {
             TravelHubOutlinedButton(
-                text = "Log Out",
+                text = stringResource(R.string.profile_action_logout),
                 onClick = {
                     profileViewModel.logout()
                     onLogout()
@@ -151,26 +203,40 @@ fun ProfileSettingsScreen(
         }
 
         // Guest session — shows the current X-Guest-Id and lets the user reset it.
-        SectionTitle("GUEST SESSION")
+        SectionTitle(stringResource(R.string.profile_section_guest_session))
         Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
             Text(
-                text = "Session ID",
+                text = stringResource(R.string.profile_guest_session_id_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
             Text(
-                text = guestSessionId.ifBlank { "(not yet assigned)" },
+                text = guestSessionId.ifBlank { stringResource(R.string.profile_guest_session_id_empty) },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
             Spacer(modifier = Modifier.height(12.dp))
             TravelHubOutlinedButton(
-                text = "Reset guest session",
+                text = stringResource(R.string.profile_action_reset_guest_session),
                 onClick = { profileViewModel.resetGuestSession() }
             )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    if (showLanguagePicker) {
+        LanguagePickerDialog(
+            currentTag = selectedLocale,
+            onDismiss = { showLanguagePicker = false },
+            onSelect = { tag ->
+                profileViewModel.setLocale(tag)
+                showLanguagePicker = false
+                // setLocale applies the locale synchronously via AppCompatDelegate,
+                // so by the time recreate() runs the new resources are in effect.
+                activity?.recreate()
+            }
+        )
     }
 }
 
@@ -268,12 +334,15 @@ private fun SettingsRow(
     icon: ImageVector,
     title: String,
     subtitle: String? = null,
-    value: String? = null
+    value: String? = null,
+    onClick: (() -> Unit)? = null
 ) {
+    val rowModifier = Modifier
+        .fillMaxWidth()
+        .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+        .padding(horizontal = 20.dp, vertical = 12.dp)
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = rowModifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = Purple, modifier = Modifier.size(24.dp))
@@ -293,6 +362,75 @@ private fun SettingsRow(
         Icon(Icons.Filled.ChevronRight, null, tint = TextSecondary)
     }
     Divider(modifier = Modifier.padding(horizontal = 20.dp))
+}
+
+/**
+ * Resolves the user-facing label shown next to the Language row. Reads from
+ * string resources so it adapts to the currently-applied locale.
+ */
+@Composable
+private fun languageDisplayValue(tag: String): String = when (tag) {
+    LOCALE_SPANISH -> stringResource(R.string.language_value_spanish)
+    LOCALE_ENGLISH -> stringResource(R.string.language_value_english)
+    else -> stringResource(R.string.language_value_system)
+}
+
+/**
+ * Simple radio-list dialog for picking the app language. Three options:
+ * Español, English, System (default). Persisted via [ProfileViewModel.setLocale].
+ */
+@Composable
+private fun LanguagePickerDialog(
+    currentTag: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.language_picker_title)) },
+        text = {
+            Column {
+                LanguageOption(
+                    label = stringResource(R.string.language_option_spanish),
+                    selected = currentTag == LOCALE_SPANISH,
+                    onClick = { onSelect(LOCALE_SPANISH) }
+                )
+                LanguageOption(
+                    label = stringResource(R.string.language_option_english),
+                    selected = currentTag == LOCALE_ENGLISH,
+                    onClick = { onSelect(LOCALE_ENGLISH) }
+                )
+                LanguageOption(
+                    label = stringResource(R.string.language_option_system),
+                    selected = currentTag == LOCALE_SYSTEM,
+                    onClick = { onSelect(LOCALE_SYSTEM) }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.dialog_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun LanguageOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(label, modifier = Modifier.padding(start = 8.dp))
+    }
 }
 
 @Preview(showBackground = true, showSystemUi = true)

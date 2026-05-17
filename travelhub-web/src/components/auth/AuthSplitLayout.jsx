@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PATH_TRAVELERS_HOME } from "../../constants/routes";
 import CurrencySwitcher from "../currency/CurrencySwitcher";
@@ -7,10 +7,12 @@ import AuthMarketingAside from "./AuthMarketingAside";
 
 function AuthSplitLayout({ children }) {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const showCurrencySwitcher = pathname !== "/login" && pathname !== "/signup";
   return (
     <div className="auth-split">
       <div className="auth-split__toolbar">
-        <CurrencySwitcher />
+        {showCurrencySwitcher ? <CurrencySwitcher /> : null}
         <LanguageSwitcher />
       </div>
       <div className="auth-split__grid">

@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +39,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,14 +48,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Booking
 import com.example.travelhub.domain.model.BookingStatus
 import com.example.travelhub.domain.model.QrAvailability
 import com.example.travelhub.domain.model.QrPayload
 import com.example.travelhub.domain.model.QrToken
 import com.example.travelhub.ui.components.TravelHubButton
+import com.example.travelhub.ui.util.UiText
+import com.example.travelhub.ui.util.formatLocalized
 import com.example.travelhub.ui.theme.GreenAccent
-import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.RedAccent
 import com.example.travelhub.ui.theme.TextSecondary
@@ -64,9 +66,11 @@ import com.example.travelhub.ui.theme.White
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.LocalDate
+import java.time.format.FormatStyle
+import java.util.Locale
 
 @Composable
 fun QRCheckInScreen(
@@ -110,7 +114,7 @@ private fun QRCheckInContent(
     booking: Booking,
     qr: QrToken?,
     isCheckingIn: Boolean,
-    error: String?,
+    error: UiText?,
     showInfoDialog: Boolean,
     onBack: () -> Unit,
     onInfoClick: () -> Unit,
@@ -126,23 +130,27 @@ private fun QRCheckInContent(
             modifier = Modifier.fillMaxWidth().background(Purple).padding(horizontal = 8.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = White) }
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, stringResource(R.string.qr_back_cd), tint = White)
+            }
             Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
-                Text("QR Check-In", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = White)
+                Text(stringResource(R.string.qr_title), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = White)
                 Text(
-                    text = when (availability) {
-                        QrAvailability.ACTIVE -> "Show this code at the front desk"
-                        QrAvailability.ALREADY_CHECKED_IN -> "You've already checked in"
-                        QrAvailability.EXPIRED -> "QR expired — your stay has ended"
-                        QrAvailability.CANCELLED -> "Reservation cancelled"
-                    },
+                    text = stringResource(
+                        when (availability) {
+                            QrAvailability.ACTIVE -> R.string.qr_status_active
+                            QrAvailability.ALREADY_CHECKED_IN -> R.string.qr_status_already_checked_in
+                            QrAvailability.EXPIRED -> R.string.qr_status_expired
+                            QrAvailability.CANCELLED -> R.string.qr_status_cancelled
+                        }
+                    ),
                     color = White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
             // Info icon — opens a dialog showing the decoded payload (for demo / review).
             IconButton(onClick = onInfoClick) {
-                Icon(Icons.Filled.Info, "QR contents", tint = White)
+                Icon(Icons.Filled.Info, stringResource(R.string.qr_info_cd), tint = White)
             }
         }
 
@@ -158,7 +166,11 @@ private fun QRCheckInContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "${booking.propertyName} · #${booking.bookingRef.ifBlank { "—" }}",
+                    text = stringResource(
+                        R.string.qr_card_header_template,
+                        booking.propertyName,
+                        booking.bookingRef.ifBlank { stringResource(R.string.qr_card_ref_placeholder) }
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold
@@ -172,13 +184,13 @@ private fun QRCheckInContent(
                         if (availability == QrAvailability.ACTIVE) {
                             Image(
                                 bitmap = bmp.asImageBitmap(),
-                                contentDescription = "QR Code",
+                                contentDescription = stringResource(R.string.qr_image_cd),
                                 modifier = Modifier.size(220.dp)
                             )
                         } else {
                             Image(
                                 bitmap = bmp.asImageBitmap(),
-                                contentDescription = "QR Code (inactive)",
+                                contentDescription = stringResource(R.string.qr_image_inactive_cd),
                                 modifier = Modifier.size(220.dp).alpha(0.35f),
                                 colorFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
                             )
@@ -186,20 +198,20 @@ private fun QRCheckInContent(
                     } ?: Box(
                         modifier = Modifier.size(220.dp).background(Purple.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
-                    ) { Text("QR unavailable", color = Purple) }
+                    ) { Text(stringResource(R.string.qr_unavailable), color = Purple) }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 AvailabilityBadge(availability)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Valid for stay: ${booking.checkIn} → ${booking.checkOut}",
+                    text = stringResource(R.string.qr_validity_template, booking.checkIn.formatLocalized(), booking.checkOut.formatLocalized()),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
                 qr?.let {
                     Text(
-                        text = "Token expires ${formatInstant(Instant.ofEpochSecond(it.payload.expEpochSeconds))}",
+                        text = stringResource(R.string.qr_token_expires_template, formatInstant(Instant.ofEpochSecond(it.payload.expEpochSeconds))),
                         style = MaterialTheme.typography.bodySmall,
                         color = TextSecondary
                     )
@@ -217,13 +229,13 @@ private fun QRCheckInContent(
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("CHECK-IN TIME", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                        Text("3:00 PM", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.qr_section_checkin_time), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text(stringResource(R.string.qr_checkin_time_value), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("ROOM", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                        Text(stringResource(R.string.qr_section_room), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                         Text(
-                            text = booking.roomType.ifBlank { "TBA" },
+                            text = booking.roomType.ifBlank { stringResource(R.string.qr_room_tba) },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -242,14 +254,14 @@ private fun QRCheckInContent(
                 }
             } else {
                 TravelHubButton(
-                    text = "Complete Check-In",
+                    text = stringResource(R.string.qr_complete_checkin_cta),
                     onClick = onCompleteCheckin,
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )
             }
             error?.let {
                 Text(
-                    text = it,
+                    text = it.asString(),
                     color = RedAccent,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
@@ -259,8 +271,7 @@ private fun QRCheckInContent(
         }
 
         Text(
-            text = "The QR is generated locally and signed with HMAC-SHA256. " +
-                "It contains the reservation, hotel and session ids plus an expiration timestamp.",
+            text = stringResource(R.string.qr_security_note),
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
             textAlign = TextAlign.Center,
@@ -275,18 +286,18 @@ private fun QRCheckInContent(
 
 @Composable
 private fun AvailabilityBadge(availability: QrAvailability) {
-    val (color, label) = when (availability) {
-        QrAvailability.ACTIVE -> GreenAccent to "Ready to scan"
-        QrAvailability.ALREADY_CHECKED_IN -> Purple to "Checked in"
-        QrAvailability.EXPIRED -> RedAccent to "Expired"
-        QrAvailability.CANCELLED -> RedAccent to "Cancelled"
+    val (color, labelRes) = when (availability) {
+        QrAvailability.ACTIVE -> GreenAccent to R.string.qr_badge_ready
+        QrAvailability.ALREADY_CHECKED_IN -> Purple to R.string.qr_badge_checked_in
+        QrAvailability.EXPIRED -> RedAccent to R.string.qr_badge_expired
+        QrAvailability.CANCELLED -> RedAccent to R.string.qr_badge_cancelled
     }
     Box(
         modifier = Modifier
             .background(color.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Text(label, color = color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(labelRes), color = color, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -294,8 +305,8 @@ private fun AvailabilityBadge(availability: QrAvailability) {
 private fun QrInfoDialog(qr: QrToken, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-        title = { Text("QR contents") },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+        title = { Text(stringResource(R.string.qr_info_dialog_title)) },
         text = {
             Column(
                 modifier = Modifier
@@ -303,26 +314,26 @@ private fun QrInfoDialog(qr: QrToken, onDismiss: () -> Unit) {
                     .widthIn(min = 280.dp)
             ) {
                 Text(
-                    text = "What gets encoded into the QR (for review purposes):",
+                    text = stringResource(R.string.qr_info_dialog_intro),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                InfoRow("Reservation ID", qr.payload.reservationId)
-                InfoRow("Guest session", qr.payload.userId)
-                InfoRow("Hotel ID", qr.payload.hotelId)
-                InfoRow("Confirmation code", qr.payload.confirmationCode)
-                InfoRow("Issued at", formatInstant(Instant.ofEpochSecond(qr.payload.issuedAtEpochSeconds)))
-                InfoRow("Expires at", formatInstant(Instant.ofEpochSecond(qr.payload.expEpochSeconds)))
+                InfoRow(stringResource(R.string.qr_info_dialog_reservation), qr.payload.reservationId)
+                InfoRow(stringResource(R.string.qr_info_dialog_session), qr.payload.userId)
+                InfoRow(stringResource(R.string.qr_info_dialog_hotel), qr.payload.hotelId)
+                InfoRow(stringResource(R.string.qr_info_dialog_confirmation), qr.payload.confirmationCode)
+                InfoRow(stringResource(R.string.qr_info_dialog_issued_at), formatInstant(Instant.ofEpochSecond(qr.payload.issuedAtEpochSeconds)))
+                InfoRow(stringResource(R.string.qr_info_dialog_expires_at), formatInstant(Instant.ofEpochSecond(qr.payload.expEpochSeconds)))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Signature (Base64URL)", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.qr_info_dialog_signature), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Text(
                     text = qr.signature,
                     style = MaterialTheme.typography.bodySmall,
                     fontFamily = FontFamily.Monospace
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Encoded token", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(stringResource(R.string.qr_info_dialog_encoded_token), style = MaterialTheme.typography.labelSmall, color = TextSecondary)
                 Text(
                     text = qr.token,
                     style = MaterialTheme.typography.bodySmall,
@@ -341,8 +352,15 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
+/**
+ * Renders an Instant as a locale-aware "medium date + short time" combo using
+ * the current default locale (which AppCompatDelegate keeps in sync with the
+ * user's selected app language).
+ */
 private fun formatInstant(instant: Instant): String =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    DateTimeFormatter
+        .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+        .withLocale(Locale.getDefault())
         .withZone(ZoneId.systemDefault())
         .format(instant)
 

@@ -15,8 +15,10 @@ import {
   PATH_HOTEL_PORTAL_HOME,
   PATH_HOTEL_PORTAL_LEGACY,
   PATH_MY_TRIPS,
+  PATH_USER_PROFILE,
   PATH_TRAVELERS_HOME,
 } from "../../constants/routes";
+import { RESET_HOME_SEARCH_EVENT } from "../../constants/homeSearchEvents";
 import logoTravelhub from "../../assets/logo_travelhub.png";
 import CurrencySwitcher from "../currency/CurrencySwitcher";
 import LanguageSwitcher from "../language/LanguageSwitcher";
@@ -45,7 +47,9 @@ function Navbar() {
     pathname === PATH_HOTEL_PORTAL_HOME ||
     pathname.startsWith("/hoteles/");
   const hideTravelerCurrency =
-    isHotelPortalRoute || pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
+    isHome ||
+    isHotelPortalRoute ||
+    pathname.startsWith(`${PATH_HOTEL_MANAGE_RESERVATIONS}`);
   const [sessionVersion, setSessionVersion] = useState(0);
   const loggedIn = useMemo(() => {
     void pathname;
@@ -90,7 +94,16 @@ function Navbar() {
     <header className="navbar">
       <div className="navbar__inner navbar__inner--compact">
         <div className="navbar__start">
-          <Link className="navbar__brand" to={PATH_TRAVELERS_HOME}>
+          <Link
+            className="navbar__brand"
+            to={PATH_TRAVELERS_HOME}
+            onClick={(e) => {
+              if (pathname === PATH_TRAVELERS_HOME) {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent(RESET_HOME_SEARCH_EVENT));
+              }
+            }}
+          >
             <span className="navbar__brand-container">
               <span className="navbar__logo" aria-hidden="true">
                 <img
@@ -122,18 +135,32 @@ function Navbar() {
                 </Link>
               </li>
               {showMyTripsLink ? (
-                <li>
-                  <Link
-                    className={
-                      "navbar__link" +
-                      (isMyTrips ? " navbar__link--active" : "")
-                    }
-                    to={PATH_MY_TRIPS}
-                    aria-current={isMyTrips ? "page" : undefined}
-                  >
-                    {t("nav.myTrips")}
-                  </Link>
-                </li>
+                <>
+                  <li>
+                    <Link
+                      className={
+                        "navbar__link" +
+                        (isMyTrips ? " navbar__link--active" : "")
+                      }
+                      to={PATH_MY_TRIPS}
+                      aria-current={isMyTrips ? "page" : undefined}
+                    >
+                      {t("nav.myTrips")}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      className={
+                        "navbar__link" +
+                        (pathname === PATH_USER_PROFILE ? " navbar__link--active" : "")
+                      }
+                      to={PATH_USER_PROFILE}
+                      aria-current={pathname === PATH_USER_PROFILE ? "page" : undefined}
+                    >
+                      {t("nav.profile")}
+                    </Link>
+                  </li>
+                </>
               ) : null}
             </ul>
           </nav>

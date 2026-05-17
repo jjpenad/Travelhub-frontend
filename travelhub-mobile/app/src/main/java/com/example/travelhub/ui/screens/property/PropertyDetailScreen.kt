@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,14 +35,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.Room
-import com.example.travelhub.ui.theme.GreenAccent
+import com.example.travelhub.ui.util.amenityLabel
+import com.example.travelhub.ui.util.formatIsoDateLocalized
+import com.example.travelhub.ui.util.formatNumber
 import com.example.travelhub.ui.theme.OrangeAccent
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.TextSecondary
@@ -93,10 +96,10 @@ private fun PropertyDetailContent(
         Box(modifier = Modifier.fillMaxWidth().height(220.dp).background(Purple)) {
             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 IconButton(onClick = onBack, modifier = Modifier.clip(CircleShape).background(White.copy(alpha = 0.3f))) {
-                    Icon(Icons.Filled.ArrowBack, "Back", tint = White)
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.property_back_cd), tint = White)
                 }
                 IconButton(onClick = { }, modifier = Modifier.clip(CircleShape).background(White.copy(alpha = 0.3f))) {
-                    Icon(Icons.Filled.FavoriteBorder, "Favorite", tint = White)
+                    Icon(Icons.Filled.FavoriteBorder, stringResource(R.string.property_favorite_cd), tint = White)
                 }
             }
             Box(modifier = Modifier.align(Alignment.Center)) {
@@ -106,34 +109,56 @@ private fun PropertyDetailContent(
 
         Column(modifier = Modifier.padding(20.dp)) {
             Text(text = prop.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text(text = "${prop.city}, ${prop.country}", color = TextSecondary, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = stringResource(R.string.booking_summary_city_country, prop.city, prop.country),
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                 Icon(Icons.Filled.Star, null, tint = OrangeAccent, modifier = Modifier.size(18.dp))
-                Text(text = " ${prop.rating} · ${prop.starRating}-star", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    // formatNumber localises the decimal separator on the
+                    // rating ("4.8" en / "4,8" es); starRating is a small
+                    // integer (1-5) so leaving it as %d is fine.
+                    text = stringResource(R.string.property_rating_template, formatNumber(prop.rating), prop.starRating),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
 
-            // Amenities
+            // Amenities. `amenityLabel` maps the raw backend value (e.g. "Pool",
+            // "WiFi") to a localised label; unknown amenities pass through
+            // unchanged so we never hide content from the user.
             if (prop.amenities.isNotEmpty()) {
                 Row(modifier = Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     prop.amenities.take(4).forEach { amenity ->
-                        AmenityChip(amenity)
+                        AmenityChip(amenityLabel(amenity))
                     }
                 }
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Description
-            Text(text = "About this stay", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            // Description (from the backend; we render as-is for now)
+            Text(text = stringResource(R.string.property_section_about), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Text(text = prop.description, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.padding(top = 8.dp))
 
-            // Dates
+            // Dates — checkIn / checkOut arrive as ISO strings from the VM;
+            // we parse + reformat in the user's locale so the user sees
+            // "1 may 2026" (es) or "May 1, 2026" (en) instead of the raw ISO.
             if (checkIn.isNotBlank()) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Purple.copy(alpha = 0.05f)), shape = RoundedCornerShape(12.dp)) {
                     Row(modifier = Modifier.padding(16.dp)) {
-                        Text("$checkIn → $checkOut · ${prop.nights} nights", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = stringResource(
+                                R.string.property_dates_template,
+                                formatIsoDateLocalized(checkIn),
+                                formatIsoDateLocalized(checkOut),
+                                prop.nights
+                            ),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
             }
@@ -142,7 +167,7 @@ private fun PropertyDetailContent(
 
             // Available Room Types
             if (prop.rooms.isNotEmpty()) {
-                Text(text = "Available Rooms", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(text = stringResource(R.string.property_section_rooms), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(modifier = Modifier.height(8.dp))
                 prop.rooms.forEach { room ->
                     RoomTypeCard(room = room, onSelect = { onReserveClick(room.id) })
@@ -155,7 +180,7 @@ private fun PropertyDetailContent(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "No rooms available for the selected dates",
+                        text = stringResource(R.string.property_no_rooms_available),
                         modifier = Modifier.padding(16.dp),
                         color = OrangeAccent,
                         style = MaterialTheme.typography.bodyMedium
@@ -179,7 +204,10 @@ private fun RoomTypeCard(room: Room, onSelect: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(room.type, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-                Text("$${room.price.toInt()}/night", fontWeight = FontWeight.Bold, color = Purple, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.property_room_price_per_night, room.price.toInt()),
+                    fontWeight = FontWeight.Bold, color = Purple, style = MaterialTheme.typography.titleMedium
+                )
             }
             Text(room.description, style = MaterialTheme.typography.bodySmall, color = TextSecondary, modifier = Modifier.padding(top = 4.dp))
 
@@ -188,20 +216,25 @@ private fun RoomTypeCard(room: Room, onSelect: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Person, null, tint = TextSecondary, modifier = Modifier.size(14.dp))
-                    Text(" ${room.capacity} guests", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(stringResource(R.string.property_room_capacity, room.capacity), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Bed, null, tint = TextSecondary, modifier = Modifier.size(14.dp))
-                    Text(" ${room.bedType}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(stringResource(R.string.property_room_bed_type, room.bedType), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
                 if (room.sizeSqm > 0) {
-                    Text("${room.sizeSqm.toInt()} m²", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(stringResource(R.string.property_room_size_sqm, room.sizeSqm.toInt()), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
             }
 
             if (room.amenities.isNotEmpty()) {
+                // joinToString with a transform lambda is NOT inline → Compose
+                // would reject the @Composable amenityLabel call inside it.
+                // Resolve labels first via the inline `map`, then join the
+                // already-resolved List<String> without a transform.
+                val localisedAmenities = room.amenities.map { amenityLabel(it) }
                 Text(
-                    room.amenities.joinToString(" · "),
+                    text = localisedAmenities.joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = Purple,
                     modifier = Modifier.padding(top = 4.dp)
@@ -212,12 +245,12 @@ private fun RoomTypeCard(room: Room, onSelect: () -> Unit) {
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 if (room.totalPrice > 0) {
-                    Text("Total: $${room.totalPrice.toInt()}", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(stringResource(R.string.property_room_total, room.totalPrice.toInt()), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Purple).clickable(onClick = onSelect).padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text("Select Room", color = White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.property_room_select_cta), color = White, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

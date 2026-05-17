@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -46,9 +47,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.travelhub.R
 import com.example.travelhub.domain.model.Property
 import com.example.travelhub.domain.model.Room
 import com.example.travelhub.ui.components.TravelHubButton
+import com.example.travelhub.ui.util.formatIsoDateLocalized
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.RedAccent
 import com.example.travelhub.ui.theme.TextSecondary
@@ -94,15 +97,17 @@ fun BookingPaymentScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator(color = Purple)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Processing reservation...", color = TextSecondary)
+                Text(stringResource(R.string.booking_processing), color = TextSecondary)
             }
         }
         is BookingUiState.Error -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                Text("Error", fontWeight = FontWeight.Bold, color = RedAccent, style = MaterialTheme.typography.titleLarge)
-                Text(state.message, color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+                Text(stringResource(R.string.booking_error_title), fontWeight = FontWeight.Bold, color = RedAccent, style = MaterialTheme.typography.titleLarge)
+                // UiText resolves against the active locale; server-provided messages
+                // still pass through verbatim via UiText.DynamicString.
+                Text(state.text.asString(), color = TextSecondary, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
                 Spacer(modifier = Modifier.height(16.dp))
-                TravelHubButton(text = "Go Back", onClick = onBack)
+                TravelHubButton(text = stringResource(R.string.booking_error_go_back), onClick = onBack)
             }
         }
         else -> {}
@@ -112,18 +117,17 @@ fun BookingPaymentScreen(
         AlertDialog(
             onDismissRequest = viewModel::onSignInPromptDismiss,
             confirmButton = {
-                TextButton(onClick = viewModel::onSignInWithExistingAccount) { Text("Sign in") }
+                TextButton(onClick = viewModel::onSignInWithExistingAccount) {
+                    Text(stringResource(R.string.action_sign_in))
+                }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onSignInPromptDismiss) { Text("Use a different email") }
+                TextButton(onClick = viewModel::onSignInPromptDismiss) {
+                    Text(stringResource(R.string.action_use_different_email))
+                }
             },
-            title = { Text("Account already exists") },
-            text = {
-                Text(
-                    "An account with this email already exists. " +
-                        "Sign in with the password you entered, or use a different email."
-                )
-            }
+            title = { Text(stringResource(R.string.booking_email_exists_dialog_title)) },
+            text = { Text(stringResource(R.string.booking_email_exists_dialog_text)) }
         )
     }
 }
@@ -158,8 +162,10 @@ private fun PaymentContent(
     ) {
         Box(modifier = Modifier.fillMaxWidth().background(Purple).padding(16.dp)) {
             Column {
-                IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, "Back", tint = White) }
-                Text(text = "Complete Booking", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White, modifier = Modifier.padding(start = 8.dp))
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Filled.ArrowBack, stringResource(R.string.booking_back_cd), tint = White)
+                }
+                Text(text = stringResource(R.string.booking_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = White, modifier = Modifier.padding(start = 8.dp))
             }
         }
 
@@ -168,12 +174,33 @@ private fun PaymentContent(
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(2.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(property.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
-                    Text("${property.city}, ${property.country}", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
-                    Text("$checkIn → $checkOut · $nights nights", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Room: ${room.type}", fontWeight = FontWeight.Medium, style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = "Total: $${totalPrice.toInt()} ${room.currencyCode}",
+                        text = stringResource(R.string.booking_summary_city_country, property.city, property.country),
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        // checkIn / checkOut arrive as ISO strings via
+                        // BookingUiState.Summary; we localise at render time
+                        // so the user sees "1 may 2026" / "May 1, 2026"
+                        // instead of the raw ISO.
+                        text = stringResource(
+                            R.string.booking_summary_dates,
+                            formatIsoDateLocalized(checkIn),
+                            formatIsoDateLocalized(checkOut),
+                            nights
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.booking_summary_room, room.type),
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = stringResource(R.string.booking_summary_total, totalPrice.toInt(), room.currencyCode),
                         color = Purple, fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 8.dp)
@@ -187,8 +214,8 @@ private fun PaymentContent(
             // (name + email) come from the account and are NOT editable — those
             // are the canonical user details and live in the user profile.
             Text(
-                text = if (isAuthenticated) "Guest Information (from your account)"
-                else "Guest Information",
+                text = if (isAuthenticated) stringResource(R.string.booking_guest_info_title_authenticated)
+                else stringResource(R.string.booking_guest_info_title_anonymous),
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -202,7 +229,7 @@ private fun PaymentContent(
                     OutlinedTextField(
                         value = form.firstName,
                         onValueChange = onForm::onFirstNameChange,
-                        label = { Text("First name") },
+                        label = { Text(stringResource(R.string.booking_field_first_name)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         readOnly = isAuthenticated,
@@ -212,7 +239,7 @@ private fun PaymentContent(
                     OutlinedTextField(
                         value = form.lastName,
                         onValueChange = onForm::onLastNameChange,
-                        label = { Text("Last name") },
+                        label = { Text(stringResource(R.string.booking_field_last_name)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         readOnly = isAuthenticated,
@@ -222,7 +249,7 @@ private fun PaymentContent(
                     OutlinedTextField(
                         value = form.email,
                         onValueChange = onForm::onEmailChange,
-                        label = { Text("Email") },
+                        label = { Text(stringResource(R.string.booking_field_email)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -231,7 +258,7 @@ private fun PaymentContent(
                     )
                     if (isAuthenticated) {
                         Text(
-                            text = "Update your name or email from Profile.",
+                            text = stringResource(R.string.booking_authenticated_profile_hint),
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary,
                             modifier = Modifier.padding(top = 4.dp)
@@ -241,7 +268,7 @@ private fun PaymentContent(
                     OutlinedTextField(
                         value = form.documentNumber,
                         onValueChange = onForm::onDocumentNumberChange,
-                        label = { Text("Document number (optional)") },
+                        label = { Text(stringResource(R.string.booking_field_document_number)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -249,7 +276,7 @@ private fun PaymentContent(
                     OutlinedTextField(
                         value = form.cardNumber,
                         onValueChange = onForm::onCardNumberChange,
-                        label = { Text("Card number (mock)") },
+                        label = { Text(stringResource(R.string.booking_field_card_number)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -258,7 +285,6 @@ private fun PaymentContent(
             }
 
             // Optional account creation — only relevant for anonymous users.
-            // Logged-in users already have an account.
             if (!isAuthenticated) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
@@ -273,9 +299,9 @@ private fun PaymentContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("Create an account", fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.booking_create_account_title), fontWeight = FontWeight.SemiBold)
                                 Text(
-                                    "Track your trips across devices. Optional.",
+                                    text = stringResource(R.string.booking_create_account_subtitle),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextSecondary
                                 )
@@ -290,14 +316,14 @@ private fun PaymentContent(
                             OutlinedTextField(
                                 value = form.password,
                                 onValueChange = onForm::onPasswordChange,
-                                label = { Text("Password") },
+                                label = { Text(stringResource(R.string.booking_create_account_password_label)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 visualTransformation = PasswordVisualTransformation(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
                             )
                             Text(
-                                text = "Minimum 6 characters",
+                                text = stringResource(R.string.booking_create_account_password_hint),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextSecondary,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -310,23 +336,26 @@ private fun PaymentContent(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Price Breakdown
-            Text("Price Breakdown", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.booking_section_price_breakdown), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium)
             Card(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = White), elevation = CardDefaults.cardElevation(1.dp)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    PriceRow("$${room.price.toInt()} x $nights nights", "$${(room.price * nights).toInt()}")
+                    PriceRow(
+                        label = stringResource(R.string.booking_price_per_night_breakdown, room.price.toInt(), nights),
+                        amount = stringResource(R.string.booking_price_subtotal_value, (room.price * nights).toInt())
+                    )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total", fontWeight = FontWeight.Bold)
-                        Text("$${totalPrice.toInt()}", fontWeight = FontWeight.Bold, color = Purple)
+                        Text(stringResource(R.string.booking_price_total_label), fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.booking_price_total_value, totalPrice.toInt()), fontWeight = FontWeight.Bold, color = Purple)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            TravelHubButton(text = "Confirm & Pay  $${totalPrice.toInt()}", onClick = onConfirmPay)
+            TravelHubButton(text = stringResource(R.string.booking_confirm_pay_cta, totalPrice.toInt()), onClick = onConfirmPay)
             Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Lock, null, tint = TextSecondary, modifier = Modifier.padding(end = 4.dp))
-                Text(text = "Secured by 256-bit SSL encryption.", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                Text(text = stringResource(R.string.booking_secure_payment_footer), style = MaterialTheme.typography.bodySmall, color = TextSecondary)
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -346,6 +375,6 @@ private fun PriceRow(label: String, amount: String) {
 private fun BookingPaymentScreenPreview() {
     TravelHubTheme {
         // Preview omitted to avoid having to instantiate a fake VM.
-        Text("Booking screen preview not available here", modifier = Modifier.padding(24.dp))
+        Text(text = stringResource(R.string.booking_title), modifier = Modifier.padding(24.dp))
     }
 }

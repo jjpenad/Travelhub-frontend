@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { normalizeFxCurrencyCode } from "../../constants/fxCurrency";
+import { PATH_PAYMENT_VOUCHER } from "../../constants/routes";
 import {
   isAuthenticated,
   isLoggedIn,
@@ -14,15 +15,12 @@ import { convertAmountAuthoritative, estimateConvertWithCachedRate } from "../..
 import { localeTagForI18n } from "../../utils/locale";
 import "./BookingSummaryCard.css";
 
-function buildPaymentLabel(
-  paymentMethod,
-  cardNumberRaw,
-) {
-  if (paymentMethod === "paypal") return "PayPal";
-  if (paymentMethod === "apple") return "Apple Pay";
-  const digits = String(cardNumberRaw ?? "").replace(/\D/g, "");
-  const last4 = digits.length >= 4 ? digits.slice(-4) : "4242";
-  return `Visa ···· ${last4}`;
+function buildPaymentLabel(selectedPaymentMethod) {
+  if (selectedPaymentMethod === "paypal") return "PayPal";
+  if (selectedPaymentMethod === "apple_pay") return "Apple Pay";
+  if (selectedPaymentMethod === "google_pay") return "Google Pay";
+  if (selectedPaymentMethod === "mercado_pago") return "Mercado Pago";
+  return "—";
 }
 
 function IconLock({ className }) {
@@ -90,8 +88,7 @@ function BookingSummaryCard({
   guestEmail = "",
   guestFormValid = false,
   paymentFormValid = false,
-  paymentMethod = "card",
-  cardNumber = "",
+  selectedPaymentMethod = null,
   guestFirstName = "",
   guestLastName = "",
   onConfirm,
@@ -222,7 +219,10 @@ function BookingSummaryCard({
         payment: {
           amount: amountStr,
           currency_code: "COP",
-          payment_token: `tok_visa_${(cardNumber || "4242424242424242").replace(/\D/g, "")}`,
+          payment_token:
+            selectedPaymentMethod != null
+              ? `tok_wallet_${selectedPaymentMethod}`
+              : "tok_wallet_pending",
         },
       };
 
@@ -322,8 +322,8 @@ function BookingSummaryCard({
         serviceFee: Number(serviceFee),
         taxes: Number(taxes),
         guestEmail: guestEmail || null,
-        paymentMethod,
-        paymentLabel: buildPaymentLabel(paymentMethod, cardNumber),
+        paymentMethod: selectedPaymentMethod,
+        paymentLabel: buildPaymentLabel(selectedPaymentMethod),
         checkInTime: "15:00",
         checkOutTime: "11:00",
       };
@@ -333,10 +333,16 @@ function BookingSummaryCard({
         : "";
       navigate(
         {
-          pathname: "/confirmation",
+          pathname: PATH_PAYMENT_VOUCHER,
           search: rid ? `?rid=${encodeURIComponent(rid)}` : "",
         },
-        { state: confirmationState },
+        {
+          state: {
+            reservationData: confirmationState,
+            selectedPaymentMethod,
+            totalPrice: copAmountForApi,
+          },
+        },
       );
     } catch (err) {
       console.error("Reservation failed:", err);
