@@ -6,6 +6,7 @@ import com.example.travelhub.data.remote.dto.LoginRequestDto
 import com.example.travelhub.data.remote.dto.RegisterRequestDto
 import com.example.travelhub.domain.model.UserSession
 import com.example.travelhub.domain.repository.AuthRepository
+import com.example.travelhub.notifications.FcmTokenSync
 import kotlinx.coroutines.flow.Flow
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -23,7 +24,8 @@ import javax.inject.Singleton
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,
-    private val userPreferences: UserPreferences
+    private val userPreferences: UserPreferences,
+    private val fcmTokenSync: FcmTokenSync,
 ) : AuthRepository {
 
     override suspend fun login(email: String, password: String): Result<UserSession> {
@@ -37,6 +39,10 @@ class AuthRepositoryImpl @Inject constructor(
                 token = response.accessToken
             )
             userPreferences.saveSession(session, password = password)
+            // Best-effort: registra el token FCM (si Firebase está
+            // inicializado) contra el backend con el JWT recién obtenido.
+            // Cualquier error queda contenido en el sync, no propaga.
+            fcmTokenSync.syncOnLogin()
             Result.success(session)
         } catch (e: HttpException) {
             val message = when (e.code()) {
@@ -92,6 +98,9 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logout() {
+        // Borrar el token FCM del backend ANTES de limpiar el JWT —
+        // esa llamada necesita el Bearer activo. Tolerante a fallos.
+        fcmTokenSync.syncOnLogout()
         userPreferences.clearSession()
     }
 
