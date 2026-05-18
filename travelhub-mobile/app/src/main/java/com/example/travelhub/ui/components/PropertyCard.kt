@@ -158,13 +158,19 @@ fun PropertyCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "$${property.pricePerNight.toInt()}/night",
+                        // Reuse the same template that PropertyDetail's RoomTypeCard
+                        // uses for "$X / noche" / "$X/night" — same visual shape, no
+                        // reason to duplicate a key.
+                        text = stringResource(
+                            R.string.property_room_price_per_night,
+                            property.pricePerNight.toInt()
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Purple
                     )
                     TravelHubSmallButton(
-                        text = "Book Now",
+                        text = stringResource(R.string.property_card_book_now),
                         onClick = onClick
                     )
                 }

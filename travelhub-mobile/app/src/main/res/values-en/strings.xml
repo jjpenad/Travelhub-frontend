@@ -3,6 +3,20 @@
     <string name="app_name">TravelHub</string>
 
     <!-- ════════════════════════════════════════════════════════════════════
+         Bottom navigation bar
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="nav_explore">Explore</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_trips">Trips</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Banners (offline + inline error)
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="banner_offline_message">You are offline. Some features may not work.</string>
+    <string name="banner_dismiss_cd">Dismiss</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
          Common / dialogs / generic actions
          ════════════════════════════════════════════════════════════════════ -->
     <string name="action_back">Back</string>
@@ -139,6 +153,7 @@
          ════════════════════════════════════════════════════════════════════ -->
     <string name="property_card_rating_value"> %1$s</string>
     <string name="property_card_reviews_template"> (%1$s reviews)</string>
+    <string name="property_card_book_now">Book Now</string>
 
     <string name="property_back_cd">Back</string>
     <string name="property_favorite_cd">Favorite</string>
