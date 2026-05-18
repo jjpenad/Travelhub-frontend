@@ -1436,7 +1436,7 @@ function mapRoomType(dto) {
  * Obtiene el perfil del usuario autenticado (viajero u hotel).
  */
 export async function getUserProfile() {
-  return authFetch("/users/profile/", { method: "GET" });
+  return authFetch("/users/profile", { method: "GET" });
 }
 
 /**
