@@ -47,31 +47,46 @@ class MainActivity : ComponentActivity() {
     /**
      * Per-app locale plumbing for a Compose / ComponentActivity setup.
      *
-     * AppCompatDelegate.setApplicationLocales stores the user's chosen locale,
-     * but the recreate() it triggers (or that we trigger manually after the
-     * language selector) only matters if THIS activity reads the override when
-     * it rebuilds. AppCompatActivity does that automatically via its own
-     * attachBaseContext; ComponentActivity does not.
+     * Wraps the base Context with a `Configuration` carrying the active
+     * locale. From that point on, every `getResources()` / `getString()`
+     * call (including Compose's `stringResource`) reads from the right
+     * values folder
      *
-     * We replicate the same trick here: when the framework attaches the base
-     * context, we wrap it with a Configuration that already has the chosen
-     * locale list applied. From that point on, every `getResources()` /
-     * `getString()` call (including Compose's stringResource) reads from the
-     * right values* folder.
+     * Source-of-truth priority:
      *
-     * Without this override, switching the language inside the app appears to
-     * do nothing — the activity recreates but loads the system locale's
-     * resources anyway. This is the missing piece that the AndroidX docs glide
-     * over for ComponentActivity-based projects.
+     *  1. **`AppCompatDelegate.getApplicationLocales()`** — catches changes
+     *     made by the user from Android Settings → Apps → TravelHub →
+     *     Language. The framework propagates those to AppCompat
+     *     immediately and the value is reliable on every OEM.
+     *
+     *  2. **`UserPreferences.currentAuthLocale()`** — catches the in-app
+     *     picker case on Samsung One UI 8 (Android 14+), which has a known
+     *     race where `AppCompatDelegate.getApplicationLocales()` returns
+     *     empty/stale for a few ms after `setApplicationLocales()`. Our
+     *     picker writes to UserPreferences synchronously before triggering
+     *     the Activity restart, so this fallback is race-free.
+     *
+     *  3. **No override** — let the system locale through.
+     *
+     * Without this override, switching the language inside the app appears
+     * to do nothing — the activity restarts but loads the system locale's
+     * resources anyway. This is the missing piece that the AndroidX docs
+     * glide over for ComponentActivity-based projects.
      */
     override fun attachBaseContext(newBase: Context) {
-        val locales = AppCompatDelegate.getApplicationLocales()
-        if (locales.isEmpty) {
+        val systemTag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        val tag = if (systemTag.isNotBlank()) {
+            systemTag
+        } else {
+            val app = newBase.applicationContext as? TravelHubApp
+            app?.userPreferences?.currentAuthLocale().orEmpty()
+        }
+        if (tag.isBlank()) {
             super.attachBaseContext(newBase)
             return
         }
         val overrideConfig = Configuration(newBase.resources.configuration).apply {
-            setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
+            setLocales(LocaleList.forLanguageTags(tag))
         }
         super.attachBaseContext(newBase.createConfigurationContext(overrideConfig))
     }

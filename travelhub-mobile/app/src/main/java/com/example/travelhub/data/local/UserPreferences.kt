@@ -74,6 +74,18 @@ class UserPreferences @Inject constructor(
         }
     }
 
+    /** Update the in-memory locale cache synchronously WITHOUT touching DataStore.
+     *
+     *  Used right before an Activity restart so that the next [currentAuthLocale]
+     *  call (from `MainActivity.attachBaseContext` in the recreated Activity)
+     *  returns the just-chosen tag — even if the [saveAuthLocale] coroutine
+     *  hasn't finished writing to disk yet. The DataStore write happens
+     *  separately via [saveAuthLocale] and is the source of truth across
+     *  process restarts; this is just a fast path for the in-memory cache. */
+    fun updateAuthLocaleCacheSync(tag: String?) {
+        cachedAuthLocale.set(tag.orEmpty())
+    }
+
     val session: Flow<UserSession?> = dataStore.data.map { prefs ->
         val userId = prefs[KEY_USER_ID] ?: return@map null
         UserSession(

@@ -42,8 +42,16 @@ class LocaleManager @Inject constructor(
 
     /** Apply a locale tag synchronously via AppCompatDelegate. Pass empty
      *  string to clear the override and fall back to the system locale.
-     *  Does NOT persist — pair with [persist] for that. */
+     *  Does NOT persist to DataStore — pair with [persist] for that.
+     *
+     *  Also updates the in-memory locale cache in UserPreferences so that
+     *  if the caller immediately restarts the Activity (which the language
+     *  picker does on Samsung), `MainActivity.attachBaseContext` reads the
+     *  new tag synchronously without depending on
+     *  `AppCompatDelegate.getApplicationLocales()` (which has a known
+     *  propagation race on One UI 8). */
     fun apply(tag: String) {
+        userPreferences.updateAuthLocaleCacheSync(tag)
         val locales = if (tag.isBlank()) LocaleListCompat.getEmptyLocaleList()
         else LocaleListCompat.forLanguageTags(tag)
         AppCompatDelegate.setApplicationLocales(locales)
