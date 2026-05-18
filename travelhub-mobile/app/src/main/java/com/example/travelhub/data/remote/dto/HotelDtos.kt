@@ -2,6 +2,17 @@ package com.example.travelhub.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
+/**
+ * Nullability policy: cualquier campo que el backend pueda devolver `null` debe
+ * declararse como `Type?` aquí. Gson asigna `null` vía reflection sin importar
+ * la firma Kotlin — si dejamos no-nullable, todo deserializa "bien" pero al
+ * primer acceso desde código Kotlin se lanza NPE y se cae la pantalla entera.
+ *
+ * Campos confirmados null-by-design por el contrato actual de service-core:
+ *  - `rating` (Hotel sin reseñas)
+ *  - `AmenityDto.icon` (amenities recién dados de alta sin icono asignado)
+ */
+
 // GET /service-core/accommodations/hotels
 data class HotelDto(
     val id: String,
@@ -10,7 +21,7 @@ data class HotelDto(
     val address: String,
     val city: String,
     val stars: Int,
-    val rating: String,
+    val rating: String?,
     @SerializedName("total_reviews") val totalReviews: Int,
     val active: Boolean
 )
@@ -32,7 +43,7 @@ data class HotelSearchResultDto(
     val address: String,
     val city: String,
     val stars: Int,
-    val rating: String,
+    val rating: String?,
     @SerializedName("check_in_time") val checkInTime: String?,
     @SerializedName("check_out_time") val checkOutTime: String?,
     @SerializedName("available_room_types") val availableRoomTypes: List<RoomTypeDto>
@@ -45,7 +56,7 @@ data class HotelAvailabilityDto(
     val description: String,
     val city: String,
     val stars: Int,
-    val rating: String,
+    val rating: String?,
     @SerializedName("check_in_time") val checkInTime: String?,
     @SerializedName("check_out_time") val checkOutTime: String?,
     val nights: Int,
@@ -68,5 +79,5 @@ data class RoomTypeDto(
 
 data class AmenityDto(
     val name: String,
-    val icon: String
+    val icon: String?
 )
