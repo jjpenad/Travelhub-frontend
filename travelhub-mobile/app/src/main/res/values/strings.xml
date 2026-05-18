@@ -4,6 +4,20 @@
     <string name="app_name">TravelHub</string>
 
     <!-- ════════════════════════════════════════════════════════════════════
+         Bottom navigation bar
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="nav_explore">Explorar</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_trips">Viajes</string>
+    <string name="nav_profile">Perfil</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         Banners (offline + inline error)
+         ════════════════════════════════════════════════════════════════════ -->
+    <string name="banner_offline_message">Estás sin conexión. Algunas funciones pueden no estar disponibles.</string>
+    <string name="banner_dismiss_cd">Descartar</string>
+
+    <!-- ════════════════════════════════════════════════════════════════════
          Common / dialogs / generic actions
          ════════════════════════════════════════════════════════════════════ -->
     <string name="action_back">Atrás</string>
@@ -144,6 +158,8 @@
     <string name="property_card_rating_value"> %1$s</string>
     <!-- %1$s is the locale-formatted review count ("578" / "1,234" / "1.234"). -->
     <string name="property_card_reviews_template"> (%1$s reseñas)</string>
+    <!-- CTA on the property card in search results / featured listings. -->
+    <string name="property_card_book_now">Reservar</string>
 
     <string name="property_back_cd">Volver</string>
     <string name="property_favorite_cd">Favorito</string>

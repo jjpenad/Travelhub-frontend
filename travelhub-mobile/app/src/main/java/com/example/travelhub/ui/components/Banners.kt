@@ -21,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.travelhub.R
 import com.example.travelhub.ui.theme.RedAccent
 import com.example.travelhub.ui.theme.White
 
@@ -52,7 +54,7 @@ fun OfflineBanner(visible: Boolean) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "You are offline. Some features may not work.",
+                text = stringResource(R.string.banner_offline_message),
                 color = White,
                 fontWeight = FontWeight.Medium,
                 style = MaterialTheme.typography.bodyMedium
@@ -100,7 +102,7 @@ fun ErrorBanner(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Dismiss",
+                        contentDescription = stringResource(R.string.banner_dismiss_cd),
                         tint = RedAccent
                     )
                 }
