@@ -1,5 +1,6 @@
 package com.example.travelhub.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Luggage
@@ -17,16 +18,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.travelhub.R
 import com.example.travelhub.ui.theme.Purple
 import com.example.travelhub.ui.theme.TextSecondary
 import com.example.travelhub.ui.theme.White
 
+/**
+ * Bottom-nav item.
+ *
+ * Carries `@StringRes labelRes` instead of a plain `String` so the label is
+ * resolved at composition time via [stringResource] and adapts to the active
+ * locale. The list of items is built at file scope (not @Composable), so we
+ * cannot resolve resources eagerly — the resource id is stored and resolved
+ * inside [BottomNavBar].
+ */
 data class BottomNavItem(
-    val label: String,
+    @StringRes val labelRes: Int,
     /** Route URI to navigate to (may include resolved query args). */
     val navigateTo: String,
     /** Registered route pattern used to detect the selected tab. */
@@ -37,28 +49,28 @@ data class BottomNavItem(
 
 val bottomNavItems = listOf(
     BottomNavItem(
-        label = "Explore",
+        labelRes = R.string.nav_explore,
         navigateTo = Screen.Home.route,
         routePattern = Screen.Home.route,
         selectedIcon = Icons.Filled.Explore,
         unselectedIcon = Icons.Outlined.Explore
     ),
     BottomNavItem(
-        label = "Search",
+        labelRes = R.string.nav_search,
         navigateTo = Screen.Search.createRoute(),
         routePattern = Screen.Search.route, // "search?city={city}"
         selectedIcon = Icons.Filled.Search,
         unselectedIcon = Icons.Outlined.Search
     ),
     BottomNavItem(
-        label = "Trips",
+        labelRes = R.string.nav_trips,
         navigateTo = Screen.MyTrips.route,
         routePattern = Screen.MyTrips.route,
         selectedIcon = Icons.Filled.Luggage,
         unselectedIcon = Icons.Outlined.Luggage
     ),
     BottomNavItem(
-        label = "Profile",
+        labelRes = R.string.nav_profile,
         navigateTo = Screen.Profile.route,
         routePattern = Screen.Profile.route,
         selectedIcon = Icons.Filled.Person,
@@ -81,6 +93,10 @@ fun BottomNavBar(navController: NavController) {
                 it.route == item.routePattern
             } == true
 
+            // Resolve once per item to avoid duplicating the call between
+            // contentDescription and the visible label.
+            val label = stringResource(item.labelRes)
+
             NavigationBarItem(
                 selected = isSelected,
                 onClick = {
@@ -100,10 +116,10 @@ fun BottomNavBar(navController: NavController) {
                 icon = {
                     Icon(
                         imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = item.label
+                        contentDescription = label
                     )
                 },
-                label = { Text(item.label) },
+                label = { Text(label) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = Purple,
                     selectedTextColor = Purple,
