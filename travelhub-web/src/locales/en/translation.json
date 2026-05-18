@@ -837,6 +837,7 @@
     "deleteModalWarning": "Your account will be permanently deleted. Your previous transaction records will remain in our system for legal reasons, but all your personal information will be completely anonymized.",
     "deleteModalCheckbox": "I understand that this action is irreversible and I accept the conditions.",
     "deleteModalCancel": "Close",
-    "deleteModalAccept": "Accept"
+    "deleteModalAccept": "Accept",
+    "deleteError403": "You cannot deactivate your account because you have pending reservations. Cancel or complete your trips before deleting your account."
   }
 }
