@@ -33,7 +33,7 @@ fun HotelDto.toDomain(): Property = Property(
     city = city,
     country = countryForCity(city),
     starRating = stars,
-    rating = rating.toDoubleOrNull() ?: 0.0,
+    rating = rating?.toDoubleOrNull() ?: 0.0,
     reviewCount = totalReviews
 )
 
@@ -46,7 +46,7 @@ fun HotelSearchResultDto.toDomain(): Property = Property(
     city = city,
     country = countryForCity(city),
     starRating = stars,
-    rating = rating.toDoubleOrNull() ?: 0.0,
+    rating = rating?.toDoubleOrNull() ?: 0.0,
     checkInTime = checkInTime ?: "",
     checkOutTime = checkOutTime ?: "",
     pricePerNight = availableRoomTypes.minOfOrNull { it.pricePerNight.toDoubleOrNull() ?: 0.0 } ?: 0.0,
@@ -63,7 +63,7 @@ fun HotelAvailabilityDto.toDomain(): Property = Property(
     city = city,
     country = countryForCity(city),
     starRating = stars,
-    rating = rating.toDoubleOrNull() ?: 0.0,
+    rating = rating?.toDoubleOrNull() ?: 0.0,
     checkInTime = checkInTime ?: "",
     checkOutTime = checkOutTime ?: "",
     nights = nights,
