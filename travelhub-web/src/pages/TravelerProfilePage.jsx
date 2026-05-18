@@ -48,7 +48,11 @@ function TravelerProfilePage() {
       navigate(PATH_TRAVELERS_HOME, { replace: true });
     } catch (err) {
       console.error('Error al dar de baja:', err);
-      alert(t('userProfile.errorTitle') || 'No se pudo dar de baja la cuenta.');
+      let errMsg = t('userProfile.errorTitle') || 'No se pudo dar de baja la cuenta.';
+      if (err.status === 403) {
+        errMsg = t('userProfile.deleteError403');
+      }
+      alert(errMsg);
       setIsDeleting(false);
       setShowDeleteModal(false);
     }

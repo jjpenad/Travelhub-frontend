@@ -962,6 +962,7 @@
     "deleteModalWarning": "Tu cuenta será eliminada de forma permanente. Los registros de tus transacciones previas continuarán existiendo por motivos legales, pero toda tu información será completamente anonimizada.",
     "deleteModalCheckbox": "Entiendo que esta acción es irreversible y acepto las condiciones.",
     "deleteModalCancel": "Cerrar",
-    "deleteModalAccept": "Aceptar"
+    "deleteModalAccept": "Aceptar",
+    "deleteError403": "No puedes darte de baja porque tienes reservas pendientes. Cancela o completa tus viajes antes de eliminar tu cuenta."
   }
 }
